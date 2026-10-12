@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>發明家日記・單元複習 互動模擬 | Sim: Inventor's Diary Review</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+.controls{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0;align-items:center}
+.pile{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0}
+.cardbtn{padding:.6rem .9rem;border:2px solid #1a6fb5;border-radius:8px;background:#fff;font-size:.98rem;cursor:pointer}
+.cardbtn.picked{background:#1a6fb5;color:#fff}
+.cardbtn.done{background:#d4efdf;border-color:#27ae60;color:#1e8449;cursor:default}
+.readout{background:#fff;border-left:5px solid #9b59b6;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#9b59b6}
+.quiz-q{background:#fff;border-radius:8px;padding:.9rem 1rem;margin:.8rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.quiz-q .opts button{display:block;width:100%;text-align:left;margin:.35rem 0;padding:.55rem .8rem;border:2px solid #ddd;border-radius:8px;background:#fafafa;font-size:1rem;cursor:pointer}
+.quiz-q .opts button.correct{background:#d4efdf;border-color:#27ae60}
+.quiz-q .opts button.wrong{background:#fadbd8;border-color:#e74c3c}
+.quiz-q .opts button:disabled{cursor:default}
+.feedback{margin-top:.4rem;font-weight:700}
+h3{margin:1.6rem 0 .4rem}
+.big-btn{padding:.7rem 1.6rem;font-size:1.05rem;background:#9b59b6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.note{font-size:.92rem;color:#555}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-10.html">← 返回課堂 Back to lesson</a></nav>
+<h2>發明家日記・單元複習 <span class="en">Inventor's Diary — Unit Review Game</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：<br>
+第一關：把每個<strong>科學概念</strong>同學到它的<strong>堂次</strong>配對（先撳概念，再撳堂次）。<br>
+第二關：回答六條單元小測驗題。<br>
+<span class="en">Round 1: match each science concept to the lesson where you learned it. Round 2: answer six unit-quiz questions.</span></p>
+</div>
+
+<h3>🏅 我的進度 <span class="en">My Progress</span></h3>
+<svg id="ring" width="120" height="120" viewBox="0 0 120 120" aria-label="progress">
+<circle cx="60" cy="60" r="50" fill="none" stroke="#eee" stroke-width="12"/>
+<circle id="ringArc" cx="60" cy="60" r="50" fill="none" stroke="#9b59b6" stroke-width="12"
+ stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)"/>
+<text id="ringText" x="60" y="68" text-anchor="middle" font-size="22" font-weight="bold" fill="#9b59b6">0/12</text>
+</svg>
+<p class="note">完成配對同測驗題，圓環會填滿。<span class="en">Complete matches and quiz questions to fill the ring.</span></p>
+
+<h3>第一關：概念配對 <span class="en">Round 1: Match the Concept</span></h3>
+<p class="note">先撳一個概念，再撳對應的堂次。<span class="en">Tap a concept, then tap the matching lesson.</span></p>
+<div class="pile" id="concepts"></div>
+<div class="pile" id="lessons"></div>
+<div class="readout">
+<div>配對成功 <span class="en">Matched</span>：<span class="big" id="matchScore">0</span> / 6</div>
+<div id="matchMsg"></div>
+<div class="controls"><button class="big-btn" id="reshuffle">🔀 重新洗牌 Reshuffle</button></div>
+</div>
+
+<h3>第二關：單元小測 <span class="en">Round 2: Unit Quiz</span></h3>
+<div id="quiz"></div>
+<div class="readout">
+<div>測驗得分 <span class="en">Quiz score</span>：<span class="big" id="quizScore">0</span> / 6</div>
+<div id="quizMsg"></div>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- Round 1: matching ---------- */
+var pairs=[
+ {c:'結構力學：形狀影響承重',l:4,a:'第 4 堂｜紙橋承重挑戰'},
+ {c:'能量轉換：彈性勢能 → 動能',l:5,a:'第 5 堂｜橡筋動力車'},
+ {c:'電磁：電生磁、同極相斥',l:6,a:'第 6 堂｜電磁鐵＋磁浮貓'},
+ {c:'光的反射：入射角＝反射角',l:7,a:'第 7 堂｜萬花筒／潛望鏡'},
+ {c:'簡單電路：電源、導線、負載',l:8,a:'第 8 堂｜關愛夜燈'},
+ {c:'氣壓：作用力與反作用力',l:9,a:'第 9 堂｜水火箭發射'}
+];
+var matched=0,picked=null,answered=0;
+function updateRing(){
+  var done=matched+answered;
+  var off=314-314*done/12;
+  document.getElementById('ringArc').setAttribute('stroke-dashoffset',off.toFixed(1));
+  document.getElementById('ringText').textContent=done+'/12';
+}
+function shuffle(arr){for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+function renderMatch(){
+  matched=0;picked=null;
+  document.getElementById('matchScore').textContent='0';
+  document.getElementById('matchMsg').textContent='';
+  updateRing();
+  var cc=document.getElementById('concepts'),lc=document.getElementById('lessons');
+  cc.innerHTML='';lc.innerHTML='';
+  shuffle(pairs.slice()).forEach(function(p){
+    var b=document.createElement('button');b.className='cardbtn';b.textContent=p.c;b.dataset.l=p.l;
+    b.addEventListener('click',function(){pickConcept(b);});cc.appendChild(b);
+  });
+  shuffle(pairs.slice()).forEach(function(p){
+    var b=document.createElement('button');b.className='cardbtn';b.textContent=p.a;b.dataset.l=p.l;
+    b.addEventListener('click',function(){pickLesson(b);});lc.appendChild(b);
+  });
+}
+function pickConcept(b){if(b.classList.contains('done'))return;
+  document.querySelectorAll('#concepts .cardbtn').forEach(function(x){x.classList.remove('picked');});
+  b.classList.add('picked');picked=b;}
+function pickLesson(b){if(b.classList.contains('done')||!picked)return;
+  if(b.dataset.l===picked.dataset.l){
+    b.classList.add('done');picked.classList.add('done');picked.classList.remove('picked');picked=null;
+    matched++;document.getElementById('matchScore').textContent=matched;updateRing();
+    document.getElementById('matchMsg').textContent='✓ 配對正確！'+(matched===6?'全部完成，你好叻！All matched!':'');
+  }else{
+    b.classList.add('picked');var bb=b;
+    document.getElementById('matchMsg').textContent='✕ 唔啱，再諗下！Try again.';
+    setTimeout(function(){bb.classList.remove('picked');},600);
+  }}
+document.getElementById('reshuffle').addEventListener('click',renderMatch);
+renderMatch();
+
+/* ---------- Round 2: quiz ---------- */
+var qs=[
+ {q:'紙橋承重挑戰中，最穩固的平面形狀是？',o:['正方形','三角形','圓形','長方形'],a:1,
+  f:'三角形三條邊長度固定後形狀唯一確定，最穩固。'},
+ {q:'橡筋動力車前進時，橡筋的彈性勢能主要轉化為？',o:['光能','車輪的動能','磁能','聲能'],a:1,
+  f:'彈性勢能 → 車輪轉動的動能 → 車輛前進。'},
+ {q:'電磁鐵斷電後會怎樣？',o:['磁力更強','磁力消失','變成永久磁石','會發光'],a:1,
+  f:'電磁鐵的磁力來自電流，斷電後磁力消失。'},
+ {q:'潛望鏡改變光路靠的是？',o:['兩次反射','折射','放大鏡','電池'],a:0,
+  f:'兩片平行鏡各成 45°，經兩次反射使光線平行移位。'},
+ {q:'紙電路的三要素是？',o:['電源、導線、負載','開關、電線、插頭','正極、負極、地線','木材、紙張、膠水'],a:0,
+  f:'電源（鈕扣電池）、導線（銅箔）、負載（LED）。'},
+ {q:'水火箭升空靠的是？',o:['浮力','作用力與反作用力','風力','磁力'],a:1,
+  f:'水向下噴（作用力），反作用力把火箭向上推。'}
+];
+var score=0;
+var qz=document.getElementById('quiz');
+qs.forEach(function(item,qi){
+  var div=document.createElement('div');div.className='quiz-q';
+  var h=document.createElement('div');h.innerHTML='<strong>Q'+(qi+1)+'.</strong> '+item.q;div.appendChild(h);
+  var fb=document.createElement('div');fb.className='feedback';
+  var opts=document.createElement('div');opts.className='opts';
+  item.o.forEach(function(opt,oi){
+    var b=document.createElement('button');b.textContent=opt;
+    b.addEventListener('click',function(){
+      if(b.disabled)return;
+      Array.prototype.forEach.call(opts.children,function(x){x.disabled=true;});
+      if(oi===item.a){b.classList.add('correct');score++;fb.style.color='#27ae60';fb.textContent='✓ 正確！'+item.f;}
+      else{b.classList.add('wrong');opts.children[item.a].classList.add('correct');
+        fb.style.color='#e74c3c';fb.textContent='✕ 正確答案是「'+item.o[item.a]+'」。'+item.f;}
+      answered++;document.getElementById('quizScore').textContent=score;updateRing();
+      if(answered===6){
+        var m=document.getElementById('quizMsg');
+        m.innerHTML=score===6?'🎉 滿分！你已經掌握晒六個概念！<br><span class="en">Perfect score!</span>'
+          :score>=4?'👍 唔錯！再睇返錯咗嗰幾堂嘅筆記啦。<br><span class="en">Good! Review the lessons you missed.</span>'
+          :'💪 加油！打開學生筆記溫習六個概念，再挑戰一次。<br><span class="en">Keep trying — review the notes and retry.</span>';
+      }
+    });
+    opts.appendChild(b);
+  });
+  div.appendChild(opts);div.appendChild(fb);qz.appendChild(div);
+});
+})();
+</script>
+</body>
+</html>

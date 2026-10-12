@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：樣本多樣性實驗室 | L15 AI 如何學習</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl label .en{display:block;font-size:.8rem;color:#666;font-weight:400}
+.ctl .val{color:#1a5276;font-weight:700}
+input[type=range]{width:100%;margin-top:.3rem}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act.warn{background:#e67e22}
+button.act:disabled{opacity:.5;cursor:default}
+table.cmp{width:100%;border-collapse:collapse;background:#fff;margin:.6rem 0;font-size:.9rem}
+table.cmp th,table.cmp td{border:1px solid #dfe6ee;padding:.5rem;text-align:center}
+table.cmp th{background:#1a5276;color:#fff}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox{background:#fef9e7;border:1px solid #f5d76e;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox .en{font-size:.82rem;color:#666}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-15.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：樣本多樣性實驗室 <span class="en">Interactive Simulation: Sample Diversity Lab</span></h2>
+<div class="howto"><b>玩法 How to play：</b>扮演 AI 訓練員！調校「樣本數目」和「樣本多樣性」，收集兩類動作的樣本（🟠 舉起右手／🔵 雙手放下），訓練模型學出一條分界線，再用 10 個「新同學」的新例子測試。<br><span class="en">Play the AI trainer: tune sample count and diversity, train a classifier, then test it on 10 brand-new examples from new classmates.</span></div>
+
+<div class="ctl">
+<label>樣本數目 No. of samples：<span class="val" id="qtyV">60</span><span class="en">How many training examples per class</span></label>
+<input type="range" id="qty" min="10" max="200" step="10" value="60">
+</div>
+<div class="ctl">
+<label>樣本多樣性 Sample diversity：<span class="val" id="divV">30%</span><span class="en">0% = 全部來自同一位同學 · 100% = 來自唔同人、唔同情況</span></label>
+<input type="range" id="divs" min="0" max="100" step="5" value="30">
+</div>
+
+<div class="btnrow">
+<button class="act" id="bCollect">① 收集樣本<br><span style="font-size:.75rem;font-weight:400">Collect samples</span></button>
+<button class="act alt" id="bTrain">② 訓練模型<br><span style="font-size:.75rem;font-weight:400">Train model</span></button>
+<button class="act warn" id="bTest">③ 測試 10 個新例子<br><span style="font-size:.75rem;font-weight:400">Test on 10 new examples</span></button>
+</div>
+<div class="btnrow">
+<button class="act" id="bCmp" style="background:#7d3c98">⚖ 比較：200 個單一樣本 vs 60 個多樣化樣本</button>
+</div>
+
+<canvas id="cv" class="sim" width="700" height="330"></canvas>
+
+<div class="readout" id="status">按「① 收集樣本」開始。<br><span class="en">Press "Collect samples" to begin.</span></div>
+<div class="tipbox" id="tip">💡 試下將「多樣性」調到 0% 再測試，然後調到 100% 再測試，比較準確率有咩分別。</div>
+<div id="cmpWrap"></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=330;
+var qty=document.getElementById('qty'),qtyV=document.getElementById('qtyV');
+var divs=document.getElementById('divs'),divV=document.getElementById('divV');
+var A=[],B=[],thr=null,trainAcc=null;
+var testing=false,queue=[],done=0,okc=0;
+qty.oninput=function(){qtyV.textContent=qty.value;};
+divs.oninput=function(){divV.textContent=divs.value+'%';};
+function g(m,s){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(6.2831853*v);}
+function X(v){return 46+v/100*608;}
+function mean(a){var s=0,i;for(i=0;i<a.length;i++)s+=a[i].v;return s/a.length;}
+function status(t){document.getElementById('status').innerHTML=t;}
+function collect(silent){
+  var n=+qty.value,d=+divs.value/100,i;A=[];B=[];
+  for(i=0;i<n;i++){
+    A.push({v:Math.random()<d?g(78,10):g(58,3),jy:(Math.random()-0.5)*26});
+    B.push({v:Math.random()<d?g(22,10):g(30,3),jy:(Math.random()-0.5)*26});
+  }
+  thr=null;trainAcc=null;queue=[];done=0;okc=0;testing=false;
+  document.getElementById('bTest').disabled=false;
+  draw();
+  if(!silent)status('已收集每類 '+n+' 個樣本（多樣性 '+divs.value+'%：'+(d<0.5?'多數來自同一位同學':'來自唔同人、唔同情況')+'）。按「② 訓練模型」。');
+}
+function train(silent){
+  if(!A.length){status('請先收集樣本。');return;}
+  var mA=mean(A),mB=mean(B),i,c=0;thr=(mA+mB)/2;
+  for(i=0;i<A.length;i++)if(A[i].v>=thr)c++;
+  for(i=0;i<B.length;i++)if(B[i].v<thr)c++;
+  trainAcc=c/(A.length+B.length);
+  draw();
+  if(!silent)status('模型學到的分界線：手臂角度 <b>'+thr.toFixed(1)+'°</b>。訓練準確率 <b>'+(trainAcc*100).toFixed(1)+'%</b>。⚠ 注意：訓練時全對，不代表測試都會全對！<br><span class="en">The model learnt a decision boundary. High training accuracy does not guarantee high test accuracy!</span>');
+}
+function newTestSet(){
+  var t=[],i;
+  for(i=0;i<10;i++){
+    var isA=(i%2===0),pm=isA?g(78,15):g(22,15);
+    t.push({v:pm+g(0,8),a:isA,p:0});
+  }
+  return t;
+}
+function startTest(){
+  if(thr===null){status('請先訓練模型（按 ②）。');return;}
+  if(testing)return;
+  queue=newTestSet();done=0;okc=0;testing=true;
+  document.getElementById('bTest').disabled=true;
+  requestAnimationFrame(step);
+}
+function step(){
+  if(!testing)return;
+  var cur=queue[done];
+  cur.p=Math.min(1,cur.p+0.035);
+  draw();
+  if(cur.p>=1){
+    var pred=cur.v>=thr,good=(pred===cur.a);
+    if(good)okc++;
+    done++;
+    status('測試 '+done+' / 10：新同學例子 → '+(good?'<b style="color:#27ae60">✓ 答對</b>':'<b style="color:#c0392b">✗ 答錯</b>')+'（累計 '+okc+' ✓）');
+  }
+  if(done<queue.length){requestAnimationFrame(step);}
+  else{testing=false;document.getElementById('bTest').disabled=false;finishTest();}
+}
+function finishTest(){
+  var acc=okc/10,d=+divs.value;
+  status('測試完成！準確率 ＝ 答對 '+okc+' ÷ 測試 10 ＝ <b>'+(acc*100).toFixed(0)+'%</b>');
+  var tip=document.getElementById('tip');
+  if(d<=20&&acc<0.96)tip.innerHTML='💡 <b>垃圾進，垃圾出！</b>樣本只來自同一位同學（多樣性低），模型學歪了分界線，面對新同學就出錯。<br><span class="en">Low diversity: the model learnt one person\'s quirk and fails on new people.</span>';
+  else if(d>=70)tip.innerHTML='💡 <b>多樣化樣本＝穩健模型！</b>模型見過唔同人、唔同情況，分界線學得準，新例子都認得。<br><span class="en">Diverse samples make a robust model.</span>';
+  else tip.innerHTML='💡 試下將「多樣性」調到 0% 或 100%，再收集、訓練、測試，比較準確率的分別。';
+  draw();
+}
+function runTestSync(){
+  var t=newTestSet(),c=0,i;
+  for(i=0;i<t.length;i++)if((t[i].v>=thr)===t[i].a)c++;
+  queue=t;done=10;okc=c;
+  return c/10;
+}
+function compare(){
+  qty.value=200;divs.value=5;qtyV.textContent='200';divV.textContent='5%';
+  collect(true);train(true);var accA=runTestSync(),thrA=thr;
+  qty.value=60;divs.value=90;qtyV.textContent='60';divV.textContent='90%';
+  collect(true);train(true);var accB=runTestSync(),thrB=thr;
+  draw();
+  document.getElementById('cmpWrap').innerHTML=
+    '<h2>比較結果 <span class="en">Comparison</span></h2>'+
+    '<table class="cmp"><tr><th>訓練資料<br><span class="en">Training data</span></th><th>分界線<br><span class="en">Boundary</span></th><th>測試準確率<br><span class="en">Test accuracy</span></th></tr>'+
+    '<tr><td>200 個樣本，多樣性 5%（同一位同學）</td><td>'+thrA.toFixed(1)+'°</td><td><b>'+(accA*100).toFixed(0)+'%</b></td></tr>'+
+    '<tr><td>60 個樣本，多樣性 90%（唔同人、唔同情況）</td><td>'+thrB.toFixed(1)+'°</td><td><b>'+(accB*100).toFixed(0)+'%</b></td></tr></table>'+
+    '<div class="tipbox">💡 <b>200 個一模一樣的樣本，不如 60 個多樣化的樣本。</b>數量多唔代表學得好——多樣性先係關鍵！<br><span class="en">200 identical samples are worth less than 60 diverse ones. Diversity matters more than quantity!</span></div>';
+  status('比較完成：200 個單一樣本 vs 60 個多樣化樣本，睇下邊個測試準確率更高。');
+}
+function dotRow(arr,color,y,label){
+  var i;
+  ctx.fillStyle=color;ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText(label,46,y-40);
+  ctx.globalAlpha=0.4;ctx.fillStyle=color;
+  for(i=0;i<arr.length;i++){ctx.beginPath();ctx.arc(X(arr[i].v),y+arr[i].jy,4,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+}
+function draw(){
+  var i;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#999';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(46,262);ctx.lineTo(654,262);ctx.stroke();
+  ctx.fillStyle='#555';ctx.font='12px sans-serif';ctx.textAlign='center';
+  for(var t=0;t<=100;t+=20)ctx.fillText(t+'°',X(t),280);
+  ctx.fillText('手臂角度 Arm angle（0°=放低 · 100°=高舉）',350,302);
+  dotRow(A,'#e67e22',130,'🟠 舉起右手 Hand raised');
+  dotRow(B,'#2e86c1',205,'🔵 雙手放下 Hands down');
+  if(thr!==null){
+    ctx.save();ctx.strokeStyle='#c0392b';ctx.setLineDash([7,5]);ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(X(thr),42);ctx.lineTo(X(thr),262);ctx.stroke();ctx.restore();
+    ctx.fillStyle='#c0392b';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('模型分界 '+thr.toFixed(1)+'°',Math.max(90,Math.min(610,X(thr))),34);
+  }
+  if(queue.length){
+    for(i=0;i<queue.length;i++){
+      var s=queue[i];
+      if(i<done){
+        var y=s.a?130:205,good=((s.v>=thr)===s.a);
+        ctx.fillStyle=s.a?'#e67e22':'#2e86c1';
+        ctx.beginPath();ctx.arc(X(s.v),y,6,0,7);ctx.fill();
+        ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+        ctx.fillStyle=good?'#27ae60':'#c0392b';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+        ctx.fillText(good?'✓':'✗',X(s.v),y-12);
+      }else if(i===done&&testing){
+        var yy=66+((s.a?130:205)-66)*s.p;
+        ctx.fillStyle=s.a?'#e67e22':'#2e86c1';
+        ctx.beginPath();ctx.arc(X(s.v),yy,6,0,7);ctx.fill();
+      }
+    }
+    ctx.fillStyle='#1a5276';ctx.font='bold 14px sans-serif';ctx.textAlign='right';
+    ctx.fillText('測試 Test: '+okc+' ✓ / '+done,654,58);
+  }
+  if(trainAcc!==null){
+    ctx.fillStyle='#1a5276';ctx.font='13px sans-serif';ctx.textAlign='left';
+    ctx.fillText('訓練準確率 Train acc: '+(trainAcc*100).toFixed(1)+'%',46,58);
+  }
+}
+document.getElementById('bCollect').onclick=function(){collect(false);};
+document.getElementById('bTrain').onclick=function(){train(false);};
+document.getElementById('bTest').onclick=startTest;
+document.getElementById('bCmp').onclick=compare;
+draw();
+})();
+</script>
+</body>
+</html>

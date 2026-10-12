@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>萬花筒＋反射定律 互動模擬 | Sim: Kaleidoscope & Reflection</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:#111;touch-action:manipulation}
+canvas.light{background:#f7f9fb}
+.controls{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0;align-items:center}
+.controls button{padding:.55rem 1rem;border:2px solid #1a6fb5;border-radius:8px;background:#fff;font-size:1rem;cursor:pointer}
+.controls button.active{background:#1a6fb5;color:#fff}
+.readout{background:#fff;border-left:5px solid #1a6fb5;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+label.slider{display:block;margin:.8rem 0 .3rem;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+h3{margin:1.6rem 0 .4rem}
+.note{font-size:.92rem;color:#555}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-07.html">← 返回課堂 Back to lesson</a></nav>
+<h2>萬花筒＋反射定律 <span class="en">Kaleidoscope & Law of Reflection — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：<br>
+1️⃣ 轉動萬花筒（拖曳圓形模擬器或按按鈕），觀察對稱圖案點樣變化；試下 2 片鏡 vs 3 片鏡有乜唔同。<br>
+2️⃣ 拖曳滑桿改變入射角，驗證「入射角＝反射角」。<br>
+<span class="en">Rotate the kaleidoscope, compare 2 vs 3 mirrors, and verify the law of reflection.</span></p>
+</div>
+
+<h3>🎡 萬花筒 Kaleidoscope</h3>
+<canvas id="kalei" height="420"></canvas>
+<div class="controls">
+<button id="rotL">⟲ 向左轉</button>
+<button id="rotR">向右轉 ⟳</button>
+<button id="shake">🔀 搖一搖碎紙 Shake beads</button>
+<button id="m3" class="active">3 片鏡</button>
+<button id="m2">2 片鏡</button>
+</div>
+<div class="readout">
+<div id="kMsg">三片鏡互相多重反射 → 對稱圖案。轉動筒身，碎紙位置改變，圖案不斷變化。<br><span class="en">Three mirrors reflect repeatedly → symmetric patterns.</span></div>
+</div>
+
+<h3>💡 反射定律 Law of Reflection：入射角＝反射角</h3>
+<label class="slider">入射角 <span class="en">Angle of incidence</span>：<span id="angVal">40</span>°</label>
+<input type="range" id="ang" min="10" max="80" step="1" value="40">
+<canvas id="refl" class="light" height="300"></canvas>
+<div class="readout">
+<div>入射角 <span class="en">incidence</span> = <strong id="rInc">40°</strong>；反射角 <span class="en">reflection</span> = <strong id="rRef">40°</strong></div>
+<p class="note">潛望鏡就係靠兩次反射令光線平行移位（兩片鏡平行、各成 45°），但唔會放大影像。<br>
+<span class="en">A periscope uses two such reflections to shift light rays in parallel — without magnifying.</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- Kaleidoscope ---------- */
+var kc=document.getElementById('kalei'),kctx=kc.getContext('2d');
+var KW=700,KH=420,mirrors=3,rot=0,spinning=0;
+var beads=[];var COLS=['#e74c3c','#f1c40f','#3498db','#2ecc71','#9b59b6','#e67e22','#1abc9c','#fd79a8'];
+function newBeads(){
+  beads=[];
+  for(var i=0;i<26;i++){
+    beads.push({a:Math.random()*Math.PI*2,r:30+Math.random()*150,
+      s:8+Math.random()*22,c:COLS[Math.floor(Math.random()*COLS.length)],
+      shape:Math.random()<0.5?'c':'t'});
+  }
+}
+newBeads();
+function kfit(){var w=kc.clientWidth;kc.width=w;kc.height=Math.round(w*KH/KW);}
+window.addEventListener('resize',function(){kfit();kdraw();});kfit();
+var dragging=false,lastX=0;
+kc.addEventListener('pointerdown',function(e){dragging=true;lastX=e.clientX;kc.setPointerCapture(e.pointerId);});
+kc.addEventListener('pointermove',function(e){if(dragging){rot+=(e.clientX-lastX)*0.02;lastX=e.clientX;}});
+kc.addEventListener('pointerup',function(){dragging=false;});
+kc.addEventListener('pointercancel',function(){dragging=false;});
+document.getElementById('rotL').addEventListener('click',function(){spinning=-0.08;});
+document.getElementById('rotR').addEventListener('click',function(){spinning=0.08;});
+document.getElementById('shake').addEventListener('click',function(){newBeads();});
+var m3b=document.getElementById('m3'),m2b=document.getElementById('m2');
+m3b.addEventListener('click',function(){mirrors=3;m3b.classList.add('active');m2b.classList.remove('active');
+  document.getElementById('kMsg').innerHTML='3 片鏡 → 六重對稱圖案。<br><span class="en">3 mirrors → six-fold symmetric patterns.</span>';});
+m2b.addEventListener('click',function(){mirrors=2;m2b.classList.add('active');m3b.classList.remove('active');
+  document.getElementById('kMsg').innerHTML='2 片鏡 → 圖案對稱度降低，只得左右鏡像。<br><span class="en">2 mirrors → simpler, less symmetric patterns.</span>';});
+
+function kdraw(){
+  var w=kc.width,h=kc.height,ctx=kctx;
+  ctx.clearRect(0,0,w,h);
+  var s=w/KW;ctx.save();ctx.scale(s,s);
+  var cx=KW/2,cy=KH/2,R=200;
+  // circular viewport mask
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+  ctx.fillStyle='#0d1117';ctx.fillRect(cx-R,cy-R,2*R,2*R);
+  var folds=(mirrors===3)?6:2,step=Math.PI*2/folds;
+  for(var f=0;f<folds;f++){
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot+f*step);
+    if(f%2===1)ctx.scale(1,-1);
+    ctx.translate(-cx,-cy);
+    beads.forEach(function(b){
+      var bx=cx+b.r*Math.cos(b.a),by=cy+b.r*Math.sin(b.a);
+      ctx.fillStyle=b.c;
+      if(b.shape==='c'){ctx.beginPath();ctx.arc(bx,by,b.s/2,0,Math.PI*2);ctx.fill();}
+      else{ctx.beginPath();ctx.moveTo(bx,by-b.s/2);ctx.lineTo(bx+b.s/2,by+b.s/2);ctx.lineTo(bx-b.s/2,by+b.s/2);ctx.closePath();ctx.fill();}
+    });
+    ctx.restore();
+  }
+  ctx.restore();
+  // tube rim
+  ctx.strokeStyle='#666';ctx.lineWidth=10;ctx.beginPath();ctx.arc(cx,cy,R+5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#888';ctx.font='14px sans-serif';ctx.fillText('拖曳旋轉 drag to rotate',cx-70,cy+R+28);
+  ctx.restore();
+}
+function kloop(){if(spinning!==0){rot+=spinning;spinning*=0.97;if(Math.abs(spinning)<0.002)spinning=0;}kdraw();requestAnimationFrame(kloop);}
+kloop();
+
+/* ---------- Reflection demo ---------- */
+var rc=document.getElementById('refl'),rctx=rc.getContext('2d');
+var ang=40;
+var angEl=document.getElementById('ang');
+angEl.addEventListener('input',function(){ang=+angEl.value;
+  document.getElementById('angVal').textContent=ang;
+  document.getElementById('rInc').textContent=ang+'°';
+  document.getElementById('rRef').textContent=ang+'°';rdraw();});
+function rfit(){var w=rc.clientWidth;rc.width=w;rc.height=Math.round(w*300/700);}
+window.addEventListener('resize',function(){rfit();rdraw();});rfit();
+function rdraw(){
+  var w=rc.width,h=rc.height,ctx=rctx;
+  ctx.clearRect(0,0,w,h);
+  var s=w/700;ctx.save();ctx.scale(s,s);
+  var cx=350,my=210;
+  // mirror
+  ctx.strokeStyle='#555';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(80,my);ctx.lineTo(620,my);ctx.stroke();
+  ctx.fillStyle='#333';ctx.font='14px sans-serif';ctx.fillText('鏡面 mirror',560,my+26);
+  // normal
+  var rad=ang*Math.PI/180,L=170;
+  ctx.strokeStyle='#999';ctx.setLineDash([6,5]);ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx,my);ctx.lineTo(cx,my-180);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#777';ctx.fillText('法線 normal',cx+8,my-168);
+  // incident ray
+  var ix=cx-L*Math.sin(rad),iy=my-L*Math.cos(rad);
+  var rx=cx+L*Math.sin(rad),ry=my-L*Math.cos(rad);
+  ctx.lineWidth=4;
+  ctx.strokeStyle='#e74c3c';ctx.beginPath();ctx.moveTo(ix,iy);ctx.lineTo(cx,my);ctx.stroke();
+  ctx.strokeStyle='#1a6fb5';ctx.beginPath();ctx.moveTo(cx,my);ctx.lineTo(rx,ry);ctx.stroke();
+  function arrow(x1,y1,x2,y2,col){var a=Math.atan2(y2-y1,x2-x1);
+    ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-12*Math.cos(a-0.4),y2-12*Math.sin(a-0.4));
+    ctx.lineTo(x2-12*Math.cos(a+0.4),y2-12*Math.sin(a+0.4));ctx.closePath();ctx.fill();}
+  arrow(ix,iy,cx-8,my-4,'#e74c3c');arrow(cx,my,rx-8,ry-4,'#1a6fb5');
+  // angle arcs
+  ctx.strokeStyle='#e74c3c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,my,60,-Math.PI/2,-Math.PI/2+rad);ctx.stroke();
+  ctx.strokeStyle='#1a6fb5';ctx.beginPath();ctx.arc(cx,my,60,-Math.PI/2-rad,-Math.PI/2);ctx.stroke();
+  ctx.fillStyle='#e74c3c';ctx.font='bold 15px sans-serif';ctx.fillText('入射角 '+ang+'°',ix-30,iy-12);
+  ctx.fillStyle='#1a6fb5';ctx.fillText('反射角 '+ang+'°',rx-30,ry-12);
+  ctx.fillStyle='#333';ctx.font='13px sans-serif';
+  ctx.fillText('入射光 incident',ix-10,iy+24);ctx.fillText('反射光 reflected',rx-10,ry+24);
+  ctx.restore();
+}
+rdraw();
+})();
+</script>
+</body>
+</html>

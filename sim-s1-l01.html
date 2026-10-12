@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>紙塔挑戰模擬器 | L01 Paper Tower Challenge Simulator</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;display:block;border:1px solid #dfe6ee;border-radius:10px;background:#f4f9ff;touch-action:manipulation}
+.ctrl{margin:.7rem 0}
+.ctrl label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:.25rem}
+.ctrl label .val{color:#1a5276}
+.ctrl input[type=range]{width:100%;height:2.2rem}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+.abtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.2rem;font-size:1rem;font-weight:700;cursor:pointer}
+.abtn.alt{background:#2e86c1}
+.abtn.warn{background:#c0392b}
+.abtn:disabled{opacity:.45;cursor:default}
+.meter{height:1.1rem;background:#e8edf2;border-radius:6px;overflow:hidden;margin:.3rem 0}
+.meter>div{height:100%;width:0;background:#27ae60;transition:width .3s}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.7rem .9rem;margin:.6rem 0}
+.readout b{color:#1a5276}
+table.log{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.92rem}
+table.log th,table.log td{border:1px solid #dfe6ee;padding:.35rem .5rem;text-align:center}
+table.log th{background:#eaf2f8}
+#collapseMsg{display:none;background:#fdecea;border:1px solid #e6a19a;border-radius:8px;padding:.8rem 1rem;margin:.6rem 0}
+.note{font-size:.85rem;color:#666}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-01.html">← 返回課堂 Back to lesson</a></nav>
+<h2>紙塔挑戰模擬器 <span class="en">Paper Tower Challenge Simulator</span></h2>
+<div class="card">
+<p><b>玩法 How to play</b></p>
+<ol>
+<li>用下面三個滑桿設計你的紙塔：<b>底座闊度</b>、<b>塔身高度</b>、<b>三角形支撐</b>。<br><span class="en">Design your tower with the three sliders: base width, tower height, triangular bracing.</span></li>
+<li>按「➕ 放一枚硬幣」逐枚測試承重，觀察紙塔愈來愈搖晃。<br><span class="en">Press "Add a coin" to load-test coin by coin, and watch the tower wobble more and more.</span></li>
+<li>紙塔倒塌後，按「📝 記錄本輪」記下數據，然後改良設計、再測一輪——這就是<b>工程循環</b>！<br><span class="en">After it collapses, record the round, improve your design and test again — that is the <b>engineering cycle</b>!</span></li>
+</ol>
+<p class="note">💡 課堂小知識：底座愈闊愈穩、三角形最穩固、紙捲成筒更受力。試下用模擬器驗證！</p>
+</div>
+<div class="card">
+<div class="ctrl">
+<label>底座闊度 Base width <span class="val" id="vBase">12 cm</span></label>
+<input type="range" id="rBase" min="5" max="30" step="1" value="12">
+</div>
+<div class="ctrl">
+<label>塔身高度 Tower height <span class="val" id="vH">40 cm</span></label>
+<input type="range" id="rH" min="15" max="60" step="1" value="40">
+</div>
+<div class="ctrl">
+<label>三角形支撐 Triangular bracing <span class="val" id="vBrace">0 層</span></label>
+<input type="range" id="rBrace" min="0" max="2" step="1" value="0">
+</div>
+<canvas id="cv"></canvas>
+<div class="readout">
+<b>結構狀態 Structure:</b> <span id="stability">穩固 Stable</span><br>
+<div class="meter"><div id="meterFill"></div></div>
+<b>已放硬幣 Coins:</b> <span id="coinN">0</span> 枚 &nbsp;|&nbsp; <b>設計承重約 Est. capacity:</b> <span id="capN">–</span> 枚
+<div class="note">（承重只係估算，真正答案要親手測試先知——就係工程師嘅「測試」精神！）</div>
+</div>
+<div id="collapseMsg"></div>
+<div class="btnrow">
+<button class="abtn" id="bAdd1">➕ 放一枚硬幣 <span class="en" style="font-weight:400;font-size:.85rem">Add 1 coin</span></button>
+<button class="abtn alt" id="bAdd5">➕➕ 放五枚 <span class="en" style="font-weight:400;font-size:.85rem">Add 5</span></button>
+<button class="abtn warn" id="bReset">🧹 清除硬幣 <span class="en" style="font-weight:400;font-size:.85rem">Clear coins</span></button>
+<button class="abtn alt" id="bLog">📝 記錄本輪 <span class="en" style="font-weight:400;font-size:.85rem">Log round</span></button>
+</div>
+<h3>測試記錄 Test log <span class="en">Round 1 → 改善 → Round 2…</span></h3>
+<table class="log" id="logTable">
+<tr><th>輪次<br><span class="en">Round</span></th><th>高度 (cm)</th><th>底座 (cm)</th><th>三角支撐</th><th>承重 (枚硬幣)</th></tr>
+</table>
+<p class="note" id="cycleHint">👆 第一輪測試後，睇下邊度係弱點（底座太窄？太高？冇三角支撐？），改良設計再測第二輪，比較數據有冇進步！</p>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var VW=0, VH=0;
+function fit(){
+  var dpr=Math.min(2,window.devicePixelRatio||1);
+  var w=cv.clientWidth||300;
+  VW=w; VH=Math.round(w*0.66);
+  cv.width=Math.round(w*dpr); cv.height=Math.round(VH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',fit);
+
+var S={base:12,h:40,brace:0,coins:0,phase:'ok',fallT:0,fallDir:1,dropT:1,t:0,rounds:[]};
+
+function cap(){ return Math.min(99, Math.max(1, Math.round(S.base*(1+0.9*S.brace)*55/S.h))); }
+
+function $(id){return document.getElementById(id);}
+function updLabels(){
+  $('vBase').textContent=S.base+' cm';
+  $('vH').textContent=S.h+' cm';
+  $('vBrace').textContent=S.brace+' 層';
+  $('coinN').textContent=S.coins;
+  $('capN').textContent=cap();
+  var r=S.coins/cap(), st=$('stability'), mf=$('meterFill');
+  mf.style.width=Math.min(100,r*100)+'%';
+  if(S.phase!=='ok'){ st.textContent='已倒塌 Collapsed'; mf.style.background='#c0392b'; }
+  else if(r<0.5){ st.textContent='穩固 Stable 👍'; mf.style.background='#27ae60'; }
+  else if(r<0.8){ st.textContent='開始搖晃 Wobbling… 😟'; mf.style.background='#e67e22'; }
+  else { st.textContent='非常危險 Critical! ⚠️'; mf.style.background='#c0392b'; }
+}
+function designChanged(note){
+  if(S.coins>0||S.phase!=='ok'){
+    S.coins=0;S.phase='ok';S.fallT=0;S.dropT=1;
+    $('collapseMsg').style.display='none';
+    if(note){var h=$('cycleHint');h.textContent='🔧 設計已更改，硬幣已清除，請重新測試！';}
+  }
+  updLabels();
+}
+$('rBase').addEventListener('input',function(){S.base=+this.value;designChanged(true);});
+$('rH').addEventListener('input',function(){S.h=+this.value;designChanged(true);});
+$('rBrace').addEventListener('input',function(){S.brace=+this.value;designChanged(true);});
+
+function addCoin(n){
+  if(S.phase!=='ok')return;
+  for(var i=0;i<n;i++){
+    if(S.coins>=cap()){ startFall(); return; }
+    S.coins++; S.dropT=0;
+  }
+  updLabels();
+}
+function startFall(){
+  S.phase='falling'; S.fallT=0; S.fallDir=Math.random()<0.5?-1:1;
+  var m=$('collapseMsg');
+  m.style.display='block';
+  m.innerHTML='<b>💥 紙塔倒塌了！</b> 呢個設計承受了 <b>'+S.coins+'</b> 枚硬幣（估算承重約 '+cap()+' 枚）。<br>'+
+    weaknessTip()+'<br>按「📝 記錄本輪」，然後改良設計再挑戰！';
+  updLabels();
+}
+function weaknessTip(){
+  if(S.base<12&&S.h>45)return '🔍 弱點分析：底座偏窄＋塔身偏高，試下<b>加闊底座</b>或者<b>加三角形支撐</b>。';
+  if(S.base<12)return '🔍 弱點分析：底座偏窄，試下<b>加闊底座</b>。';
+  if(S.h>45)return '🔍 弱點分析：塔身太高，重心太高易搖，試下<b>降低高度</b>或者<b>加三角形支撐</b>。';
+  if(S.brace<2)return '🔍 弱點分析：可以試下<b>加多層三角形支撐</b>，結構會更穩固。';
+  return '🔍 呢個設計已經好強！試下再推高佢嘅極限。';
+}
+$('bAdd1').addEventListener('click',function(){addCoin(1);});
+$('bAdd5').addEventListener('click',function(){addCoin(5);});
+$('bReset').addEventListener('click',function(){
+  S.coins=0;S.phase='ok';S.fallT=0;S.dropT=1;
+  $('collapseMsg').style.display='none';updLabels();
+});
+$('bLog').addEventListener('click',function(){
+  var n=S.rounds.length+1;
+  S.rounds.push({n:n,h:S.h,base:S.base,brace:S.brace,coins:S.coins});
+  var t=$('logTable'), tr=document.createElement('tr');
+  tr.innerHTML='<td>'+n+'</td><td>'+S.h+'</td><td>'+S.base+'</td><td>'+S.brace+' 層</td><td><b>'+S.coins+'</b></td>';
+  t.appendChild(tr);
+  $('cycleHint').textContent=n===1?
+    '✅ 第一輪已記錄！諗下弱點喺邊，改良設計（加闊底座／加三角支撐／調高度），再測第二輪比較！':
+    '✅ 第 '+n+' 輪已記錄！比較下改良前後嘅承重，進步咗幾多？';
+});
+
+/* ---------- drawing ---------- */
+function line(x0,y0,x1,y1){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();}
+function easeIn(t){return t*t;}
+
+function drawCoins(topw,hh,scattered,fallT,fallDir){
+  var n=S.coins, show=Math.min(n,24);
+  for(var k=0;k<show;k++){
+    var x=0,y=-hh-12-k*6;
+    if(scattered){
+      var r1=Math.sin(k*12.9898)*43758.5453, r2=Math.sin(k*78.233)*12543.1234;
+      r1=r1-Math.floor(r1); r2=r2-Math.floor(r2);
+      x=fallDir*fallT*(50+r1*160);
+      y=-hh-12-k*6 - fallT*fallT*(60+r2*160) + fallT*140;
+    } else if(k===n-1 && S.dropT<1){
+      y=-hh-150+ (150-12-k*6)*S.dropT*S.dropT;
+    }
+    ctx.fillStyle='#f1c40f';ctx.strokeStyle='#b7950b';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(x,y,11,4.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b7950b';ctx.font='7px sans-serif';ctx.textAlign='center';
+    ctx.fillText('$1',x,y+2.5);
+  }
+  if(n>24){ctx.fillStyle='#7f8c8d';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('…共 '+n+' 枚',0,-hh-12-24*6-14);}
+}
+
+function draw(){
+  ctx.clearRect(0,0,VW,VH);
+  // sky + ground
+  var g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#eaf4ff');g.addColorStop(1,'#f4f9ff');
+  ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+  var gy=VH-30;
+  ctx.fillStyle='#d5dbdb';ctx.fillRect(0,gy,VW,VH-gy);
+  ctx.strokeStyle='#7f8c8d';ctx.lineWidth=2;line(0,gy,VW,gy);
+  // scale to fit
+  var pxcm=Math.min((VW-70)/Math.max(S.base*2.6,70),(gy-120)/S.h);
+  var bw=S.base*pxcm, hh=S.h*pxcm, topw=Math.max(14,bw*0.35);
+  var c=cap(), ratio=Math.min(1,S.coins/c);
+  var ang=0,sink=0,scattered=false;
+  if(S.phase==='ok'){
+    ang=ratio*0.10*Math.sin(S.t)+ratio*0.045*Math.sin(S.t*2.7+1);
+  }else if(S.phase==='falling'){
+    var e=easeIn(Math.min(1,S.fallT));
+    ang=S.fallDir*(0.10+1.30*e); sink=34*e*e; scattered=S.fallT>0.25;
+  }else{ ang=S.fallDir*1.40; sink=34; scattered=true; }
+  var cx=VW/2;
+  ctx.save();ctx.translate(cx,gy+sink);ctx.rotate(ang);
+  var segN=4,segH=hh/segN;
+  ctx.strokeStyle='#8d6e63';ctx.lineWidth=Math.max(2.5,pxcm*0.8);ctx.lineCap='round';
+  for(var i=0;i<segN;i++){
+    var y0=-i*segH,y1=-(i+1)*segH;
+    var w0=bw-(bw-topw)*i/segN, w1=bw-(bw-topw)*(i+1)/segN;
+    line(-w0/2,y0,-w1/2,y1);line(w0/2,y0,w1/2,y1);
+    ctx.lineWidth=Math.max(1.5,pxcm*0.45);
+    line(-w1/2,y1,w1/2,y1);
+    if(i<S.brace){line(-w0/2,y0,w1/2,y1);line(w0/2,y0,-w1/2,y1);}
+    else if(i%2===0){line(-w0/2,y0,w1/2,y1);}
+    else{line(w0/2,y0,-w1/2,y1);}
+    ctx.lineWidth=Math.max(2.5,pxcm*0.8);
+  }
+  // base plate + top platform
+  ctx.fillStyle='#a1887f';ctx.fillRect(-bw/2-8,-7,bw+16,7);
+  ctx.fillStyle='#6d4c41';ctx.fillRect(-topw/2-9,-hh-7,topw+18,7);
+  // brace highlight label
+  if(S.brace>0){ctx.fillStyle='#c0392b';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('▲三角支撐 ×'+S.brace,-bw/2-8,-segH*S.brace-8);}
+  drawCoins(topw,hh,scattered,Math.min(1,S.fallT),S.fallDir);
+  ctx.restore();
+  // height label
+  ctx.fillStyle='#1a5276';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('↕ '+S.h+' cm',8,24);
+  ctx.fillText('↔ 底座 '+S.base+' cm',8,44);
+}
+
+function loop(){
+  S.t+=0.06;
+  if(S.dropT<1)S.dropT=Math.min(1,S.dropT+0.08);
+  if(S.phase==='falling'){S.fallT+=0.022;if(S.fallT>=1){S.phase='fallen';updLabels();}}
+  draw();
+  requestAnimationFrame(loop);
+}
+fit();updLabels();loop();
+})();
+</script>
+</body>
+</html>

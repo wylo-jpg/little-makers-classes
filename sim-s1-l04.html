@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>紙橋承重挑戰 互動模擬 | Sim: Paper Bridge Load Test</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+.controls{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0;align-items:center}
+.struct-btns{display:flex;flex-wrap:wrap;gap:.5rem}
+.struct-btns button{padding:.55rem .9rem;border:2px solid #2c3e50;border-radius:8px;background:#fff;font-size:1rem;cursor:pointer}
+.struct-btns button.active{background:#2c3e50;color:#fff}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:#f7f9fb;touch-action:manipulation}
+.readout{background:#fff;border-left:5px solid #e67e22;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#e67e22}
+.big-btn{padding:.7rem 1.6rem;font-size:1.05rem;background:#27ae60;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.big-btn:disabled{background:#95a5a6}
+.big-btn.reset{background:#e74c3c;margin-left:.5rem}
+label.slider{display:block;margin:.5rem 0;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+.note{font-size:.92rem;color:#555}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-04.html">← 返回課堂 Back to lesson</a></nav>
+<h2>紙橋承重挑戰 <span class="en">Paper Bridge Load Test — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：揀一種橋樑結構、調校跨度，然後逐枚加上硬幣，看看橋可以承起幾多枚才倒塌。形狀決定承重上限！<br>
+<span class="en">Choose a bridge structure and span, then add coins one by one and see how many it can carry before collapsing.</span></p>
+</div>
+
+<div class="controls">
+<div class="struct-btns" role="group" aria-label="結構">
+<button data-s="beam" class="active">樑式 <span class="en">Beam</span></button>
+<button data-s="arch">拱形 <span class="en">Arch</span></button>
+<button data-s="truss">三角形桁架 <span class="en">Truss</span></button>
+<button data-s="fold">W 形摺疊 <span class="en">Fold</span></button>
+</div>
+</div>
+<label class="slider">跨度 Span：<span id="spanVal">30</span> 厘米 cm</label>
+<input type="range" id="span" min="20" max="40" step="1" value="30">
+<div class="controls">
+<button class="big-btn" id="startBtn">▶ 開始承重測試 Start test</button>
+<button class="big-btn reset" id="resetBtn">重設 Reset</button>
+</div>
+
+<canvas id="cv" height="360"></canvas>
+
+<div class="readout">
+<div>結構 <span class="en">Structure</span>：<strong id="rStruct">樑式 Beam</strong></div>
+<div>已加硬幣 <span class="en">Coins added</span>：<span class="big" id="rCoins">0</span> 枚</div>
+<div id="rResult" style="margin-top:.4rem"></div>
+<p class="note">提示：樑式紙橋跨度 30cm 時通常只能承起幾枚；三角形桁架同拱形強得多——試下比較！<br>
+<span class="en">Tip: a flat beam bridge is the weakest; trusses and arches carry much more — compare them!</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=360,structure='beam',span=30;
+var state='idle',coins=0,maxCoins=0,tick=0,collapse=0,bend=0;
+var NAMES={beam:'樑式 Beam',arch:'拱形 Arch',truss:'三角形桁架 Triangular truss',fold:'W 形摺疊 W-fold'};
+var BASE={beam:3,arch:14,truss:20,fold:11}; // coins at 30 cm span
+
+function fit(){var w=cv.clientWidth;cv.width=w;cv.height=Math.round(w*H/W);}
+window.addEventListener('resize',function(){fit();draw();});
+fit();
+
+function maxLoad(){
+  var v=Math.round(BASE[structure]*30/span);
+  return Math.max(1,v+Math.floor(Math.random()*3)-1);
+}
+document.querySelectorAll('.struct-btns button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.struct-btns button').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active');structure=b.getAttribute('data-s');reset();
+  });
+});
+document.getElementById('span').addEventListener('input',function(e){
+  span=+e.target.value;document.getElementById('spanVal').textContent=span;reset();
+});
+function reset(){
+  state='idle';coins=0;maxCoins=0;collapse=0;bend=0;tick=0;
+  document.getElementById('rCoins').textContent='0';
+  document.getElementById('rStruct').textContent=NAMES[structure];
+  document.getElementById('rResult').textContent='';
+  document.getElementById('startBtn').disabled=false;draw();
+}
+document.getElementById('resetBtn').addEventListener('click',reset);
+document.getElementById('startBtn').addEventListener('click',function(){
+  reset();maxCoins=maxLoad();state='loading';this.disabled=true;
+});
+
+function bridgeY(x,cx,sag){ // deck vertical position at canvas x
+  var left=cx-spanPx/2,right=cx+spanPx/2;
+  if(structure==='arch'){
+    var t=(x-left)/spanPx;return baseY-38*Math.sin(Math.PI*t);
+  }
+  if(structure==='fold'||structure==='truss'){return baseY;}
+  return baseY+sag;
+}
+var spanPx=0,baseY=0;
+function draw(){
+  var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  var scale=w/W;ctx.save();ctx.scale(scale,scale);
+  baseY=250;var cx=W/2;spanPx=span*12; // 12 px per cm
+  var deskW=110,left=cx-spanPx/2,right=cx+spanPx/2;
+  // desks
+  ctx.fillStyle='#a9713f';
+  ctx.fillRect(left-deskW,baseY+6,deskW,104);ctx.fillRect(right,baseY+6,deskW,104);
+  ctx.fillStyle='#8a5a2b';ctx.fillRect(left-deskW,baseY+6,deskW,14);ctx.fillRect(right,baseY+6,deskW,14);
+  ctx.fillStyle='#333';ctx.font='13px sans-serif';
+  ctx.fillText('書桌 desk',left-deskW+15,baseY+80);ctx.fillText('書桌 desk',right+15,baseY+80);
+  // supports
+  ctx.fillStyle='#666';ctx.fillRect(left-14,baseY,14,10);ctx.fillRect(right,baseY,14,10);
+  // bridge shape
+  var sag=bend;var cy0=baseY;
+  ctx.lineWidth=5;ctx.strokeStyle='#1a6fb5';ctx.beginPath();
+  if(structure==='beam'){
+    ctx.moveTo(left-14,cy0);ctx.lineTo(right+14,cy0+sag);
+  }else if(structure==='arch'){
+    for(var i=0;i<=40;i++){var x=left-14+(spanPx+28)*i/40;var y=bridgeY(x,cx,0);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  }else if(structure==='truss'){
+    ctx.moveTo(left-14,cy0);ctx.lineTo(right+14,cy0);ctx.stroke();
+    ctx.lineWidth=3;
+    var n=6;
+    for(var k=0;k<n;k++){var x0=left-14+(spanPx+28)*k/n,x1=left-14+(spanPx+28)*(k+1)/n;
+      ctx.beginPath();ctx.moveTo(x0,cy0);ctx.lineTo((x0+x1)/2,cy0+26);ctx.lineTo(x1,cy0);ctx.stroke();}
+    ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(left-14,cy0);ctx.lineTo(right+14,cy0);
+  }else{ // fold W
+    var n2=8;ctx.beginPath();
+    for(var j=0;j<=n2;j++){var xf=left-14+(spanPx+28)*j/n2;var yf=cy0+(j%2?16:0);if(j===0)ctx.moveTo(xf,yf);else ctx.lineTo(xf,yf);}
+  }
+  ctx.stroke();
+  // collapse effect
+  if(state==='collapsed'){
+    ctx.strokeStyle='#e74c3c';ctx.lineWidth=5;ctx.beginPath();
+    ctx.moveTo(left-14,cy0);ctx.lineTo(cx,cy0+70+collapse*2);ctx.lineTo(right+14,cy0);ctx.stroke();
+  }
+  // coin plate + coins
+  var px=cx,py=baseY-8;
+  ctx.fillStyle='#ddd';ctx.beginPath();ctx.ellipse(px,py,44,12,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#999';ctx.lineWidth=2;ctx.stroke();
+  var r=9,per=6;
+  for(var c=0;c<coins;c++){
+    var row=Math.floor(c/per),col=c%per;
+    var ccx=px-30+col*12,ccy=py-10-row*7-(state==='collapsed'?collapse*3:0);
+    ctx.fillStyle='#f4d03f';ctx.beginPath();ctx.arc(ccx,ccy,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#b7950b';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#b7950b';ctx.font='9px sans-serif';ctx.fillText('$1',ccx-7,ccy+3);
+  }
+  ctx.restore();
+}
+function loop(){
+  tick++;
+  if(state==='loading'){
+    if(tick%22===0){
+      coins++;bend=Math.min(34,coins*34/Math.max(1,maxCoins));
+      document.getElementById('rCoins').textContent=coins;
+      if(coins>=maxCoins){state='collapsed';
+        document.getElementById('rResult').innerHTML='<strong>倒塌！</strong>本橋最多承起 <span class="big">'+coins+'</span> 枚硬幣。<br><span class="en">Collapsed! Maximum load: '+coins+' coins.</span>';
+      }
+      draw();
+    }
+  }else if(state==='collapsed'){
+    collapse+=0.6;if(collapse<12)draw();else state='done';
+  }
+  requestAnimationFrame(loop);
+}
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

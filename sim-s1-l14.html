@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L14 互動模擬：Debug 大作戰 | Debugging Challenge</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas#dbg{width:100%;max-width:440px;display:block;margin:0 auto;background:#fff;border:2px solid #1a5276;border-radius:10px;touch-action:manipulation}
+.cbtn{display:inline-block;padding:.55rem .95rem;border-radius:8px;border:1px solid #bcd9f2;background:#fff;color:#1a5276;font-weight:700;font-size:.95rem;margin:.25rem;cursor:pointer}
+.cbtn:hover{background:#eaf6ff}
+.cbtn.primary{background:#1a5276;color:#fff;border-color:#1a5276}
+.cbtn.good{background:#27ae60;color:#fff;border-color:#27ae60}
+.cbtn.warn{background:#e67e22;color:#fff;border-color:#e67e22}
+.cbtn:disabled{opacity:.45;cursor:default}
+.cbtn.on{outline:3px solid #e67e22}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0;min-height:2.6rem}
+.chip{background:#eaf6ff;border:1px solid #1a5276;color:#1a5276;border-radius:20px;padding:.3rem .7rem;font-size:.92rem;font-weight:700;cursor:pointer}
+.chip.sel{background:#1a5276;color:#fff}
+.chip.flagged{background:#c0392b;border-color:#c0392b;color:#fff}
+.chip.vague{background:#f3e5ff;border-color:#8e44ad;color:#8e44ad}
+.chip.cur{background:#f39c12;border-color:#f39c12;color:#fff}
+#traceD td:first-child{width:3rem;text-align:center}
+#traceD tr.bad td{background:#fdecea}
+.bugbtn{border:2px solid #bcd9f2}
+.bugbtn.on{border-color:#e67e22;background:#fef3e2}
+.stars{font-size:1.15rem}
+.stepnum{display:inline-block;background:#1a5276;color:#fff;border-radius:50%;width:1.6rem;height:1.6rem;text-align:center;line-height:1.6rem;font-size:.95rem;margin-right:.4rem}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-14.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L14 互動模擬：Debug 大作戰 <span class="en">Debugging Challenge — reproduce → trace → fix</span></h2>
+
+<div class="card"><b>玩法 How to play</b>
+<ol>
+<li>揀一個情境（甲／乙／丙／丁），每組指令都收埋咗蟲 bug。<br><span class="en">Pick a scenario — each instruction set hides bugs.</span></li>
+<li><b>① 重現</b>：撳「重現問題」睇機械人行到邊度出事。<b>② 追蹤</b>：睇追蹤表，撳 🐞 圈出錯嘅一步，再揀錯誤類型。<b>③ 修正</b>：用編輯工具改指令。<b>④ 測試</b>：撳「重新測試」驗證！<br><span class="en">Reproduce → trace &amp; flag the bug → fix → re-test.</span></li>
+<li>四種蟲：次序錯誤、遺漏步驟、含糊用詞、多餘步驟。<br><span class="en">Four bug types: wrong order, missing step, vague wording, redundant step.</span></li>
+</ol>
+<div id="scenBtns"></div>
+<div class="stars" id="stars">⭐ 找出售處：—　⭐ 分類正確：—　⭐ 修正成功：—</div>
+</div>
+
+<div class="card"><b><span class="stepnum">1</span>重現問題 Reproduce</b><br>
+<button class="cbtn primary" id="repro">▶ 重現問題 <span style="font-weight:400;font-size:.8rem">Run</span></button>
+<button class="cbtn" id="resetD">↺ 重設 <span style="font-weight:400;font-size:.8rem">Reset</span></button>
+<canvas id="dbg" width="440" height="440"></canvas>
+<div id="readoutD" style="margin-top:.5rem;font-weight:700"></div>
+</div>
+
+<div class="card"><b><span class="stepnum">2</span>追蹤＋圈錯 Trace &amp; flag</b>
+<p class="en">Click 🐞 on the row where things first go wrong.</p>
+<table id="traceD"><thead><tr><th>步驟<br>Step</th><th>指令 Instruction</th><th>執行後位置／面向<br>After</th><th>正常？<br>OK?</th><th>圈錯<br>Flag</th></tr></thead><tbody><tr><td colspan="5" style="text-align:center;color:#888">撳「重現問題」先 Run first</td></tr></tbody></table>
+<div id="flagInfo" style="font-weight:700;color:#c0392b"></div>
+<div style="margin-top:.4rem"><b>錯誤類型 Bug type：</b><br>
+<button class="cbtn bugbtn" data-bt="order">🔀 次序錯誤<br><span style="font-weight:400;font-size:.78rem">wrong order</span></button>
+<button class="cbtn bugbtn" data-bt="missing">🕳️ 遺漏步驟<br><span style="font-weight:400;font-size:.78rem">missing step</span></button>
+<button class="cbtn bugbtn" data-bt="vague">🌫️ 含糊用詞<br><span style="font-weight:400;font-size:.78rem">vague wording</span></button>
+<button class="cbtn bugbtn" data-bt="redundant">➕ 多餘步驟<br><span style="font-weight:400;font-size:.78rem">redundant step</span></button>
+</div>
+<div id="typeInfo" style="margin-top:.4rem;font-weight:700"></div>
+</div>
+
+<div class="card"><b><span class="stepnum">3</span>修正指令 Fix</b>
+<p class="en">Click a step chip to select it, then edit.</p>
+<div class="chips" id="chipsD"></div>
+<div id="editBox">
+<button class="cbtn" id="mvUp">⬆ 上移 <span style="font-weight:400;font-size:.8rem">Move up</span></button>
+<button class="cbtn" id="mvDn">⬇ 下移 <span style="font-weight:400;font-size:.8rem">Move down</span></button>
+<button class="cbtn" id="delS">🗑 刪除 <span style="font-weight:400;font-size:.8rem">Delete</span></button><br>
+<span style="font-size:.9rem;color:#555">改為 Change to：</span>
+<button class="cbtn" data-ch="F1">前1</button><button class="cbtn" data-ch="F2">前2</button><button class="cbtn" data-ch="F3">前3</button>
+<button class="cbtn" data-ch="L">←左轉</button><button class="cbtn" data-ch="R">右轉→</button><br>
+<span style="font-size:.9rem;color:#555">喺前面插入 Insert before：</span>
+<button class="cbtn" data-ins="F1">前1</button><button class="cbtn" data-ins="F2">前2</button><button class="cbtn" data-ins="F3">前3</button>
+<button class="cbtn" data-ins="L">←</button><button class="cbtn" data-ins="R">→</button>
+</div>
+</div>
+
+<div class="card"><b><span class="stepnum">4</span>重新測試 Re-test</b><br>
+<button class="cbtn good" id="retest">↺ 重新測試 <span style="font-weight:400;font-size:.8rem">Test fix</span></button>
+<button class="cbtn warn" id="hintD">💡 提示 <span style="font-weight:400;font-size:.8rem">Hint</span></button>
+<div id="verdict" style="margin-top:.5rem;font-weight:700"></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var N=5, cell=440/N;
+var COR={}; ["0,0","1,0","2,0","3,0","3,1","3,2"].forEach(function(k){COR[k]=1;});
+var GOAL={x:3,y:2};
+var DX=[1,0,-1,0], DY=[0,1,0,-1];
+var DNAME=["→","↓","←","↑"];
+var BTNAME={order:"次序錯誤",missing:"遺漏步驟",vague:"含糊用詞",redundant:"多餘步驟"};
+function S(t,n){ return {t:t,n:n||0}; }
+var SCEN=[
+ {id:"A",label:"甲：次序錯誤",bugType:"order",flagOk:[1,2],
+  steps:[S("F",3),S("F",2),S("R")],
+  hint:"第 2 步撞牆。轉彎應該喺第二次前行之前做——邊兩步調轉咗？"},
+ {id:"B",label:"乙：遺漏步驟",bugType:"missing",flagOk:[1],
+  steps:[S("F",3),S("F",2)],
+  hint:"第 2 步撞牆。去到 (3,0) 之後，爭咗一步先可以向下行——爭咗咩？"},
+ {id:"C",label:"丙：含糊用詞",bugType:"vague",flagOk:[2],
+  steps:[S("F",3),S("R"),S("V")],
+  hint:"「行前少少」——少少即係幾多格？機械人估唔到，企咗喺度。"},
+ {id:"D",label:"丁：多餘步驟",bugType:"redundant",flagOk:[0,1],
+  steps:[S("L"),S("R"),S("F",3),S("R"),S("F",2)],
+  hint:"機械人去到終點，但頭兩步左轉＋右轉兜咗個圈。刪咗佢哋都仲去到終點？"}
+];
+var cur=0, steps=[], sel=-1, flagged=-1, flaggedType=null;
+var foundStar=false, typeStar=false, fixStar=false, busy=false;
+var canvas=document.getElementById("dbg"), ctx=canvas.getContext("2d");
+var dpr=window.devicePixelRatio||1; canvas.width=440*dpr; canvas.height=440*dpr; ctx.scale(dpr,dpr);
+var robot={x:0,y:0,dir:0};
+
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function stepText(s){
+  if(s.t==="F") return "向前行"+["零","一","兩","三"][s.n]+"格";
+  if(s.t==="L") return "向左轉"; if(s.t==="R") return "向右轉"; return "行前少少？";
+}
+function stepTextEn(s){
+  if(s.t==="F") return "Forward "+s.n; if(s.t==="L") return "Turn left";
+  if(s.t==="R") return "Turn right"; return "Move a little??";
+}
+function cloneSteps(){ return SCEN[cur].steps.map(function(s){return {t:s.t,n:s.n};}); }
+function loadScen(i){
+  cur=i; steps=cloneSteps(); sel=-1; flagged=-1; flaggedType=null;
+  foundStar=false; typeStar=false; fixStar=false; busy=false;
+  document.querySelectorAll("#scenBtns .cbtn").forEach(function(b,bi){ b.classList.toggle("primary",bi===i); });
+  document.querySelectorAll(".bugbtn").forEach(function(b){ b.classList.remove("on"); });
+  document.getElementById("flagInfo").textContent="";
+  document.getElementById("typeInfo").textContent="";
+  document.getElementById("verdict").textContent="";
+  document.getElementById("readoutD").textContent="";
+  document.querySelector("#traceD tbody").innerHTML='<tr><td colspan="5" style="text-align:center;color:#888">撳「重現問題」先 Run first</td></tr>';
+  updateStars(); renderChips(); resetRobotDraw();
+  document.getElementById("readoutD").innerHTML="🐞 情境"+SCEN[cur].label+"：呢組指令有蟲！先撳「重現問題」。";
+}
+function updateStars(){
+  document.getElementById("stars").textContent=
+    "⭐ 找出售處："+(foundStar?"✅":"—")+"　⭐ 分類正確："+(typeStar?"✅":"—")+"　⭐ 修正成功："+(fixStar?"✅":"—");
+}
+function renderChips(){
+  var box=document.getElementById("chipsD"); box.innerHTML="";
+  steps.forEach(function(s,i){
+    var c=document.createElement("span");
+    c.className="chip"+(s.t==="V"?" vague":"")+(i===sel?" sel":"")+(i===flagged?" flagged":"");
+    c.textContent=(i+1)+". "+stepText(s)+(i===flagged?" 🐞":"");
+    c.onclick=function(){ sel=i; renderChips(); };
+    box.appendChild(c);
+  });
+}
+function resetRobotDraw(){ robot={x:0,y:0,dir:0}; draw(); }
+function draw(){
+  ctx.clearRect(0,0,440,440);
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){
+    ctx.fillStyle=COR[x+","+y]?"#f4f8fb":"#2c3e50";
+    ctx.fillRect(x*cell,y*cell,cell,cell);
+    ctx.strokeStyle="#dfe6ee"; ctx.strokeRect(x*cell+.5,y*cell+.5,cell-1,cell-1);
+  }
+  ctx.fillStyle="#27ae60"; ctx.fillRect(0,0,cell,cell);
+  ctx.fillStyle="#fff"; ctx.font="bold 15px sans-serif"; ctx.fillText("START",cell/2,cell/2);
+  ctx.fillStyle="#e74c3c"; ctx.fillRect(GOAL.x*cell,GOAL.y*cell,cell,cell);
+  ctx.fillStyle="#fff"; ctx.fillText("GOAL",GOAL.x*cell+cell/2,GOAL.y*cell+cell/2);
+  // robot
+  var cx=(robot.x+0.5)*cell, cy=(robot.y+0.5)*cell, r=cell*0.3;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(robot.dir*Math.PI/2);
+  ctx.fillStyle="#f39c12"; ctx.strokeStyle="#7d4e00"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle="#7d4e00";
+  ctx.beginPath(); ctx.moveTo(r*1.3,0); ctx.lineTo(r*0.3,-r*0.7); ctx.lineTo(r*0.3,r*0.7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function simulate(st){
+  var r={x:0,y:0,dir:0}, trace=[];
+  for(var i=0;i<st.length;i++){
+    var s=st[i];
+    if(s.t==="V"){ trace.push({x:r.x,y:r.y,dir:r.dir,ok:false,kind:"vague"}); return {ok:false,failAt:i,kind:"vague",trace:trace,end:r}; }
+    if(s.t==="L") r.dir=(r.dir+3)%4; else if(s.t==="R") r.dir=(r.dir+1)%4;
+    else { for(var k=0;k<s.n;k++){ var nx=r.x+DX[r.dir],ny=r.y+DY[r.dir];
+      if(nx<0||ny<0||nx>=N||ny>=N||!COR[nx+","+ny]){ trace.push({x:r.x,y:r.y,dir:r.dir,ok:false,kind:"wall"}); return {ok:false,failAt:i,kind:"wall",trace:trace,end:r}; }
+      r.x=nx; r.y=ny; } }
+    trace.push({x:r.x,y:r.y,dir:r.dir,ok:true});
+  }
+  var goal=(r.x===GOAL.x&&r.y===GOAL.y);
+  return {ok:goal, failAt:goal?-1:st.length, kind:goal?null:"nogoal", trace:trace, end:r};
+}
+function reachesGoal(st){ return simulate(st).ok; }
+function solvedNow(){
+  if(!reachesGoal(steps)) return false;
+  if(SCEN[cur].id==="D") return steps.length===3;
+  return true;
+}
+function fillTrace(res,curIdx){
+  var tb=document.querySelector("#traceD tbody"); tb.innerHTML="";
+  for(var i=0;i<res.trace.length;i++){
+    var t=res.trace[i];
+    var tr=document.createElement("tr");
+    if(!t.ok) tr.className="bad";
+    var ok=t.ok?"✓":(t.kind==="wall"?"✗ 撞牆！":"✗ 含糊，停低！");
+    var after="("+t.x+","+t.y+") "+DNAME[t.dir];
+    tr.innerHTML="<td>"+(i+1)+"</td><td>"+stepText(steps[i])+"<br><span style='color:#888;font-size:.78rem'>"+stepTextEn(steps[i])+"</span></td><td>"+after+"</td><td>"+ok+"</td>";
+    var td=document.createElement("td");
+    var b=document.createElement("button"); b.className="cbtn"; b.textContent="🐞"; b.title="圈出呢步";
+    (function(idx){ b.onclick=function(){ flagStep(idx); }; })(i);
+    td.appendChild(b); tr.appendChild(td);
+    tb.appendChild(tr);
+  }
+}
+function flagStep(i){
+  flagged=i; flaggedType=null; renderChips();
+  document.querySelectorAll(".bugbtn").forEach(function(b){b.classList.remove("on");});
+  document.getElementById("flagInfo").textContent="🐞 你圈出第 "+(i+1)+" 步：「"+stepText(steps[i])+"」。跟住揀錯誤類型。";
+  document.getElementById("typeInfo").textContent="";
+  if(SCEN[cur].flagOk.indexOf(i)>=0){ foundStar=true; }
+  updateStars();
+}
+document.querySelectorAll(".bugbtn").forEach(function(b){
+  b.onclick=function(){
+    if(flagged<0){ alert("請先撳追蹤表入面嘅 🐞 圈出錯嘅一步。"); return; }
+    document.querySelectorAll(".bugbtn").forEach(function(x){x.classList.remove("on");});
+    b.classList.add("on");
+    flaggedType=b.getAttribute("data-bt");
+    var okT=flaggedType===SCEN[cur].bugType;
+    if(okT) typeStar=true;
+    document.getElementById("typeInfo").innerHTML=okT?
+      "✅ 分類正確：呢個係「"+BTNAME[flaggedType]+"」。去第 3 步修正佢！":
+      "🤔 你揀咗「"+BTNAME[flaggedType]+"」。再諗下：錯處嘅成因係咩？可以睇提示。";
+    updateStars();
+  };
+});
+async function animateRun(){
+  resetRobotDraw();
+  var res=simulate(steps);
+  // animate robot along the simulated trace
+  for(var i=0;i<res.trace.length;i++){
+    var t=res.trace[i], s=steps[i];
+    if(s.t==="L"||s.t==="R"){ robot.dir=t.dir; draw(); await sleep(280); }
+    else if(s.t==="V"){ await sleep(400); }
+    else {
+      var fx=robot.x, fy=robot.y, dx2=t.x-fx, dy2=t.y-fy, dist=Math.abs(dx2)+Math.abs(dy2), frames=Math.max(4,dist*6);
+      for(var f=1;f<=frames;f++){ robot.x=fx+dx2*f/frames; robot.y=fy+dy2*f/frames; robot.dir=t.dir; draw(); await sleep(40); }
+      robot.x=t.x; robot.y=t.y;
+      if(!t.ok){ // bump
+        for(var b2=0;b2<4;b2++){ robot.x=t.x+DX[t.dir]*0.2*Math.sin(b2/3*Math.PI); robot.y=t.y+DY[t.dir]*0.2*Math.sin(b2/3*Math.PI); draw(); await sleep(60); }
+        robot.x=t.x; robot.y=t.y; draw();
+      }
+    }
+    draw();
+    await sleep(200);
+  }
+  robot.x=res.end.x; robot.y=res.end.y; robot.dir=res.end.dir; draw();
+  fillTrace(res);
+  return res;
+}
+document.getElementById("repro").onclick=async function(){
+  if(busy) return; busy=true;
+  document.getElementById("verdict").textContent="";
+  var res=await animateRun();
+  var ro=document.getElementById("readoutD");
+  if(res.kind==="wall") ro.innerHTML="💥 第 "+(res.failAt+1)+" 步撞牆！問題重現咗——去第 2 步追蹤圈錯。";
+  else if(res.kind==="vague") ro.innerHTML="🌫️ 第 "+(res.failAt+1)+" 步「"+stepText(steps[res.failAt])+"」——機械人唔知行幾遠，停低咗。";
+  else if(res.kind==="nogoal") ro.innerHTML="🤖 行完都未到終點（停喺 "+res.end.x+","+res.end.y+"）。";
+  else ro.innerHTML="✅ 竟然去到終點！但係咪有多餘步驟？諗下。";
+  busy=false;
+};
+document.getElementById("resetD").onclick=function(){ loadScen(cur); };
+document.getElementById("retest").onclick=async function(){
+  if(busy) return; busy=true;
+  document.getElementById("verdict").textContent="";
+  var res=await animateRun();
+  var v=document.getElementById("verdict");
+  if(solvedNow()){
+    fixStar=true;
+    v.style.color="#27ae60";
+    v.innerHTML="🎉 修正成功！機械人順利到達終點。除錯循環完成：重現 → 追蹤 → 修正 → 再測試 ✅";
+  }else{
+    v.style.color="#c0392b";
+    if(!res.ok) v.innerHTML="❌ 仲未得："+(res.kind==="wall"?"第 "+(res.failAt+1)+" 步撞牆。":"第 "+(res.failAt+1)+" 步出事／未到終點。")+"再追蹤下。";
+    else v.innerHTML="❌ 去到終點，但仲有多餘步驟——試下刪走唔需要嘅。";
+  }
+  updateStars(); busy=false;
+};
+document.getElementById("hintD").onclick=function(){
+  document.getElementById("verdict").style.color="#1a5276";
+  document.getElementById("verdict").textContent="💡 "+SCEN[cur].hint;
+};
+/* editing */
+function needSel(){ if(sel<0||sel>=steps.length){ alert("請先撳一步指令嚟揀選。"); return false; } return true; }
+document.getElementById("mvUp").onclick=function(){ if(!needSel()||sel===0) return; var t=steps[sel]; steps[sel]=steps[sel-1]; steps[sel-1]=t; sel--; renderChips(); };
+document.getElementById("mvDn").onclick=function(){ if(!needSel()||sel>=steps.length-1) return; var t=steps[sel]; steps[sel]=steps[sel+1]; steps[sel+1]=t; sel++; renderChips(); };
+document.getElementById("delS").onclick=function(){ if(!needSel()) return; steps.splice(sel,1); if(flagged===sel){flagged=-1;} if(flagged>sel)flagged--; sel=-1; renderChips(); };
+function mkStep(code){ if(code==="L")return S("L"); if(code==="R")return S("R"); return S("F",+code[1]); }
+document.querySelectorAll("[data-ch]").forEach(function(b){
+  b.onclick=function(){ if(!needSel()) return; steps[sel]=mkStep(b.getAttribute("data-ch")); if(flagged===sel&&b.getAttribute("data-ch")!=="V"){} renderChips(); };
+});
+document.querySelectorAll("[data-ins]").forEach(function(b){
+  b.onclick=function(){
+    var at=(sel>=0)?sel:steps.length;
+    steps.splice(at,0,mkStep(b.getAttribute("data-ins")));
+    if(flagged>=at) flagged++;
+    renderChips();
+  };
+});
+/* scenario buttons */
+var sb=document.getElementById("scenBtns");
+SCEN.forEach(function(sc,i){
+  var b=document.createElement("button"); b.className="cbtn"+(i===0?" primary":""); b.textContent=sc.label;
+  b.onclick=function(){ loadScen(i); };
+  sb.appendChild(b);
+});
+loadScen(0);
+})();
+</script>
+</body>
+</html>

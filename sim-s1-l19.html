@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動模擬 · 第 19 堂：AI 倫理（一）真假難分</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:960px;margin:0 auto;padding:0 1rem 3rem}
+.sim-wrap h2{margin:.6rem 0 .2rem}
+.sim-wrap .en-sub{color:#666;font-size:.9rem;margin-bottom:.8rem}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0;font-size:.95rem}
+.howto ol{margin:.4rem 0 .2rem;padding-left:1.4rem}
+.msgcard{background:#fff;border:2px solid #dfe6ee;border-radius:12px;padding:1rem 1.2rem;margin:.9rem 0;cursor:pointer;transition:box-shadow .2s}
+.msgcard:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.msgcard.open{border-color:#1a5276}
+.msgcard.done{opacity:.92;cursor:default}
+.msghead{font-size:1.05rem;font-weight:700}
+.msgmeta{font-size:.82rem;color:#888;margin:.2rem 0 .5rem}
+.msgbody{background:#f7f9fb;border-radius:8px;padding:.7rem .9rem;margin:.5rem 0;font-size:.98rem}
+.vsteps{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.vbtn{border:2px solid #bbb;background:#fff;border-radius:8px;padding:.45rem .9rem;font-size:.95rem;cursor:pointer}
+.vbtn.used{border-color:#1a5276;background:#eaf6ff}
+.hint{background:#fef9e7;border-left:4px solid #f1c40f;padding:.5rem .8rem;margin:.4rem 0;font-size:.93rem;display:none}
+.judge{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.jbtn{border:2px solid;border-radius:8px;padding:.5rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer;background:#fff}
+.jbtn.ok{border-color:#27ae60;color:#27ae60}
+.jbtn.sus{border-color:#e67e22;color:#e67e22}
+.jbtn.no{border-color:#c0392b;color:#c0392b}
+.jbtn:disabled{opacity:.45;cursor:not-allowed}
+.feedback{border-radius:8px;padding:.7rem 1rem;margin-top:.5rem;display:none;font-size:.95rem}
+.feedback.right{background:#e8f8f0;border:1px solid #27ae60}
+.feedback.wrong{background:#fdecea;border:1px solid #c0392b}
+.scoreline{font-size:1.2rem;font-weight:800;margin:.8rem 0}
+.hallu{background:#2c3e50;color:#ecf0f1;border-radius:12px;padding:1rem 1.2rem;margin:1.2rem 0}
+.hallu .q{color:#f1c40f;font-weight:700}
+.hallu .a{margin-top:.6rem;min-height:3em;line-height:1.6}
+.bigbtn{background:#2c3e50;color:#fff;border:none;border-radius:8px;padding:.65rem 1.2rem;font-size:1rem;font-weight:700;cursor:pointer;margin-top:.5rem}
+.bigbtn:disabled{background:#777;cursor:not-allowed}
+.motto{text-align:center;font-size:1.3rem;font-weight:800;color:#1a5276;margin:1.4rem 0}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<nav class="crumb wrap"><a href="lesson-s1-19.html">← 返回課堂 Back to lesson</a></nav>
+<main class="sim-wrap">
+<h2>🎮 真假偵探社 <span class="en-sub">True-or-False Detective</span></h2>
+<div class="en-sub">第 19 堂 · AI 倫理（一）：真假難分 Hard to Tell True from False</div>
+<div class="howto">
+<b>玩法 How to play：</b>
+<ol>
+<li><b>撳開</b>每則可疑訊息，先用<b>查證三步</b>（停一停 → 查來源 → 找多個來源）逐個撳，睇下搵到咩線索。</li>
+<li>再判斷佢係「<b>可信 / 可疑 / 假</b>」，即時睇下啱唔啱。</li>
+<li>玩晒 6 則睇總分。金句：<b>先查證，後轉發。</b></li>
+</ol>
+</div>
+<div class="scoreline">偵探得分 Score：<span id="score">0</span> / 6　·　已判斷 Judged：<span id="doneN">0</span> / 6</div>
+<svg id="progSvg" width="300" height="44" viewBox="0 0 300 44" style="max-width:100%" aria-label="查案進度"></svg>
+<div id="cards"></div>
+
+<div class="hallu">
+<h3 style="margin:.2rem 0">🤖 AI 幻覺實驗室 <span class="en-sub" style="color:#bdc3c7">AI Hallucination Lab</span></h3>
+<p>老師示範：問 AI 一條佢<b>不可能知道</b>嘅問題，睇下佢點答。</p>
+<p class="q">❓ 「我哋學校上星期二午膳食咗咩？」<br><span style="font-weight:400;font-size:.85rem">What did our school have for lunch last Tuesday?</span></p>
+<button class="bigbtn" id="askBtn">問 AI Ask the AI</button>
+<div class="a" id="halluOut"></div>
+<div id="halluLesson" style="display:none;margin-top:.6rem;color:#f1c40f"></div>
+</div>
+
+<div class="motto">「先查證，後轉發。」<br><span class="en-sub">Verify before forwarding.</span></div>
+</main>
+
+<script>
+var MSGS = [
+ {t:'🌟 明星代言神奇藥水', meta:'家族群組轉發 · 無來源', body:'「某大明星代言神奇藥水，飲咗百病全消！限時優惠，快啲買！」',
+  v:['① 停一停：太誇張（百病全消）→ 先別轉發。','② 查來源：冇官方帳號、冇署名，只係群組轉發。','③ 找多個來源：搜尋唔到任何可靠媒體報導，明星官網亦冇提及。'],
+  ans:'sus', why:'<b>可疑。</b>手法：假冒名人發言＋誇張標題。明星代言多為假冒，查無官方來源。'},
+ {t:'🏫 學校聽日停課！', meta:'同學私訊 · 一張截圖', body:'「聽日停課！快啲話俾人知！」（附一張冇來源嘅截圖）',
+  v:['① 停一停：好驚人嘅消息 → 先別轉發。','② 查來源：截圖冇學校名、冇日期，唔知邊個發。','③ 找多個來源：學校官網／eClass 完全冇公布；天文台亦冇特別天氣警告。'],
+  ans:'no', why:'<b>假。</b>與官方公布不符。停課消息一定要查學校官方渠道，唔好信截圖。'},
+ {t:'🩺 長者中心免費量血壓', meta:'社區中心海報 · 附電話', body:'「長者中心免費量血壓活動，歡迎參加。查詢：2345 6789。」',
+  v:['① 停一停：內容平實，冇誇張字眼。','② 查來源：有具體中心名同聯絡電話，可以致電核實。','③ 找多個來源：中心職員確認確有此活動。'],
+  ans:'ok', why:'<b>較可信。</b>有具體聯絡方式、可致電核實，內容亦合理。'},
+ {t:'📸 新聞相：市中心出現神秘巨獸', meta:'社交平台熱傳 · 萬人轉發', body:'一張好逼真嘅相：鬧市中有隻巨型怪獸。留言話「新聞都冇報，政府隱瞞！」',
+  v:['① 停一停：太驚人＋煽動憤怒 → 先別轉發。','② 查來源：發文帳號係匿名 meme 帳號，唔係新聞機構。','③ 找多個來源：冇任何可靠媒體報導；圖片風格似 AI 生成（手指／光影怪怪的）。'],
+  ans:'sus', why:'<b>可疑。</b>手法：以假亂真嘅 AI 生成圖冒充新聞相片。眼見唔一定為實——deepfake 時代，有圖有片都唔一定真。'},
+ {t:'🎤 名人演講金句', meta:'短片平台 · 百萬觀看', body:'短片：「某某名人話：讀書冇用，後生仔應該即刻輟學創業！」',
+  v:['① 停一停：言論極端 → 先別信。','② 查來源：短片冇註明出處，剪接痕跡明顯。','③ 找多個來源：搵到原片——名人原話係講「讀書以外都要學實踐」，被斷章取義。'],
+  ans:'no', why:'<b>假。</b>手法：斷章取義＋假冒名人發言。標題同內容不符，原片意思完全相反。'},
+ {t:'🎁 免費遊戲點數', meta:'陌生短訊 · 附連結', body:'「恭喜！你中咗 5000 遊戲點數，撳呢條連結領取：bit.ly/xxxxx」',
+  v:['① 停一停：天跌餡餅 → 先別撳。','② 查來源：陌生號碼、縮短網址，唔知真身。','③ 找多個來源：官方遊戲公司從未辦過呢個活動。'],
+  ans:'no', why:'<b>假（釣魚詐騙）。</b>唔好亂撳不明連結！正確做法：唔撳、唔回覆，話俾信任嘅成人知。'}
+];
+var score = 0, doneN = 0;
+var box = document.getElementById('cards');
+var progSvg = document.getElementById('progSvg');
+var NS = 'http://www.w3.org/2000/svg';
+var progDots = [];
+for(var d=0; d<6; d++){
+  var c = document.createElementNS(NS, 'circle');
+  c.setAttribute('cx', 25 + d*50); c.setAttribute('cy', 22); c.setAttribute('r', 17);
+  c.setAttribute('fill', '#eee'); c.setAttribute('stroke', '#bbb'); c.setAttribute('stroke-width', 2);
+  progSvg.appendChild(c);
+  var t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', 25 + d*50); t.setAttribute('y', 28); t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('font-size', '15'); t.setAttribute('font-weight', '700'); t.setAttribute('fill', '#888');
+  t.textContent = (d+1);
+  progSvg.appendChild(t);
+  progDots.push({c:c, t:t});
+}
+
+MSGS.forEach(function(m, i){
+  var d = document.createElement('div');
+  d.className = 'msgcard'; d.id = 'mc'+i;
+  var hints = m.v.map(function(v, j){ return '<div class="hint" id="h'+i+'-'+j+'">🔎 '+v+'</div>'; }).join('');
+  d.innerHTML =
+    '<div class="msghead">'+m.t+'</div><div class="msgmeta">'+m.meta+'</div>'
+    + '<div class="msgbody" style="display:none">'+m.body+'</div>'
+    + '<div class="vsteps" style="display:none">'
+    + '<button class="vbtn" data-i="'+i+'" data-j="0">① 停一停 Pause</button>'
+    + '<button class="vbtn" data-i="'+i+'" data-j="1">② 查來源 Check source</button>'
+    + '<button class="vbtn" data-i="'+i+'" data-j="2">③ 找多個來源 More sources</button></div>'
+    + hints
+    + '<div class="judge" style="display:none">'
+    + '<span style="align-self:center">你的判斷：</span>'
+    + '<button class="jbtn ok" data-i="'+i+'" data-a="ok">✅ 可信</button>'
+    + '<button class="jbtn sus" data-i="'+i+'" data-a="sus">⚠️ 可疑</button>'
+    + '<button class="jbtn no" data-i="'+i+'" data-a="no">❌ 假</button></div>'
+    + '<div class="feedback" id="f'+i+'"></div>';
+  d.onclick = function(e){
+    if(e.target.tagName === 'BUTTON') return;
+    d.classList.add('open');
+    d.querySelector('.msgbody').style.display='block';
+    d.querySelector('.vsteps').style.display='flex';
+    d.querySelector('.judge').style.display='flex';
+  };
+  box.appendChild(d);
+});
+box.addEventListener('click', function(e){
+  var t = e.target;
+  if(t.classList.contains('vbtn')){
+    var i = t.dataset.i, j = t.dataset.j;
+    document.getElementById('h'+i+'-'+j).style.display='block';
+    t.classList.add('used');
+  } else if(t.classList.contains('jbtn')){
+    var i2 = t.dataset.i, a = t.dataset.a, m = MSGS[i2];
+    var card = document.getElementById('mc'+i2);
+    if(card.classList.contains('done')) return;
+    card.classList.add('done');
+    var f = document.getElementById('f'+i2);
+    var right = (a === m.ans);
+    f.className = 'feedback ' + (right ? 'right' : 'wrong');
+    f.style.display = 'block';
+    f.innerHTML = (right ? '✅ 啱！' : '❌ 唔啱，再諗下。') + ' ' + m.why;
+    var jbs = card.querySelectorAll('.jbtn');
+    for(var k=0;k<jbs.length;k++) jbs[k].disabled = true;
+    if(right) score++;
+    doneN++;
+    progDots[i2].c.setAttribute('fill', right ? '#27ae60' : '#c0392b');
+    progDots[i2].t.setAttribute('fill', '#fff');
+    document.getElementById('score').textContent = score;
+    document.getElementById('doneN').textContent = doneN;
+    if(doneN === 6){
+      f.innerHTML += '<br><br>🏁 <b>總分 '+score+'/6！</b>' + (score>=5
+        ? '你係出色嘅真假偵探！記住金句：先查證，後轉發。'
+        : '再練下查證三步：停一停、查來源、找多個來源。');
+    }
+    f.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+});
+
+// AI 幻覺實驗室
+var HALLU_TEXT = 'AI：「根據我嘅資料，你哋學校上星期二午膳食咗香草烤雞配意粉，甜品係芒果布甸，同學們都話好好味！」\n\n（⚠️ 以上內容係 AI 一本正經編出嚟嘅——佢根本唔可能知道！）';
+document.getElementById('askBtn').onclick = function(){
+  var out = document.getElementById('halluOut');
+  var lesson = document.getElementById('halluLesson');
+  var btn = this;
+  btn.disabled = true;
+  out.textContent = ''; lesson.style.display = 'none';
+  var i = 0;
+  var timer = setInterval(function(){
+    out.textContent = HALLU_TEXT.slice(0, ++i);
+    if(i >= HALLU_TEXT.length){
+      clearInterval(timer);
+      lesson.style.display = 'block';
+      lesson.innerHTML = '💡 <b>AI 幻覺：</b>AI 係按機率估下一個字嚟生成答案，佢唔會查證事實。唔知答案嗰陣，佢都會自信地編一個。<br><b>問 AI 功課答案，一定要再查證！</b>';
+      btn.disabled = false;
+    }
+  }, 22);
+  out.scrollIntoView({behavior:'smooth', block:'center'});
+};
+</script>
+</body>
+</html>

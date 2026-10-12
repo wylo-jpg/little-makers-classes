@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L13 互動模擬：排序網絡＋二分搜尋 | Sorting Network & Binary Search</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas{width:100%;max-width:600px;display:block;margin:0 auto;touch-action:manipulation}
+.cbtn{display:inline-block;padding:.55rem .95rem;border-radius:8px;border:1px solid #bcd9f2;background:#fff;color:#1a5276;font-weight:700;font-size:.95rem;margin:.25rem;cursor:pointer}
+.cbtn:hover{background:#eaf6ff}
+.cbtn.primary{background:#1a5276;color:#fff;border-color:#1a5276}
+.cbtn.primary:hover{background:#14425f}
+.cbtn:disabled{opacity:.45;cursor:default}
+.tabbtn{display:inline-block;padding:.5rem 1rem;border-radius:8px 8px 0 0;font-weight:700;font-size:1rem;cursor:pointer;border:1px solid #bcd9f2;border-bottom:none;background:#eaf0f6;color:#1a5276;margin-right:.3rem}
+.tabbtn.on{background:#fff;color:#e67e22}
+.panel{display:none}
+.panel.on{display:block}
+#readoutS,#readoutB{font-size:1.02rem;font-weight:700}
+#readoutS .en,#readoutB .en{font-size:.85rem;font-weight:400;color:#555}
+input[type=number]{font-size:1.1rem;padding:.4rem;width:6rem;border:1px solid #bcd9f2;border-radius:8px}
+input[type=range]{width:130px;vertical-align:middle}
+table.log{font-size:.88rem}
+table.log td,table.log th{padding:.35rem .4rem}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-13.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L13 互動模擬：排序網絡＋二分搜尋 <span class="en">Sorting Network &amp; Binary Search — efficiency in action</span></h2>
+
+<div class="card"><b>玩法 How to play</b>
+<ol>
+<li><b>排序網絡 Sorting network</b>：撳「隨機」打亂六個人嘅身高，再撳「播放」睇六輪「比較—交換」點樣自動排好隊。留意：快嘅係<b>方法</b>，唔係人跑得快！<br><span class="en">Shuffle six heights, then run six phases of compare-and-swap.</span></li>
+<li><b>猜數字 Guess the number</b>：老師諗咗 1–100 其中一個數。每次估範圍中間，聽「太大／太小」縮細範圍——試下用唔超過 7 次估中！<br><span class="en">Find the hidden number 1–100 in at most 7 guesses using binary search.</span></li>
+</ol></div>
+
+<div>
+<span class="tabbtn on" id="tabS">📊 排序網絡 <span style="font-weight:400;font-size:.8rem">Sorting</span></span><span class="tabbtn" id="tabB">🔍 猜數字 <span style="font-weight:400;font-size:.8rem">Binary search</span></span>
+</div>
+
+<div class="card panel on" id="panelS">
+<canvas id="sort" width="600" height="330"></canvas>
+<div style="margin-top:.4rem">
+<button class="cbtn" id="shuf">🎲 隨機 <span style="font-weight:400;font-size:.8rem">Shuffle</span></button>
+<button class="cbtn primary" id="playS">▶ 播放 <span style="font-weight:400;font-size:.8rem">Run</span></button>
+<button class="cbtn" id="stepS">⏭ 下一輪 <span style="font-weight:400;font-size:.8rem">Next phase</span></button>
+<button class="cbtn" id="resetS">↺ 重設 <span style="font-weight:400;font-size:.8rem">Reset</span></button>
+<span style="font-size:.9rem;color:#555">速度 <input type="range" id="speedS" min="1" max="10" value="6"></span>
+</div>
+<div id="readoutS" style="margin-top:.4rem"></div>
+<p class="en" style="font-size:.85rem;color:#555">奇數輪比較 (1,2)(3,4)(5,6)；偶數輪比較 (2,3)(4,5)。每輪只比較指定嘅相鄰兩人：前面較高就交換。<br>Odd phases compare pairs (1,2),(3,4),(5,6); even phases (2,3),(4,5).</p>
+</div>
+
+<div class="card panel" id="panelB">
+<canvas id="guess" width="600" height="220"></canvas>
+<div style="margin-top:.4rem">
+<input type="number" id="gin" min="1" max="100" placeholder="1–100">
+<button class="cbtn primary" id="gok">🎯 猜！ <span style="font-weight:400;font-size:.8rem">Guess</span></button>
+<button class="cbtn" id="gmid">💡 建議中間數 <span style="font-weight:400;font-size:.8rem">Suggest middle</span></button>
+<button class="cbtn" id="gnew">🎲 換數字 <span style="font-weight:400;font-size:.8rem">New number</span></button>
+<button class="cbtn" id="gauto">🤖 二分搜尋示範 <span style="font-weight:400;font-size:.8rem">Auto demo</span></button>
+<button class="cbtn" id="gseq">🐢 逐個猜要幾次？ <span style="font-weight:400;font-size:.8rem">One-by-one?</span></button>
+</div>
+<div id="readoutB" style="margin-top:.4rem"></div>
+<table class="log" id="glog"><thead><tr><th>次數<br>No.</th><th>猜測<br>Guess</th><th>提示<br>Hint</th><th>新範圍<br>New range</th></tr></thead><tbody><tr><td colspan="4" style="text-align:center;color:#888">未開始 Not started</td></tr></tbody></table>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+var dpr=window.devicePixelRatio||1;
+
+/* ============ tabs ============ */
+document.getElementById("tabS").onclick=function(){showTab("S");};
+document.getElementById("tabB").onclick=function(){showTab("B");};
+function showTab(t){
+  document.getElementById("tabS").classList.toggle("on",t==="S");
+  document.getElementById("tabB").classList.toggle("on",t==="B");
+  document.getElementById("panelS").classList.toggle("on",t==="S");
+  document.getElementById("panelB").classList.toggle("on",t==="B");
+}
+
+/* ============ sorting network ============ */
+var sc=document.getElementById("sort"), sx=sc.getContext("2d");
+var SW=600,SH=330; sc.width=SW*dpr; sc.height=SH*dpr; sx.scale(dpr,dpr);
+var heights=[], posX=[], phase=0, comps=0, swaps=0, busyS=false, hl=[];
+function initHeights(){
+  heights=[150,158,165,172,180,188];
+  for(var i=heights.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=heights[i]; heights[i]=heights[j]; heights[j]=t; }
+  phase=0; comps=0; swaps=0; hl=[];
+  for(var k=0;k<6;k++) posX[k]=k;
+  drawSort(-1);
+  document.getElementById("readoutS").innerHTML="六個人企好喇（數字＝身高 cm）。撳「播放」開始排序網絡！<br><span class=\"en\">Six heights ready. Press Run!</span>";
+}
+function barX(i){ return 50+i*86; }
+function drawSort(phaseLabel){
+  sx.clearRect(0,0,SW,SH);
+  sx.textAlign="center"; sx.textBaseline="middle";
+  for(var i=0;i<6;i++){
+    var x=barX(posX[i]), h=(heights[i]-130)*2.2, y=SH-60-h;
+    var isHl=hl.indexOf(i)>=0;
+    sx.fillStyle=isHl?"#e67e22":"#2e86c1";
+    sx.fillRect(x,y,72,h);
+    sx.fillStyle="#fff"; sx.font="bold 20px sans-serif";
+    sx.fillText(heights[i],x+36,y+h/2);
+    sx.fillStyle="#555"; sx.font="15px sans-serif";
+    sx.fillText("第"+(i+1)+"位",x+36,SH-35);
+  }
+  sx.fillStyle="#1a5276"; sx.font="bold 19px sans-serif"; sx.textAlign="left";
+  sx.fillText("第 "+phase+" / 6 輪　比較 "+comps+" 次　交換 "+swaps+" 次",10,24);
+  sx.fillStyle="#888"; sx.font="15px sans-serif";
+  var rule=phase%2===1?"奇數輪：比較 (1,2)(3,4)(5,6)":"偶數輪：比較 (2,3)(4,5)";
+  sx.fillText(phase===0?"未開始":"規則："+rule,10,48);
+}
+function sDelay(){ var v=+document.getElementById("speedS").value; return 560-(v-1)*55; }
+async function doPhase(){
+  phase++;
+  var pairs=phase%2===1?[[0,1],[2,3],[4,5]]:[[1,2],[3,4]];
+  for(var p=0;p<pairs.length;p++){
+    var a=pairs[p][0], b=pairs[p][1];
+    hl=[a,b]; drawSort(); comps++;
+    await sleep(sDelay()*0.55);
+    if(heights[a]>heights[b]){
+      swaps++;
+      // animate swap
+      var ax=posX[a], bx=posX[b], frames=10;
+      for(var f=1;f<=frames;f++){ posX[a]=ax+(bx-ax)*f/frames; posX[b]=bx+(ax-bx)*f/frames; drawSort(); await sleep(sDelay()/frames*0.5); }
+      var t=heights[a]; heights[a]=heights[b]; heights[b]=t;
+      t=posX[a]; posX[a]=posX[b]; posX[b]=t;
+    }
+    hl=[]; drawSort();
+    await sleep(sDelay()*0.25);
+  }
+  var ro=document.getElementById("readoutS");
+  if(phase>=6){
+    var ok=true; for(var i=0;i<5;i++) if(heights[i]>heights[i+1]) ok=false;
+    ro.innerHTML=(ok?"🎉 六輪完成，隊伍由矮排到高！":"⚠️ 六輪完成，但仲未排好（唔應該發生）。")+"共比較 "+comps+" 次、交換 "+swaps+" 次。<br><span class=\"en\">Done in 6 phases: "+comps+" comparisons, "+swaps+" swaps. Fast because the method is systematic!</span>";
+  }else{
+    ro.innerHTML="第 "+phase+" 輪完成。留意：每對各自同時比較，唔使停低商量。<br><span class=\"en\">Phase "+phase+" done.</span>";
+  }
+}
+async function playSort(){
+  if(busyS) return;
+  if(phase>=6) initHeights();
+  busyS=true; setS(false);
+  while(phase<6){ await doPhase(); }
+  busyS=false; setS(true);
+}
+function setS(on){ ["shuf","playS","stepS","resetS"].forEach(function(id){document.getElementById(id).disabled=!on;}); }
+document.getElementById("shuf").onclick=initHeights;
+document.getElementById("resetS").onclick=initHeights;
+document.getElementById("playS").onclick=playSort;
+document.getElementById("stepS").onclick=async function(){
+  if(busyS) return;
+  if(phase>=6) initHeights();
+  busyS=true; setS(false); await doPhase(); busyS=false; setS(true);
+};
+initHeights();
+
+/* ============ binary search guessing ============ */
+var gc=document.getElementById("guess"), gx=gc.getContext("2d");
+var GW=600,GH=220; gc.width=GW*dpr; gc.height=GH*dpr; gx.scale(dpr,dpr);
+var target=0, lo=1, hi=100, gcount=0, over=false, marks=[];
+function newTarget(){
+  target=1+Math.floor(Math.random()*100);
+  lo=1; hi=100; gcount=0; over=false; marks=[];
+  document.querySelector("#glog tbody").innerHTML='<tr><td colspan="4" style="text-align:center;color:#888">未開始 Not started</td></tr>';
+  document.getElementById("readoutB").innerHTML="🤔 老師諗咗 1–100 其中一個數。估範圍嘅<b>中間數</b>啦！<br><span class=\"en\">Guess the middle of the range.</span>";
+  drawGuess(-1,"");
+}
+function drawGuess(last,msg){
+  gx.clearRect(0,0,GW,GH);
+  gx.textAlign="center"; gx.textBaseline="middle";
+  var x0=40,x1=GW-40;
+  function X(n){ return x0+(n-1)/99*(x1-x0); }
+  // base line
+  gx.strokeStyle="#7f8c8d"; gx.lineWidth=4;
+  gx.beginPath(); gx.moveTo(x0,110); gx.lineTo(x1,110); gx.stroke();
+  // range shading
+  gx.fillStyle="rgba(46,134,193,0.25)";
+  gx.fillRect(X(lo),88,X(hi)-X(lo),44);
+  gx.fillStyle="#1a5276"; gx.font="bold 16px sans-serif";
+  gx.fillText(lo,X(lo),70); gx.fillText(hi,X(hi),70);
+  for(var n=1;n<=100;n+=10){ gx.fillStyle="#aaa"; gx.font="12px sans-serif"; gx.fillText(n,X(n),140); }
+  // marks
+  marks.forEach(function(m){
+    gx.fillStyle=m.hit?"#27ae60":"#c0392b";
+    gx.beginPath(); gx.arc(X(m.g),110,m.hit?11:7,0,Math.PI*2); gx.fill();
+    gx.fillStyle="#fff"; gx.font="bold 11px sans-serif";
+    if(m.hit) gx.fillText("✓",X(m.g),110);
+  });
+  gx.fillStyle="#1a5276"; gx.font="bold 18px sans-serif"; gx.textAlign="left";
+  gx.fillText("估咗 "+gcount+" 次　範圍 "+lo+"–"+hi,10,24);
+  gx.fillStyle="#e67e22"; gx.font="bold 16px sans-serif";
+  gx.fillText(over?"目標係 "+target:"目標：？",10,52);
+  if(msg){ gx.fillStyle="#c0392b"; gx.font="bold 20px sans-serif"; gx.textAlign="center"; gx.fillText(msg,GW/2,180); }
+}
+function logRow(g,hint,nr){
+  var tb=document.querySelector("#glog tbody");
+  if(gcount===1) tb.innerHTML="";
+  var tr=document.createElement("tr");
+  tr.innerHTML="<td>"+gcount+"</td><td>"+g+"</td><td>"+hint+"</td><td>"+nr+"</td>";
+  tb.appendChild(tr);
+}
+function guess(n){
+  if(over||!n||n<1||n>100) return;
+  gcount++;
+  var hint,nr,msg="";
+  if(n===target){ hint="🎉 猜中！"; nr="—"; over=true; marks.push({g:n,hit:true}); msg="猜中！";
+    logRow(n,hint,nr); drawGuess(n,msg);
+    document.getElementById("readoutB").innerHTML="🎉 猜中喇！用咗 <b>"+gcount+"</b> 次。" +(gcount<=7?"好嘢，呢個就係二分搜尋嘅威力（1–100 最多 7 次）！":"試下每次估中間數，應該 7 次內搞掂。")+"<br><span class=\"en\">Found in "+gcount+" guesses.</span>";
+    return;
+  }
+  marks.push({g:n,hit:false});
+  if(n<target){ hint="太小 too small"; lo=Math.max(lo,n+1); msg="太小 ↑"; }
+  else { hint="太大 too big"; hi=Math.min(hi,n-1); msg="太大 ↓"; }
+  nr=lo+"–"+hi;
+  logRow(n,hint,nr); drawGuess(n,msg);
+  document.getElementById("readoutB").innerHTML=(n<target?"📉 太小，":"📈 太大，")+"範圍縮到 <b>"+lo+"–"+hi+"</b>（第 "+gcount+" 次）。<br><span class=\"en\">Range halved to "+lo+"–"+hi+".</span>";
+}
+document.getElementById("gok").onclick=function(){
+  var n=parseInt(document.getElementById("gin").value,10); guess(n);
+  document.getElementById("gin").value=""; document.getElementById("gin").focus();
+};
+document.getElementById("gin").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("gok").click(); });
+document.getElementById("gmid").onclick=function(){
+  if(over) return;
+  var mid=Math.floor((lo+hi)/2);
+  document.getElementById("gin").value=mid;
+  document.getElementById("readoutB").innerHTML="💡 建議估 <b>"+mid+"</b>（"+lo+"–"+hi+" 嘅中間數）。<br><span class=\"en\">Try the middle: "+mid+".</span>";
+};
+document.getElementById("gnew").onclick=newTarget;
+document.getElementById("gseq").onclick=function(){
+  document.getElementById("readoutB").innerHTML="🐢 如果由 1 開始逐個估，呢個數字（"+target+"）要估 <b>"+target+"</b> 次！二分搜尋最多 7 次。<br><span class=\"en\">One-by-one would take "+target+" guesses; binary search takes at most 7.</span>";
+};
+document.getElementById("gauto").onclick=async function(){
+  if(over) newTarget();
+  var btn=this; btn.disabled=true;
+  while(!over){
+    var mid=Math.floor((lo+hi)/2);
+    guess(mid);
+    await sleep(900);
+  }
+  btn.disabled=false;
+};
+newTarget();
+})();
+</script>
+</body>
+</html>

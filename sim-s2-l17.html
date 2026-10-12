@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：進階提示詞策略實驗室 | L17 Prompt 進階</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl .en,.en2{font-size:.85rem;color:#666;font-weight:400}
+input[type=text],input[type=number],select{font-size:1rem;padding:.35rem .5rem;border:1px solid #bbb;border-radius:6px;margin:.15rem .3rem .15rem 0;max-width:100%}
+input[type=checkbox]{transform:scale(1.25);margin-right:.4rem}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act.warn{background:#e67e22}
+button.act.ok{background:#27ae60}
+button.act:disabled{opacity:.5;cursor:default}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+#chat{margin:.8rem 0}
+.bub{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0}
+.bub.ai{border-left:5px solid #2e86c1}
+.bub.me{border-left:5px solid #e67e22;background:#fef9f3}
+.bub .who{font-weight:700;font-size:.85rem;color:#555;margin-bottom:.3rem}
+.sus{background:#fdecea;border-bottom:3px solid #c0392b;cursor:pointer;padding:0 .2rem}
+.sus:hover{background:#fadbd8}
+.sus.marked{background:#f5b7b1;outline:2px dashed #c0392b}
+.meterWrap{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.8rem 0}
+.meterBg{background:#dfe6ee;border-radius:8px;height:22px;overflow:hidden}
+#meterBar{background:linear-gradient(90deg,#e67e22,#27ae60);height:22px;width:0%;transition:width .6s}
+.strat li{margin:.25rem 0;list-style:none}
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.good{color:#27ae60;font-weight:700}.bad{color:#c0392b;font-weight:700}.pend{color:#999}
+.warnbox{background:#fdecea;border:2px solid #c0392b;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.okbox{background:#eafaf1;border:2px solid #27ae60;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-17.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：進階提示詞策略實驗室 <span class="en">Interactive Simulation: Advanced Prompting Lab</span></h2>
+<div class="howto"><b>玩法 How to play：</b>用「對話起點卡」向模擬 AI 查詢，為獨居長者設計關愛活動。試下開／關三種進階策略（角色扮演、多輪對話、限制條件），再用「追問／修正／收窄」做好幾輪對話。<b>小心：AI 會一本正經地出錯</b>——找出可疑句子並修正！<br><span class="en">Query a simulated AI to design a care activity. Toggle the three advanced strategies, run multi-turn dialogue, and spot the AI's confident mistake!</span></div>
+
+<div class="ctl">
+<label><input type="checkbox" id="roleChk" checked> 🎭 角色扮演 Role-play：請 AI 扮演</label>
+<select id="roleSel"><option>社區中心社工</option><option>學校老師</option><option>活動策劃義工</option></select>
+<span class="en2">Assign the AI an identity</span>
+</div>
+<div class="ctl">
+<label>📏 設定限制條件 Constraints <span class="en2">（愈具體，計劃愈做得到）</span></label><br>
+對象 <input type="text" id="cAud" value="70 歲以上獨居長者" size="18">
+預算 $<input type="number" id="cBud" value="500" min="0" style="width:5.5rem">
+人數 <input type="number" id="cHead" value="20" min="1" style="width:4.5rem"> 人
+時間 <input type="text" id="cTime" value="半日（下午）" size="12">
+</div>
+
+<div class="meterWrap"><b>計劃書質素 Plan quality：<span id="qNum">0</span> / 100</b><br><span class="en2">Quality score</span>
+<div class="meterBg"><div id="meterBar"></div></div></div>
+
+<div class="btnrow">
+<button class="act" id="bStart">💬 開始第一輪對話 Start round 1</button>
+<button class="act alt" id="bFollow" disabled>🔍 追問 Follow up</button>
+<button class="act alt" id="bNarrow" disabled>🎯 收窄範圍 Narrow down</button>
+<button class="act warn" id="bFix" disabled>✏️ 修正可疑句子 Fix it</button>
+<button class="act ok" id="bDone" disabled>✅ 定稿（人工審核） Finalise</button>
+<button class="act" id="bReset" style="background:#7f8c8d">↺ 重來 Reset</button>
+</div>
+
+<ul class="strat" id="stratList">
+<li id="s_role"><span class="pend">○</span> 角色扮演 Role-play</li>
+<li id="s_multi"><span class="pend">○</span> 多輪對話 Multi-turn dialogue</li>
+<li id="s_con"><span class="pend">○</span> 設定限制條件 Setting constraints</li>
+<li id="s_rev"><span class="pend">○</span> 人工審核修正 Human review &amp; fix</li>
+</ul>
+<canvas id="tcv" class="sim" width="700" height="96"></canvas>
+
+<div id="chat"></div>
+<div id="verdict"></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+var round=0,halluMarked=false,halluFixed=false,finalized=false;
+var usedMulti=false;
+function bubble(who,cls,html){
+  var d=document.createElement('div');d.className='bub '+cls;
+  d.innerHTML='<div class="who">'+who+'</div><div>'+html+'</div>';
+  $('chat').appendChild(d);d.scrollIntoView({block:'nearest'});
+}
+function constraints(){
+  return {aud:$('cAud').value.trim(),bud:$('cBud').value,head:$('cHead').value,time:$('cTime').value.trim()};
+}
+function conCount(){var c=constraints(),n=0;if(c.aud)n++;if(c.bud&&+c.bud>0)n++;if(c.head&&+c.head>0)n++;if(c.time)n++;return n;}
+function quality(){
+  var q=25;
+  if($('roleChk').checked)q+=15;
+  q+=conCount()*5;
+  if(round>=2)q+=10;
+  if(round>=3)q+=10;
+  if(halluFixed)q+=15;
+  if(finalized&&halluFixed)q+=5;
+  if(finalized&&!halluFixed)q-=25;
+  return Math.max(0,Math.min(100,q));
+}
+function paintQ(){$('qNum').textContent=quality();$('meterBar').style.width=quality()+'%';}
+function tick(id,on,label){
+  $(id).innerHTML='<span class="'+(on?'good':'pend')+'">'+(on?'●':'○')+'</span> '+label+(on?' <span class="good">✓</span>':'');
+}
+function paintStrat(){
+  tick('s_role',$('roleChk').checked&&round>0,'角色扮演 Role-play');
+  tick('s_multi',usedMulti,'多輪對話 Multi-turn dialogue');
+  tick('s_con',conCount()>0&&round>0,'設定限制條件 Setting constraints');
+  tick('s_rev',halluFixed,'人工審核修正 Human review & fix');
+  drawTimeline();
+}
+var tcv=document.getElementById('tcv'),tctx=tcv.getContext('2d');
+function drawTimeline(){
+  var W=700,H=96,labels=['① 起點卡 Starter','② 追問 Follow-up','③ 收窄 Narrow','④ 定稿 Finalise'];
+  var xs=[70,250,450,630],i;
+  tctx.clearRect(0,0,W,H);tctx.fillStyle='#fff';tctx.fillRect(0,0,W,H);
+  tctx.font='bold 14px sans-serif';tctx.textAlign='center';
+  tctx.fillStyle='#1a5276';tctx.fillText('多輪對話進度 Multi-turn progress',W/2,20);
+  var stage=finalized?4:round; // 0..4 nodes done
+  for(i=0;i<3;i++){
+    tctx.strokeStyle=i<stage?'#27ae60':'#dfe6ee';tctx.lineWidth=5;
+    tctx.beginPath();tctx.moveTo(xs[i]+34,58);tctx.lineTo(xs[i+1]-34,58);tctx.stroke();
+  }
+  for(i=0;i<4;i++){
+    var doneN=i<stage,cur=i===stage&&stage<4;
+    tctx.fillStyle=doneN?'#27ae60':(cur?'#e67e22':'#ecf0f1');
+    tctx.beginPath();tctx.arc(xs[i],58,24,0,7);tctx.fill();
+    tctx.fillStyle=doneN||cur?'#fff':'#999';tctx.font='bold 15px sans-serif';
+    tctx.fillText(doneN?'✓':String(i+1),xs[i],64);
+    tctx.fillStyle='#555';tctx.font='12px sans-serif';
+    tctx.fillText(labels[i],xs[i],92);
+  }
+}
+var HALLU='早上 6 時集合，步行 5 公里前往公園。';
+function aiRound1(){
+  var c=constraints(),role=$('roleChk').checked;
+  var h='';
+  h+='<b>活動大綱 Activity outline</b><br>';
+  if(role)h+='（以'+$('roleSel').value+'的角度 I am speaking as a '+$('roleSel').value+'）<br>';
+  h+='目標：讓 '+(c.aud||'社區人士')+' 感受社區關懷。<br>';
+  h+='對象：'+(c.aud||'（未定）')+' '+(c.head?'約 '+c.head+' 人':'（人數未定）')+'<br>';
+  h+='活動內容：健康操、茶聚分享、義工探訪配對。<br>';
+  h+='時間：'+(c.time||'（未定）')+'<br>';
+  h+='預算：'+(c.bud&&+c.bud>0?'$'+c.bud+'（茶點及物資）':'（未定）')+'<br>';
+  h+='<span class="sus" id="sus1" title="覺得呢句有問題？撳一下標記它">⚠ '+HALLU+'</span>';
+  if(!role)h+='<br><i style="color:#888">（冇設定角色：建議空泛，似「搞個開心啲嘅活動啦」。）</i>';
+  if(conCount()===0)h+='<br><i style="color:#888">（冇限制條件：計劃流於空想，冇預算冇人數。）</i>';
+  return h;
+}
+function aiFollow(){
+  var c=constraints();
+  var h='<b>追問回應 Follow-up: 預算分配 Budget breakdown</b><br>';
+  if(c.bud&&+c.bud>0){
+    var b=+c.bud;
+    h+='茶點：$'+Math.round(b*0.5)+'（'+(c.head||'?')+' 人，每人約 $'+(c.head?Math.round(b*0.5/c.head):'?')+'）<br>';
+    h+='物資（手工材料）：$'+Math.round(b*0.3)+'<br>後備／雜費：$'+Math.round(b*0.2);
+  }else h+='因為冇預算數字，我只可以講：「預留一啲錢買茶點。」——唔夠具體，做唔到預算表。';
+  return h;
+}
+function aiNarrow(){
+  var h='<b>收窄範圍 Narrowing: 時間表 Schedule</b><br>';
+  h+='14:00–14:15 集合＋破冰<br>14:15–15:00 健康操（設座椅版，量力而為）<br>';
+  h+='15:00–15:20 ☕ 休息＋茶點<br>15:20–16:10 茶聚分享<br>16:10–16:50 義工探訪配對<br>16:50–17:00 大合照＋散隊';
+  return h;
+}
+function bindSus(){
+  var s=$('sus1');
+  if(s)s.onclick=function(){
+    halluMarked=true;s.classList.add('marked');
+    $('bFix').disabled=false;
+    bubble('🧑 你 You','me','我標記了可疑句子：「'+HALLU+'」——長者朝早 6 點集合行 5 公里，唔合理！按「✏️ 修正可疑句子」請 AI 重寫。');
+  };
+}
+$('bStart').onclick=function(){
+  if(round>0)return;
+  round=1;
+  var c=constraints();
+  var me='請你'+($('roleChk').checked?'扮演'+$('roleSel').value+'，':'')+'為'+(c.aud||'社區人士')+'設計一個關愛活動'+(c.bud&&+c.bud>0?'，預算 $'+c.bud:'')+(c.head&&+c.head>0?'，約 '+c.head+' 人':'')+(c.time?'，'+c.time:'')+'。';
+  bubble('🧑 你 You','me','「'+me+'」');
+  bubble('🤖 AI','ai',aiRound1());
+  bindSus();
+  $('bFollow').disabled=false;$('bNarrow').disabled=false;$('bDone').disabled=false;
+  $('bStart').disabled=true;
+  paintQ();paintStrat();
+};
+$('bFollow').onclick=function(){
+  if(round!==1)return;
+  round=2;usedMulti=true;
+  bubble('🧑 你 You','me','「預算有限，茶點和物資怎樣分配？請列出預算表。」<br><span class="en2">Follow-up: how should the budget be split?</span>');
+  bubble('🤖 AI','ai',aiFollow());
+  paintQ();paintStrat();
+};
+$('bNarrow').onclick=function(){
+  if(round!==2)return;
+  round=3;usedMulti=true;
+  bubble('🧑 你 You','me','「下午 2 時至 5 時對長者會不會太長？請加入休息時間並重寫時間表。」<br><span class="en2">Narrow down: add breaks and rewrite the schedule.</span>');
+  bubble('🤖 AI','ai',aiNarrow());
+  paintQ();paintStrat();
+};
+$('bFix').onclick=function(){
+  if(!halluMarked||halluFixed)return;
+  halluFixed=true;
+  bubble('🧑 你 You','me','「『'+HALLU+'』對長者唔合理，請修正。」<br><span class="en2">Revision: that suggestion is unsuitable for elderly participants.</span>');
+  bubble('🤖 AI','ai','<b>已修正 Revised：</b>下午 2 時集合，活動全程設休息時間；步行環節改為公園緩步（約 15 分鐘，量力而為），絕不要求長者清晨長途步行。');
+  var s=$('sus1');if(s){s.classList.remove('marked');s.style.textDecoration='line-through';s.onclick=null;}
+  paintQ();paintStrat();
+};
+$('bDone').onclick=function(){
+  if(finalized)return;
+  finalized=true;
+  var v=$('verdict');
+  if(halluFixed){
+    v.innerHTML='<div class="okbox">✅ <b>定稿完成！</b>你做到了人工審核：發現 AI「一本正經地出錯」（'+HALLU+'），並修正為適合長者的安排。記住：<b>AI 是草稿助手，不是代筆</b>——最後定稿要經過你的思考和改寫，並說得出改了甚麼、為甚麼改。<br><span class="en">Done! You reviewed the draft, spotted the AI\'s confident mistake, and fixed it.</span></div>';
+  }else{
+    v.innerHTML='<div class="warnbox">⚠ <b>定稿失敗！</b>AI 在初稿中「一本正經地出錯」——「'+HALLU+'」對 70 歲以上長者極不合理，而你冇審核、冇修正就直接定稿。呢份計劃書交出去會出事！<br><b>教訓：AI 初稿必須經過人工審核與修改。</b><br><span class="en">You finalised without reviewing: the AI\'s confident mistake slipped through!</span></div>';
+  }
+  paintQ();paintStrat();
+  v.scrollIntoView({block:'nearest'});
+};
+$('bReset').onclick=function(){
+  round=0;halluMarked=false;halluFixed=false;finalized=false;usedMulti=false;
+  $('chat').innerHTML='';$('verdict').innerHTML='';
+  $('bStart').disabled=false;$('bFollow').disabled=true;$('bNarrow').disabled=true;
+  $('bFix').disabled=true;$('bDone').disabled=true;
+  paintQ();paintStrat();
+};
+paintQ();paintStrat();
+})();
+</script>
+</body>
+</html>

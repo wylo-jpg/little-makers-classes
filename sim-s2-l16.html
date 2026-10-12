@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：提示詞設計工作坊 | L16 AI 生成影片／音樂</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl .en,.en2{font-size:.85rem;color:#666;font-weight:400}
+.klist label{display:block;font-weight:400;margin:.35rem 0;cursor:pointer}
+.klist input{margin-right:.5rem;transform:scale(1.2)}
+select,input[type=text]{font-size:1rem;padding:.4rem .5rem;border:1px solid #bbb;border-radius:6px;max-width:100%}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act.warn{background:#e67e22}
+button.act:disabled{opacity:.5;cursor:default}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.stars{color:#e67e22;font-size:1.2rem;letter-spacing:.1rem}
+.good{color:#27ae60;font-weight:700}.bad{color:#c0392b;font-weight:700}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-16.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：提示詞設計工作坊 <span class="en">Interactive Simulation: Prompt Design Studio</span></h2>
+<div class="howto"><b>玩法 How to play：</b>為關愛對象設計一段 30 秒正能量短片！剔選提示詞要包含的關鍵資訊、寫低訊息，然後按「生成作品」，睇下模擬 AI 會交出咩質素的作品。<br><span class="en">Design a 30-second positivity video for people you care about. Tick the key info for your prompt, write the message, then generate and see the simulated result.</span></div>
+
+<div class="ctl">
+<label>關愛對象 Audience</label><br>
+<select id="aud">
+<option value="elderly">社區獨居長者 Elderly living alone</option>
+<option value="vi">視障人士 Visually impaired persons</option>
+<option value="child">住院兒童 Hospitalised children</option>
+</select>
+</div>
+<div class="ctl">
+<label>提示詞包含的關鍵資訊 Key info in the prompt <span class="en2">（具體 ≠ 冗長：俾關鍵資訊！）</span></label>
+<div class="klist">
+<label><input type="checkbox" id="k_who" checked> 👥 對象是誰 Who is it for</label>
+<label><input type="checkbox" id="k_scene" checked> 🏞️ 場景 Scene</label>
+<label><input type="checkbox" id="k_len" checked> ⏱️ 長度 Length（30 秒）</label>
+<label><input type="checkbox" id="k_style"> 🎨 風格／色調 Style &amp; colours（溫暖色調）</label>
+<label><input type="checkbox" id="k_msg" checked> 💬 訊息（一句話） Message in one sentence</label>
+</div>
+</div>
+<div class="ctl">
+<label>正能量訊息（一句話） Positivity message</label><br>
+<input type="text" id="msg" value="天氣轉涼，記得加衣，你並不孤單。" style="width:100%">
+</div>
+<div class="ctl">
+<label style="font-weight:400;cursor:pointer"><input type="checkbox" id="labelChk" style="transform:scale(1.3);margin-right:.4rem"> 註明「本作品含有 AI 生成內容」<span class="en2"> Label AI-generated content（誠信要求）</span></label>
+</div>
+<div class="btnrow">
+<button class="act warn" id="bGen">🎬 生成作品 Generate</button>
+<button class="act alt" id="bWeak">填入弱提示詞 Weak prompt</button>
+<button class="act" id="bStrong">填入強提示詞 Strong prompt</button>
+</div>
+
+<canvas id="cv" class="sim" width="700" height="400"></canvas>
+<div class="readout" id="result">按「🎬 生成作品」開始。<br><span class="en">Press "Generate" to begin.</span></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=400,gen=0,generating=false,last=null;
+function $(id){return document.getElementById(id);}
+function keys(){return [$('k_who').checked,$('k_scene').checked,$('k_len').checked,$('k_style').checked,$('k_msg').checked];}
+function setKeys(a){var ids=['k_who','k_scene','k_len','k_style','k_msg'];for(var i=0;i<5;i++)$(ids[i]).checked=a[i];}
+$('bWeak').onclick=function(){setKeys([false,false,false,false,false]);$('msg').value='做一段開心的影片。';};
+$('bStrong').onclick=function(){setKeys([true,true,true,true,true]);$('msg').value='天氣轉涼，記得加衣，你並不孤單。';};
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function draw(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  if(generating){
+    ctx.fillStyle='#1a5276';ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+    ctx.fillText('AI 生成中… Generating…',W/2,150);
+    ctx.fillStyle='#dfe6ee';roundRect(W/2-200,180,400,26,13);ctx.fill();
+    ctx.fillStyle='#e67e22';roundRect(W/2-200,180,400*gen,26,13);ctx.fill();
+    ctx.fillStyle='#555';ctx.font='14px sans-serif';
+    ctx.fillText(Math.round(gen*100)+'%',W/2,222);
+    return;
+  }
+  if(!last){
+    ctx.fillStyle='#999';ctx.font='16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('作品預覽會喺呢度出現',W/2,190);
+    ctx.fillText('The generated work preview will appear here',W/2,216);
+    return;
+  }
+  var warm=last.style,aud=last.aud;
+  // background
+  var gr=ctx.createLinearGradient(0,0,0,H);
+  if(warm){gr.addColorStop(0,'#fdebd0');gr.addColorStop(1,'#f5cba7');}
+  else{gr.addColorStop(0,'#eaf2f8');gr.addColorStop(1,'#d6dbdf');}
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  // sun
+  ctx.fillStyle=warm?'#f39c12':'#aab7b8';
+  ctx.beginPath();ctx.arc(580,80,44,0,7);ctx.fill();
+  // hills
+  ctx.fillStyle=warm?'#a9dfbf':'#aeb6bf';
+  ctx.beginPath();ctx.ellipse(180,330,220,90,0,0,7);ctx.fill();
+  ctx.fillStyle=warm?'#82c991':'#979a9a';
+  ctx.beginPath();ctx.ellipse(520,340,240,100,0,0,7);ctx.fill();
+  // music notes
+  ctx.fillStyle='#1a5276';ctx.font='34px sans-serif';ctx.textAlign='center';
+  ctx.fillText('♪',200,150);ctx.fillText('♫',260,120);ctx.fillText('♪',470,140);
+  // title
+  ctx.fillStyle='#1a5276';ctx.font='bold 19px sans-serif';
+  ctx.fillText(last.title,W/2,52);
+  ctx.font='13px sans-serif';ctx.fillStyle='#555';
+  ctx.fillText(last.titleEn,W/2,74);
+  // subtitle bar
+  var fs=aud==='elderly'?24:16;
+  ctx.fillStyle='rgba(0,0,0,0.72)';roundRect(60,238,W-120,86,10);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold '+fs+'px sans-serif';
+  var msg=last.msg||'（沒有訊息 No message）';
+  if(ctx.measureText(msg).width>W-160&&fs>16){ctx.font='bold 16px sans-serif';}
+  ctx.fillText(msg,W/2,282);
+  ctx.font='13px sans-serif';ctx.fillStyle='#f9e79f';ctx.textAlign='center';
+  var sub2='字幕 '+(aud==='elderly'?'大字體 Large':'標準 Standard')+' · 旁白 '+(aud==='child'?'中速 Medium':'慢速 Slow')+' · 配樂：柔和音樂';
+  ctx.fillText(sub2,W/2,308);
+  // AI label badge
+  if(last.labeled){
+    ctx.fillStyle='#27ae60';roundRect(W/2-190,340,380,34,8);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';
+    ctx.fillText('✓ 本作品含有 AI 生成內容',W/2,363);
+  }else{
+    ctx.fillStyle='#c0392b';roundRect(W/2-150,340,300,34,8);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';
+    ctx.fillText('✗ 未標示 AI 生成內容！',W/2,363);
+  }
+}
+function genWork(){
+  if(generating)return;
+  generating=true;gen=0;
+  var t0=performance.now();
+  function fr(t){
+    gen=Math.min(1,(t-t0)/1400);draw();
+    if(gen<1)requestAnimationFrame(fr);
+    else{generating=false;finish();}
+  }
+  requestAnimationFrame(fr);
+}
+function finish(){
+  var k=keys(),n=0,i;for(i=0;i<5;i++)if(k[i])n++;
+  var aud=$('aud').value,msg=$('msg').value.trim(),labeled=$('labelChk').checked;
+  var spec=Math.round(n/5*100);
+  var specWord=spec>=80?'具體 Specific':(spec>=40?'普通 Average':'空泛 Vague');
+  var titles={elderly:['給獨居長者的打氣短片','A heart-warming video for elderly living alone'],
+              vi:['給視障朋友的聲音短片','An audio-led video for visually impaired friends'],
+              child:['給住院小朋友的打氣歌','A cheer-up song for hospitalised children']};
+  last={style:k[3],aud:aud,msg:(k[4]?msg:''),labeled:labeled,title:titles[aud][0],titleEn:titles[aud][1]};
+  // audience fit stars
+  var stars=0,reasons=[];
+  if(k[0]){stars++;reasons.push('<span class="good">✓</span> 有說明對象，設計切合觀眾');}
+  else reasons.push('<span class="bad">✗</span> 冇講對象是誰，AI 唔知為邊個設計');
+  if(k[4]&&msg){stars++;reasons.push('<span class="good">✓</span> 訊息清晰具體（一句話）');}
+  else reasons.push('<span class="bad">✗</span> 訊息含糊，觀眾未必收到重點');
+  if(k[3]){stars++;reasons.push('<span class="good">✓</span> 有風格指示（溫暖色調＋柔和音樂）');}
+  else reasons.push('<span class="bad">✗</span> 冇風格指示，畫面氣氛靠彩數');
+  var starStr='';for(i=0;i<3;i++)starStr+=i<stars?'★':'☆';
+  var integ=labeled?'<span class="good">✓ 已標示「本作品含有 AI 生成內容」，符合誠信要求</span>':'<span class="bad">✗ 未標示 AI 生成內容——將 AI 作品冒充人手創作，違反誠信！</span>';
+  $('result').innerHTML=
+    '📊 <b>提示詞具體度 Prompt specificity：'+spec+'%（'+specWord+'）</b> — 包含 '+n+' / 5 項關鍵資訊<br>'+
+    '❤️ <b>觀眾適合度 Audience fit：</b><span class="stars">'+starStr+'</span><br>'+reasons.join('<br>')+'<br>'+
+    '🤝 <b>誠信 Integrity：</b>'+integ+
+    (spec<60?'<br><br>💡 <b>記住：具體 ≠ 冗長。</b>唔係寫得愈長愈好，而係要俾齊關鍵資訊（對象、場景、長度、風格、訊息）。<br><span class="en">Specific, not wordy: give the key information.</span>':'');
+  draw();
+}
+$('bGen').onclick=genWork;
+draw();
+})();
+</script>
+</body>
+</html>

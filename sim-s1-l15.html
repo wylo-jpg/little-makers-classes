@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動模擬 · 第 15 堂：AI 是什麼？</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:960px;margin:0 auto;padding:0 1rem 3rem}
+.sim-wrap h2{margin:.6rem 0 .2rem}
+.sim-wrap .en-sub{color:#666;font-size:.9rem;margin-bottom:.8rem}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0;font-size:.95rem}
+.howto ol{margin:.4rem 0 .2rem;padding-left:1.4rem}
+.deck,.zones{display:flex;flex-wrap:wrap;gap:.6rem;margin:.8rem 0}
+.deck{min-height:90px;background:#fafafa;border:2px dashed #ccc;border-radius:10px;padding:.8rem}
+.cardbtn{background:#fff;border:2px solid #1a5276;border-radius:10px;padding:.6rem .8rem;font-size:1rem;cursor:pointer;min-width:120px;transition:transform .18s,box-shadow .18s;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.cardbtn:hover{transform:translateY(-2px);box-shadow:0 5px 10px rgba(0,0,0,.12)}
+.cardbtn.selected{border-color:#e67e22;background:#fef3e6;box-shadow:0 0 0 3px rgba(230,126,34,.35);transform:scale(1.05)}
+.zone{flex:1;min-width:260px;border-radius:12px;padding:.8rem;min-height:150px;cursor:pointer;transition:background .2s,box-shadow .2s;border:3px dashed transparent}
+.zone.ai{background:#e8f8f0;border-color:#27ae60}
+.zone.notai{background:#fdecea;border-color:#c0392b}
+.zone.armed{box-shadow:0 0 0 4px rgba(26,82,118,.4)}
+.zone h3{margin:.2rem 0 .6rem;text-align:center}
+.zone .placed{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center}
+.placed .cardbtn{min-width:0;font-size:.9rem;padding:.4rem .6rem;cursor:default}
+.placed .cardbtn:hover{transform:none;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.bar{display:flex;gap:.6rem;flex-wrap:wrap;margin:.9rem 0;align-items:center}
+.bigbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.4rem;font-size:1.05rem;font-weight:700;cursor:pointer}
+.bigbtn:disabled{background:#aaa;cursor:not-allowed}
+.ghostbtn{background:#fff;border:2px solid #1a5276;color:#1a5276;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;cursor:pointer}
+.progress{font-size:1rem;font-weight:700}
+.result{display:none;background:#fff;border:2px solid #1a5276;border-radius:12px;padding:1rem 1.2rem;margin-top:1rem}
+.result table{width:100%;border-collapse:collapse;font-size:.92rem}
+.result th,.result td{border:1px solid #dfe6ee;padding:.45rem .4rem;text-align:left;vertical-align:top}
+.result th{background:#1a5276;color:#fff}
+.tick{color:#27ae60;font-weight:700;font-size:1.15rem}
+.cross{color:#c0392b;font-weight:700;font-size:1.15rem}
+.score{font-size:1.4rem;font-weight:800;margin:.6rem 0}
+.score.good{color:#27ae60}.score.bad{color:#c0392b}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<nav class="crumb wrap"><a href="lesson-s1-15.html">← 返回課堂 Back to lesson</a></nav>
+<main class="sim-wrap">
+<h2>🎮 AI 大搜查：分類挑戰 <span class="en-sub">AI or Not AI — Classification Challenge</span></h2>
+<div class="en-sub">第 15 堂 · AI 是什麼？ What is AI?</div>
+<div class="howto">
+<b>玩法 How to play：</b>
+<ol>
+<li>下面有 10 張例子卡（全是課堂例子）。<b>撳一張卡</b>揀起佢，再<b>撳「是 AI」或「不是 AI」分區</b>，把卡片分類。</li>
+<li>分完 10 張，撳「揭曉答案」睇自己啱幾多。</li>
+<li>關鍵問題：<b>佢識唔識「學習」和「適應」？</b>只係跟固定程式行的，就算幾快都唔係 AI。</li>
+</ol>
+</div>
+
+<div class="progress">已分類 Sorted：<span id="count">0</span> / 10</div>
+<div class="deck" id="deck"></div>
+
+<div class="zones">
+<div class="zone ai" id="zoneAI"><h3>✅ 是 AI <span class="en-sub">Uses AI</span></h3><div class="placed" id="placedAI"></div></div>
+<div class="zone notai" id="zoneNot"><h3>❌ 不是 AI <span class="en-sub">Not AI</span></h3><div class="placed" id="placedNot"></div></div>
+</div>
+
+<div class="bar">
+<button class="bigbtn" id="revealBtn" disabled>🔍 揭曉答案 Reveal</button>
+<button class="ghostbtn" id="resetBtn">🔀 重新洗牌 Reset</button>
+</div>
+
+<div class="result" id="result">
+<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+<svg width="120" height="120" viewBox="0 0 120 120" aria-label="得分圖">
+<circle cx="60" cy="60" r="50" fill="none" stroke="#eee" stroke-width="14"/>
+<circle id="scoreArc" cx="60" cy="60" r="50" fill="none" stroke="#27ae60" stroke-width="14" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s"/>
+<text id="scoreTxt" x="60" y="68" text-anchor="middle" font-size="24" font-weight="800" fill="#1a5276">0/10</text>
+</svg>
+<div><div class="score" id="scoreLine"></div>
+<div id="scoreMsg"></div></div>
+</div>
+<table><thead><tr><th>例子 Example</th><th>你的判斷</th><th>正確答案</th><th>原因 Reason</th></tr></thead><tbody id="resultBody"></tbody></table>
+<p>💡 口訣：「<b>識學習、識適應，先至係 AI</b>。」AI 的聰明來自數據同運算——數據是 AI 的糧食。</p>
+</div>
+</main>
+
+<script>
+var CARDS = [
+ {n:"Siri 語音助手", ai:true, why:"識聽懂你講嘢，會不斷學習改進——係 AI。"},
+ {n:"微波爐", ai:false, why:"只按固定時間同火力加熱，永遠唔會學新嘢——唔係 AI。"},
+ {n:"Netflix 影片推薦", ai:true, why:"按你嘅喜好學習，推薦你鍾意嘅片——係 AI。"},
+ {n:"人臉解鎖", ai:true, why:"認得出你嘅臉，會學習你外貌嘅變化——係 AI。"},
+ {n:"計算機", ai:false, why:"3+5 永遠等於 8，只跟固定程式運算——唔係 AI。"},
+ {n:"掃地機械人（具學習功能）", ai:true, why:"會記住家居地圖、學習路線——係 AI。"},
+ {n:"自動翻譯", ai:true, why:"理解語言並轉換，會從大量例子學習——係 AI。"},
+ {n:"電飯煲保溫", ai:false, why:"感應器加固定程式，冇學習能力——唔係 AI。"},
+ {n:"手機相簿人物自動分類", ai:true, why:"認出相中人並自動分組——係 AI。"},
+ {n:"交通燈定時轉燈", ai:false, why:"按固定時間切換，唔識適應交通情況——唔係 AI。"}
+];
+var deck = document.getElementById('deck'),
+    zoneAI = document.getElementById('zoneAI'),
+    zoneNot = document.getElementById('zoneNot'),
+    placedAI = document.getElementById('placedAI'),
+    placedNot = document.getElementById('placedNot'),
+    countEl = document.getElementById('count'),
+    revealBtn = document.getElementById('revealBtn'),
+    resetBtn = document.getElementById('resetBtn'),
+    resultBox = document.getElementById('result'),
+    resultBody = document.getElementById('resultBody'),
+    scoreLine = document.getElementById('scoreLine'),
+    scoreMsg = document.getElementById('scoreMsg'),
+    order = [], placed = {}, selected = null;
+
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function reset(){
+  order = shuffle(CARDS.map(function(_,i){return i;}));
+  placed = {}; selected = null;
+  deck.innerHTML = ''; placedAI.innerHTML = ''; placedNot.innerHTML = '';
+  resultBox.style.display = 'none';
+  order.forEach(function(idx){
+    var b = document.createElement('button');
+    b.className = 'cardbtn'; b.textContent = CARDS[idx].n;
+    b.dataset.idx = idx;
+    b.onclick = function(){ selectCard(b, idx); };
+    deck.appendChild(b);
+  });
+  update();
+}
+function selectCard(btn, idx){
+  selected = idx;
+  var all = deck.querySelectorAll('.cardbtn');
+  for(var i=0;i<all.length;i++) all[i].classList.remove('selected');
+  btn.classList.add('selected');
+  zoneAI.classList.add('armed'); zoneNot.classList.add('armed');
+}
+function place(ai){
+  if(selected === null) return;
+  placed[selected] = ai;
+  var btn = deck.querySelector('.cardbtn[data-idx="'+selected+'"]');
+  if(btn) btn.remove();
+  selected = null;
+  zoneAI.classList.remove('armed'); zoneNot.classList.remove('armed');
+  renderPlaced(); update();
+}
+function renderPlaced(){
+  placedAI.innerHTML=''; placedNot.innerHTML='';
+  Object.keys(placed).forEach(function(idx){
+    var b = document.createElement('span');
+    b.className = 'cardbtn'; b.textContent = CARDS[idx].n;
+    (placed[idx] ? placedAI : placedNot).appendChild(b);
+  });
+}
+function update(){
+  var n = Object.keys(placed).length;
+  countEl.textContent = n;
+  revealBtn.disabled = (n < 10);
+}
+function reveal(){
+  var right = 0, html = '';
+  CARDS.forEach(function(c, idx){
+    var mine = placed[idx], ok = (mine === c.ai);
+    if(ok) right++;
+    html += '<tr><td>'+c.n+'</td><td>'+(mine?'✅ 是 AI':'❌ 不是 AI')+'</td>'
+      + '<td>'+(ok?'<span class="tick">✔</span>':'<span class="cross">✘</span>')+' '+(c.ai?'是 AI':'不是 AI')+'</td>'
+      + '<td>'+c.why+'</td></tr>';
+  });
+  resultBody.innerHTML = html;
+  scoreLine.textContent = '得分 Score：'+right+' / 10';
+  scoreLine.className = 'score ' + (right>=8 ? 'good' : 'bad');
+  var arc = document.getElementById('scoreArc'), C = 314.16;
+  arc.style.strokeDashoffset = C * (1 - right/10);
+  arc.setAttribute('stroke', right>=8 ? '#27ae60' : '#c0392b');
+  document.getElementById('scoreTxt').textContent = right + '/10';
+  scoreMsg.innerHTML = right>=8
+    ? '🎉 勁！達到本堂目標（至少 8 題正確）。<br>Target reached — at least 8 correct!'
+    : '💪 差少少！記住口訣：<b>識學習、識適應，先至係 AI</b>，再試一次。<br>Try again!';
+  resultBox.style.display = 'block';
+  resultBox.scrollIntoView({behavior:'smooth'});
+}
+zoneAI.onclick = function(){ place(true); };
+zoneNot.onclick = function(){ place(false); };
+revealBtn.onclick = reveal;
+resetBtn.onclick = reset;
+reset();
+</script>
+</body>
+</html>

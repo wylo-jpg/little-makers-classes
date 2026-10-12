@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L02 訪問問題診所 | Question Clinic</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.round{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:.8rem 0}
+.round h3{color:#1a5276;margin:0 0 .3rem}
+.round .en{font-size:.85rem;color:#666;font-weight:400}
+.qcard{background:#f7f9fc;border-radius:8px;padding:.9rem;margin:.6rem 0}
+.qtext{font-size:1.15rem;font-weight:700;color:#1a5276}
+.optbtn{display:block;width:100%;text-align:left;margin:.45rem 0;padding:.7rem .9rem;border:2px solid #dfe6ee;border-radius:10px;background:#fff;font-size:1rem;cursor:pointer;line-height:1.6}
+.optbtn:hover{border-color:#2e86c1}
+.optbtn.right{border-color:#1e7e34;background:#eafbe7}
+.optbtn.wrong{border-color:#c0392b;background:#fdecea}
+.optbtn:disabled{cursor:default}
+.explain{background:#eaf6ff;border-left:5px solid #2e86c1;padding:.7rem .9rem;border-radius:0 8px 8px 0;margin:.6rem 0;display:none}
+.explain.show{display:block}
+.feedback{font-weight:700;margin:.5rem 0;min-height:1.6rem}
+.feedback.good{color:#1e7e34}.feedback.bad{color:#c0392b}
+.navrow{display:flex;justify-content:space-between;align-items:center;margin-top:.8rem;gap:.6rem;flex-wrap:wrap}
+.nextbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer;font-weight:700}
+.nextbtn:disabled{background:#bdc3c7;cursor:default}
+.nextbtn:not(:disabled):hover{background:#2e86c1}
+.resetbtn{background:#95a5a6;color:#fff;border:none;border-radius:8px;padding:.55rem 1.1rem;font-size:.95rem;cursor:pointer;font-weight:700}
+.progbar{height:10px;background:#eef3f8;border-radius:6px;overflow:hidden;margin:.6rem 0}
+.progbar>div{height:100%;background:linear-gradient(90deg,#2e86c1,#1a5276);width:0%;transition:width .4s}
+#gaugeWrap{display:flex;align-items:center;gap:1rem;margin:.6rem 0}
+.bigscore{font-size:2rem;color:#1a5276;font-weight:800}
+.tag{display:inline-block;font-size:.78rem;border-radius:12px;padding:.1rem .7rem;margin-left:.4rem;vertical-align:middle}
+.tag.open{background:#d4efdf;color:#1e7e34}.tag.closed{background:#fdebd0;color:#935116}.tag.lead{background:#fadbd8;color:#943126}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-02.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L02 訪問問題診所 <span class="en">Question Clinic: Open vs Closed Questions</span></h2>
+<div class="card">
+<b>玩法 How to play</b><br>
+你係問題診所嘅醫生！四關挑戰：<b>①分類</b>（開放式定封閉式？）、<b>②改寫</b>（將封閉式改成開放式）、<b>③捉蟲</b>（搵出引導性問題）、<b>④情境</b>（揀最適當嘅訪問做法）。每答一題都有即時診斷報告！
+<p class="en">You are the question doctor! Four rounds: ① classify, ② rewrite closed questions as open ones, ③ spot the leading question, ④ pick the best interview practice — with instant feedback every time.</p>
+<div class="progbar"><div id="progFill"></div></div>
+<div id="gaugeWrap">
+<svg width="72" height="72" viewBox="0 0 72 72" aria-label="得分儀表">
+<circle cx="36" cy="36" r="30" fill="none" stroke="#eef3f8" stroke-width="10"/>
+<circle id="gaugeArc" cx="36" cy="36" r="30" fill="none" stroke="#2e86c1" stroke-width="10" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5" transform="rotate(-90 36 36)" style="transition:stroke-dashoffset .5s"/>
+<text id="gaugeTxt" x="36" y="42" text-anchor="middle" font-size="16" font-weight="700" fill="#1a5276">0</text>
+</svg>
+<div><b>診所成績 Clinic score</b><br><span style="font-size:.9rem;color:#666">答啱 <span id="scoreNow">0</span> / <span id="scoreTotal">13</span> 題</span></div>
+</div>
+</div>
+
+<div class="round" id="round1">
+<h3>第一關：分類診斷 <span class="en">Round 1 — Open or closed?</span></h3>
+<p>下面每條問題，判斷係<span class="tag open">開放式 Open</span>定<span class="tag closed">封閉式 Closed</span>。</p>
+<div id="r1box"></div>
+</div>
+
+<div class="round hidden" id="round2">
+<h3>第二關：改寫手術 <span class="en">Round 2 — Rewrite as open-ended</span></h3>
+<p>將封閉式問題改寫成開放式——揀最好嘅改寫版本。<span class="en">Pick the best open-ended rewrite.</span></p>
+<div id="r2box"></div>
+</div>
+
+<div class="round hidden" id="round3">
+<h3>第三關：捉引導性問題 <span class="en">Round 3 — Spot the leading question</span></h3>
+<p>引導性問題會將自己嘅立場藏喺問題入面，預設答案——捉佢出嚟！<span class="en">Leading questions smuggle in the asker's own view. Catch them!</span></p>
+<div id="r3box"></div>
+</div>
+
+<div class="round hidden" id="round4">
+<h3>第四關：情境應診 <span class="en">Round 4 — Best practice in context</span></h3>
+<p>真實訪問情境，揀最適當嘅做法。<span class="en">Real interview situations — choose the most appropriate approach.</span></p>
+<div id="r4box"></div>
+</div>
+
+<div class="card hidden" id="sumCard">
+<h2 style="margin-top:0">診斷完成 <span class="en">Clinic complete</span></h2>
+<div class="bigscore" id="finalScore"></div>
+<p id="finalMsg"></p>
+<p><b>記住四招 Remember:</b> ①多用「什麼／怎樣／為什麼」問開放式問題 ②專心聆聽 ③唔打斷對方 ④尊重私隱、先徵得同意。訪問嘅目的係理解對方嘅需要，唔係滿足自己嘅好奇心！</p>
+<button class="resetbtn" id="resetBtn">再玩一次 Play again</button>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+var TOTAL=13, score=0, answered=0;
+var scoreNow=document.getElementById('scoreNow'), gaugeArc=document.getElementById('gaugeArc'),
+    gaugeTxt=document.getElementById('gaugeTxt'), progFill=document.getElementById('progFill');
+function bump(ok){
+ answered++; if(ok)score++;
+ scoreNow.textContent=score;
+ gaugeTxt.textContent=score;
+ gaugeArc.style.strokeDashoffset=(188.5*(1-score/TOTAL)).toFixed(1);
+ progFill.style.width=(answered/TOTAL*100)+'%';
+ if(answered===TOTAL)finish();
+}
+function finish(){
+ var s=document.getElementById('sumCard');s.classList.remove('hidden');
+ document.getElementById('finalScore').textContent='總分：'+score+' / '+TOTAL;
+ document.getElementById('finalMsg').innerHTML=score>=11
+  ?'🌟 金牌醫生！你已經掌握開放式問題同訪問倫理，社區探訪實冇問題！<br><span class="en">Outstanding — you have mastered open-ended questions and interview ethics!</span>'
+  :score>=8?'👍 唔錯！再留意引導性用詞同問題次序（由淺入深），就會更上一層樓。<br><span class="en">Good! Watch out for leading wording and order questions from general to specific.</span>'
+  :'💪 繼續努力！記住：開放式問題用「什麼／怎樣／為什麼」，畀對方發揮空間。<br><span class="en">Keep practising! Open-ended questions use "what / how / why" and give room to share.</span>';
+ s.scrollIntoView({behavior:'smooth'});
+}
+/* ---- Round 1: classify ---- */
+var R1=[
+ {q:'你覺得悶嗎？',en:'Do you feel bored?',a:'closed',why:'答案只有「是／不是」，範圍狹窄 → 封閉式。'},
+ {q:'你平日喜歡做些什麼來打發時間？',en:'What do you enjoy doing to pass the time?',a:'open',why:'邀請對方分享想法同經歷，答案豐富 → 開放式。'},
+ {q:'你今年幾歲？',en:'How old are you?',a:'closed',why:'答案係一個數字，簡單事實 → 封閉式。'},
+ {q:'可否分享一下你日常出行的安排？',en:'Could you share how you usually get around?',a:'open',why:'用「分享」邀請對方詳細講述 → 開放式。'},
+ {q:'你昨天有沒有去公園？',en:'Did you go to the park yesterday?',a:'closed',why:'「有／冇」作答，確認事實 → 封閉式。'},
+ {q:'你對社區服務有什麼期望？',en:'What do you expect from community services?',a:'open',why:'用「什麼」問想法同期望 → 開放式。'}
+];
+/* ---- Round 2: rewrite ---- */
+var R2=[
+ {q:'「你覺得悶嗎？」',en:'Rewrite "Do you feel bored?"',
+  opts:['你平日喜歡做些什麼來打發時間？','你係咪覺得好悶？','你悶嗰陣會唔會睇電視？'],ans:0,
+  why:'將「是／不是」嘅提問，轉為邀請對方分享嘅提問，先係真正嘅改寫。第二個選項依然係封閉式，第三個仲有少少引導性。'},
+ {q:'「你喜歡這個社區嗎？」',en:'Rewrite "Do you like this neighbourhood?"',
+  opts:['呢個社區好唔好住？','你覺得這個社區有什麼地方最吸引你？','你住喺度開唔開心？'],ans:1,
+  why:'「有什麼地方最吸引你」用「什麼」開頭，邀請對方分享具體想法；其餘兩個都係「好／唔好」式封閉問題。'},
+ {q:'「你滿意學校的設施嗎？」',en:'Rewrite "Are you satisfied with the school facilities?"',
+  opts:['學校設施夠唔夠用？','你對設施滿唔滿意？','你覺得學校設施有什麼可以改善的地方？'],ans:2,
+  why:'「有什麼可以改善」邀請對方講出具體意見；頭兩個只係換湯唔換藥嘅封閉式問法。'}
+];
+/* ---- Round 3: leading ---- */
+var R3=[
+ {q:'邊條係引導性問題？',en:'Which one is a leading question?',
+  opts:['你平日怎樣打發時間？','社區中心活動這麼少，你一定很少去吧？','你對社區服務有什麼期望？'],ans:1,
+  why:'「這麼少…你一定很少去吧」將自己嘅立場（活動少＝少去）藏喺問題入面，預設咗答案 → 引導性問題。'},
+ {q:'邊條係引導性問題？',en:'Which one is a leading question?',
+  opts:['你一定覺得一個人住很慘吧？','你平時會去社區中心嗎？通常做些什麼？','可否分享一下你日常出行的安排？'],ans:0,
+  why:'「你一定…很慘吧」預設對方覺得慘，仲要對方認同 → 典型引導性問題。訪問前唔好預設答案！'}
+];
+/* ---- Round 4: scenario ---- */
+var R4=[
+ {q:'探訪獨居長者，一開口應該點講？',en:'Opening line when visiting an elderly person living alone?',
+  opts:['「你每個月靠什麼生活？」','「陳伯，你好！我哋係呂明才中學嘅學生，今日想同你傾下偈，了解下街坊嘅日常生活，得唔得呀？」','一口氣連珠問十條問題，愈快愈好'],ans:1,
+  why:'一開口就問經濟狀況，用詞直接，令對方難堪。正確做法：先自我介紹、徵得同意，由淺入深，唔好一開始就掂敏感話題。'},
+ {q:'想了解視障人士嘅日常出行需要，邊個做法最恰當？',en:'Best way to ask a visually impaired person about daily travel needs?',
+  opts:['直接問：「你失明嘅原因係咩？」','先徵得同意，再問：「可否分享你日常出行的安排？」','邊聽邊睇手機，等氣氛輕鬆啲'],ans:1,
+  why:'失明原因係私隱，唔應該追問；睇手機係唔專心。正確做法：先徵得同意，用開放式問題邀請分享，專心聆聽。'}
+];
+function mcq(container,item,btnLabels,onDone){
+ var d=document.createElement('div');d.className='qcard';
+ var h='<div class="qtext">'+item.q+'</div>';
+ if(item.en)h+='<div style="font-size:.85rem;color:#666">'+item.en+'</div>';
+ h+=item.opts.map(function(o,i){return '<button class="optbtn" data-i="'+i+'">'+o+'</button>';}).join('');
+ h+='<div class="explain"></div><div class="feedback"></div>';
+ d.innerHTML=h;container.appendChild(d);
+ var btns=d.querySelectorAll('.optbtn'),fb=d.querySelector('.feedback'),ex=d.querySelector('.explain');
+ btns.forEach(function(b){b.addEventListener('click',function(){
+  btns.forEach(function(x){x.disabled=true;});
+  var ok=+b.dataset.i===item.ans;
+  if(ok){b.classList.add('right');fb.className='feedback good';fb.textContent='✅ 診斷正確！';}
+  else{b.classList.add('wrong');btns[item.ans].classList.add('right');fb.className='feedback bad';fb.textContent='❌ 睇下正確答案同解說…';}
+  ex.innerHTML='<b>診斷報告 Diagnosis：</b>'+item.why;ex.classList.add('show');
+  bump(ok);onDone();
+ });});
+}
+function buildRound(boxId,items,btnLabels,nextRoundId){
+ var box=document.getElementById(boxId),idx=0;
+ function show(){
+  box.innerHTML='';
+  mcq(box,items[idx],btnLabels,function(){
+   idx++;
+   var nav=document.createElement('div');nav.className='navrow';
+   var lab=document.createElement('span');lab.style.color='#888';lab.textContent=(idx)+' / '+items.length+' 題';
+   var nb=document.createElement('button');nb.className='nextbtn';
+   nb.textContent=idx<items.length?'下一題 Next →':(nextRoundId?'下一關 Next round →':'睇成績 See results →');
+   nb.addEventListener('click',function(){
+    if(idx<items.length){show();}
+    else if(nextRoundId){document.getElementById(nextRoundId).classList.remove('hidden');document.getElementById(nextRoundId).scrollIntoView({behavior:'smooth'});}
+    else{document.getElementById('sumCard').scrollIntoView({behavior:'smooth'});}
+   });
+   nav.appendChild(lab);nav.appendChild(nb);box.appendChild(nav);
+  });
+ }
+ show();
+}
+buildRound('r1box',R1.map(function(it){return {q:it.q,en:it.en,opts:['開放式 Open-ended','封閉式 Closed'],ans:it.a==='open'?0:1,why:it.why};}),null,'round2');
+buildRound('r2box',R2,null,'round3');
+buildRound('r3box',R3,null,'round4');
+buildRound('r4box',R4,null,null);
+document.getElementById('resetBtn').addEventListener('click',function(){location.reload();});
+})();
+</script>
+</body>
+</html>

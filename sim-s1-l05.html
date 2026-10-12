@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>橡筋動力車 互動模擬 | Sim: Rubber-band Car</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:#f7f9fb;touch-action:manipulation}
+.readout{background:#fff;border-left:5px solid #27ae60;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#27ae60}
+.big-btn{padding:.7rem 1.6rem;font-size:1.05rem;background:#27ae60;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.big-btn:disabled{background:#95a5a6}
+.big-btn.reset{background:#e74c3c;margin-left:.5rem}
+label.slider{display:block;margin:.8rem 0 .3rem;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+.flow{font-size:1.05rem;margin:.6rem 0}
+.flow b{color:#1a6fb5}
+.note{font-size:.92rem;color:#555}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-05.html">← 返回課堂 Back to lesson</a></nav>
+<h2>橡筋動力車 <span class="en">Rubber-band Car — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：扭緊橡筋（調校圈數），鬆手！看看車跑多遠。扭得愈多圈係咪一定跑得愈遠？<br>
+<span class="en">Twist the rubber band, release, and measure the distance. Do more twists always go further?</span></p>
+<p class="flow">能量轉換 <span class="en">Energy flow</span>：<b>手做功 Work</b> → <b>彈性勢能 Elastic potential</b> → <b>動能 Kinetic</b> → <b>熱 Heat</b>（摩擦）</p>
+</div>
+
+<label class="slider">橡筋扭轉圈數 <span class="en">Rubber-band twists</span>：<span id="twistVal">20</span> 圈</label>
+<input type="range" id="twists" min="0" max="40" step="1" value="20">
+<div style="margin:.6rem 0">
+<button class="big-btn" id="startBtn">▶ 鬆手！Release!</button>
+<button class="big-btn reset" id="resetBtn">重設 Reset</button>
+</div>
+
+<canvas id="cv" height="300"></canvas>
+
+<div class="readout">
+<div>行走距離 <span class="en">Distance</span>：<span class="big" id="rDist">0.0</span> 米 m</div>
+<div id="rMsg" style="margin-top:.4rem"></div>
+<p class="note">公平測試提示：跑道、起跑線、橡筋、車身都要一樣，淨係改變圈數。<br>
+<span class="en">Fair test: keep track, start line, band and car the same; change only the twists.</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=300,twists=20,state='idle',x=0,target=0,wheel=0,speed=0;
+var twistEl=document.getElementById('twists');
+twistEl.addEventListener('input',function(){twists=+twistEl.value;document.getElementById('twistVal').textContent=twists;reset();});
+
+function distance(){
+  if(twists<=30)return +(twists*0.16).toFixed(1);
+  return +Math.max(0,30*0.16-(twists-30)*0.28).toFixed(1);
+}
+function reset(){
+  state='idle';x=0;wheel=0;
+  document.getElementById('rDist').textContent='0.0';
+  document.getElementById('rMsg').textContent='';
+  document.getElementById('startBtn').disabled=false;draw();
+}
+document.getElementById('resetBtn').addEventListener('click',reset);
+document.getElementById('startBtn').addEventListener('click',function(){
+  reset();target=distance();state='running';this.disabled=true;
+  var msg=document.getElementById('rMsg');
+  if(twists>30)msg.innerHTML='⚠ 扭得太多圈，車輪打滑空轉，能量浪費咗！<br><span class="en">Over-twisted: wheels slip and energy is wasted!</span>';
+  else if(twists>=20)msg.innerHTML='👍 彈性勢能充足，車走得好遠！<br><span class="en">Good amount of elastic potential energy!</span>';
+  else if(twists>0)msg.innerHTML='儲存的彈性勢能較少，車走得唔遠。<br><span class="en">Less stored elastic potential energy.</span>';
+  else msg.innerHTML='冇扭橡筋，車唔會郁。<br><span class="en">No twists — the car does not move.</span>';
+});
+function fit(){var w=cv.clientWidth;cv.width=w;cv.height=Math.round(w*H/W);}
+window.addEventListener('resize',function(){fit();draw();});fit();
+
+function draw(){
+  var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  var scale=w/W;ctx.save();ctx.scale(scale,scale);
+  // ground + metre marks
+  ctx.fillStyle='#e8e0d0';ctx.fillRect(0,230,W,70);
+  ctx.fillStyle='#7f8c8d';ctx.font='13px sans-serif';
+  for(var m=0;m<=6;m++){var mx=60+m*100;ctx.strokeStyle='#7f8c8d';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(mx,230);ctx.lineTo(mx,244);ctx.stroke();ctx.fillText(m+'m',mx-10,264);}
+  ctx.fillStyle='#e74c3c';ctx.fillRect(58,214,4,16);ctx.fillStyle='#333';ctx.fillText('起跑線 start',8,212);
+  // target flag
+  if(state==='running'||state==='done'){
+    var fx=60+target*100;
+    if(fx<660){ctx.fillStyle='#27ae60';ctx.fillRect(fx,180,4,50);ctx.beginPath();ctx.moveTo(fx+4,180);ctx.lineTo(fx+34,190);ctx.lineTo(fx+4,200);ctx.fill();}
+  }
+  // car
+  var cx=60+x*100,cy=230;
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle='#1a6fb5';ctx.fillRect(-45,-46,90,26); // body box
+  ctx.fillStyle='#154a7d';ctx.fillRect(-45,-46,90,8);
+  ctx.fillStyle='#333';ctx.font='13px sans-serif';ctx.fillText('橡筋車',-30,-52);
+  // rubber band coil visual
+  ctx.strokeStyle='#e67e22';ctx.lineWidth=4;
+  ctx.beginPath();ctx.arc(0,-33,12+twists*0.35,0,Math.PI*2);ctx.stroke();
+  // wheels
+  ctx.fillStyle='#222';
+  [[-32,0],[32,0]].forEach(function(p){
+    ctx.beginPath();ctx.arc(p[0],p[1],20,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#aaa';ctx.lineWidth=3;ctx.beginPath();
+    ctx.moveTo(p[0]+20*Math.cos(wheel),p[1]+20*Math.sin(wheel));
+    ctx.lineTo(p[0]-20*Math.cos(wheel),p[1]-20*Math.sin(wheel));ctx.stroke();
+    ctx.fillStyle='#888';ctx.beginPath();ctx.arc(p[0],p[1],6,0,Math.PI*2);ctx.fill();
+  });
+  ctx.restore();
+  ctx.restore();
+}
+function loop(){
+  if(state==='running'){
+    if(x<target){
+      var remaining=target-x;
+      speed=Math.max(0.004,remaining*0.05)*(twists>30?0.5:1);
+      x+=speed;wheel+=speed*2.5;
+      if(x>=target){x=target;state='done';document.getElementById('rDist').textContent=target.toFixed(1);}
+      document.getElementById('rDist').textContent=x.toFixed(1);
+      draw();
+    }else{state='done';}
+  }
+  requestAnimationFrame(loop);
+}
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

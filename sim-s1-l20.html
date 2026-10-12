@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動模擬 · 第 20 堂：AI 倫理（二）偏見與私隱</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:960px;margin:0 auto;padding:0 1rem 3rem}
+.sim-wrap h2{margin:.6rem 0 .2rem}
+.sim-wrap .en-sub{color:#666;font-size:.9rem;margin-bottom:.8rem}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0;font-size:.95rem}
+.howto ol{margin:.4rem 0 .2rem;padding-left:1.4rem}
+.sect{background:#fff;border:2px solid #dfe6ee;border-radius:12px;padding:1rem 1.2rem;margin:1.2rem 0}
+.sect h3{margin:.2rem 0 .6rem}
+input[type=range]{width:min(340px,75vw)}
+.bar-row{display:flex;align-items:center;gap:.6rem;margin:.5rem 0}
+.bar-row .lbl{width:90px;font-weight:700}
+.bartrack{flex:1;height:30px;background:#eee;border-radius:8px;overflow:hidden}
+.barfill{height:100%;width:0;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;color:#fff;font-weight:700;padding-right:.5rem;font-size:.9rem}
+.bf{background:#2980b9}.bm{background:#8e44ad}
+.verdict{font-size:1.05rem;font-weight:700;margin:.6rem 0;min-height:1.8em}
+input#pw{width:min(340px,80vw);font-size:1.1rem;padding:.6rem;border:2px solid #1a5276;border-radius:8px;font-family:monospace}
+.meter{height:24px;background:#eee;border-radius:12px;overflow:hidden;margin:.7rem 0;max-width:420px}
+.meter>div{height:100%;width:0;transition:width .4s}
+.pwline{font-size:1rem;margin:.3rem 0}
+.pwtips{background:#fef9e7;border-radius:8px;padding:.6rem .9rem;font-size:.92rem;margin-top:.6rem}
+.scen{display:flex;gap:.6rem;flex-wrap:wrap;margin:.6rem 0}
+.sbtn{border:2px solid;border-radius:8px;padding:.5rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer;background:#fff}
+.sbtn.safe{border-color:#27ae60;color:#27ae60}
+.sbtn.unsafe{border-color:#c0392b;color:#c0392b}
+.sbtn:disabled{opacity:.4;cursor:not-allowed}
+.scen-card{background:#f7f9fb;border-radius:10px;padding:.8rem 1rem;margin:.6rem 0;font-size:.97rem}
+.scen-fb{margin-top:.4rem;font-size:.93rem;display:none}
+.motto{text-align:center;font-size:1.25rem;font-weight:800;color:#1a5276;margin:1.4rem 0}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<nav class="crumb wrap"><a href="lesson-s1-20.html">← 返回課堂 Back to lesson</a></nav>
+<main class="sim-wrap">
+<h2>🎮 偏見與私隱實驗室 <span class="en-sub">Bias &amp; Privacy Lab</span></h2>
+<div class="en-sub">第 20 堂 · AI 倫理（二）：偏見與私隱 Bias and Privacy</div>
+<div class="howto">
+<b>玩法 How to play：</b>
+<ol>
+<li><b>實驗一</b>：拖動滑桿，改變訓練履歷入面男性嘅比例，睇下 AI 推薦男／女求職者嘅比率點變。</li>
+<li><b>實驗二</b>：打個密碼試下，睇強度計同埋估計幾耐會被破解。</li>
+<li><b>實驗三</b>：逐張情境卡判斷「安全／唔安全」。</li>
+</ol>
+</div>
+
+<div class="sect">
+<h3>🧪 實驗一：AI 會歧視人？ <span class="en-sub">Can AI discriminate?</span></h3>
+<p>某公司用 AI 篩選求職履歷。拖動滑桿，設定<b>訓練數據</b>入面男性履歷嘅比例：</p>
+<label>👨 訓練履歷中男性比例：<b id="maleVal">90</b>%</label><br>
+<input type="range" id="maleRatio" min="50" max="100" value="90">
+<div class="bar-row"><div class="lbl">👩 女性獲推薦</div><div class="bartrack"><div class="barfill bf" id="barF">0%</div></div></div>
+<div class="bar-row"><div class="lbl">👨 男性獲推薦</div><div class="bartrack"><div class="barfill bm" id="barM">0%</div></div></div>
+<svg width="100%" height="46" viewBox="0 0 400 46" style="max-width:420px" aria-label="推薦比例圖">
+<rect id="svgF" x="0" y="6" width="40" height="26" fill="#2980b9" style="transition:width .5s, x .5s"/>
+<rect id="svgM" x="40" y="6" width="360" height="26" fill="#8e44ad" style="transition:width .5s, x .5s"/>
+<text x="4" y="40" font-size="12" fill="#2980b9">👩 女性</text>
+<text x="380" y="40" font-size="12" fill="#8e44ad" text-anchor="end">男性 👨</text>
+</svg>
+<div class="verdict" id="biasVerdict"></div>
+<p style="font-size:.92rem;color:#555">💡 問題唔喺電腦，喺<b>數據</b>。科技並非中立——人揀咩數據，會影響 AI 嘅判斷。</p>
+</div>
+
+<div class="sect">
+<h3>🔐 實驗二：密碼強度測試 <span class="en-sub">Password strength tester</span></h3>
+<p>打個密碼試下（<b>唔好打真密碼！</b>用假嘅嚟試）：</p>
+<input type="text" id="pw" placeholder="例如：Lmc2026!" autocomplete="off">
+<div class="meter"><div id="pwBar"></div></div>
+<div class="pwline">強度 Strength：<b id="pwScore">—</b></div>
+<div class="pwline">估計破解時間 Est. crack time：<b id="pwTime">—</b></div>
+<div class="pwtips">💡 <b>私隱自保四招：</b>① 唔隨便上傳個人相片 ② 閂咗唔需要嘅定位權限 ③ 設強密碼並保密（用<b>句子首字母加數字</b>，易記又難估）④ 唔亂撳不明連結</div>
+</div>
+
+<div class="sect">
+<h3>🛡️ 實驗三：情境安全判斷 <span class="en-sub">Safe or unsafe?</span></h3>
+<p>每則情境，撳「安全」或「唔安全」：</p>
+<div id="scens"></div>
+<div class="pwline">得分 Score：<b id="sScore">0</b> / 6</div>
+</div>
+
+<div class="motto">「我的資料很值錢。」<br><span class="en-sub">My data is valuable — protect it.</span></div>
+</main>
+
+<script>
+// ---- 實驗一：偏見 ----
+var maleRatio = document.getElementById('maleRatio');
+function updateBias(){
+  var m = parseInt(maleRatio.value, 10);
+  document.getElementById('maleVal').textContent = m;
+  // AI 學咗偏見：推薦率向訓練比例傾斜（加少少放大效應）
+  var mRec = Math.min(99, Math.round(m + (m-50)*0.35));
+  var fRec = 100 - mRec;
+  document.getElementById('barM').style.width = mRec + '%';
+  document.getElementById('barM').textContent = mRec + '%';
+  document.getElementById('barF').style.width = fRec + '%';
+  document.getElementById('barF').textContent = fRec + '%';
+  var svgF = document.getElementById('svgF'), svgM = document.getElementById('svgM');
+  svgF.setAttribute('width', fRec*4); svgF.setAttribute('x', 0);
+  svgM.setAttribute('x', fRec*4); svgM.setAttribute('width', mRec*4);
+  var v = document.getElementById('biasVerdict');
+  if(m >= 80){
+    v.innerHTML = '⚠️ <span style="color:#c0392b">訓練數據極唔平均 → AI 學識咗偏見，女性求職者好蝕底！</span><br>演算法偏見：AI 學咗有偏見嘅數據，就會做出有偏見嘅判斷。';
+  } else if(m >= 65){
+    v.innerHTML = '😐 <span style="color:#b9770e">數據有啲偏，AI 嘅推薦都開始唔公平。</span>';
+  } else {
+    v.innerHTML = '✅ <span style="color:#27ae60">數據大致平均，AI 嘅推薦都較公平。公平嘅數據 → 公平嘅 AI。</span>';
+  }
+}
+maleRatio.oninput = updateBias;
+updateBias();
+
+// ---- 實驗二：密碼 ----
+var pw = document.getElementById('pw');
+pw.addEventListener('input', function(){
+  var v = pw.value;
+  var score = 0, tips = [];
+  if(v.length >= 8) score += 25; else tips.push('至少 8 個字');
+  if(v.length >= 12) score += 15;
+  if(/[a-z]/.test(v) && /[A-Z]/.test(v)) score += 20; else tips.push('大細楷混合');
+  if(/\d/.test(v)) score += 20; else tips.push('加數字');
+  if(/[^a-zA-Z0-9]/.test(v)) score += 20; else tips.push('加符號');
+  if(/^(123|abc|password|qwerty|生日|000000)/i.test(v)) score = Math.min(score, 15);
+  if(score > 100) score = 100;
+  var bar = document.getElementById('pwBar');
+  bar.style.width = score + '%';
+  var col, label, time;
+  if(score < 30){ col='#c0392b'; label='弱 Weak 😱'; time='幾秒鐘 seconds'; }
+  else if(score < 60){ col='#e67e22'; label='普通 Medium 😐'; time='幾日 days'; }
+  else if(score < 85){ col='#f1c40f'; label='唔錯 Good 🙂'; time='幾年 years'; }
+  else { col='#27ae60'; label='強 Strong 💪'; time='幾百年 centuries'; }
+  bar.style.background = col;
+  document.getElementById('pwScore').innerHTML = '<span style="color:'+col+'">'+label+'</span>';
+  document.getElementById('pwTime').textContent = v ? time : '—';
+});
+
+// ---- 實驗三：情境 ----
+var SCENS = [
+ {t:'上傳學生證相片換禮物', safe:false, why:'❌ 唔安全。證件資料可被冒用，唔好為咗禮物交出個人資料。'},
+ {t:'遊戲要求開啟定位權限', safe:false, why:'❌ 唔安全。行蹤可能外洩——唔需要嘅權限要閂咗佢。'},
+ {t:'收到「學校」短訊叫撳連結交費', safe:false, why:'❌ 唔安全。唔亂撳不明連結！先向老師核實。'},
+ {t:'用生日日期做密碼', safe:false, why:'❌ 唔安全。太易被估中。用句子首字母加數字，又易記又難估。'},
+ {t:'把功課相片分享到班群', safe:true, why:'✅ 大致安全。冇個人敏感資料，但都要睇清楚相入面有冇其他私隱。'},
+ {t:'陌生人私訊索取你的相片', safe:false, why:'❌ 唔安全！唔好回覆，即刻話俾信任嘅成人（老師／家長）知。'}
+];
+var sScore = 0;
+var scBox = document.getElementById('scens');
+SCENS.forEach(function(s, i){
+  var d = document.createElement('div');
+  d.className = 'scen-card';
+  d.innerHTML = '<b>情境 '+(i+1)+'：</b>'+s.t
+    + '<div class="scen"><button class="sbtn safe" data-i="'+i+'">✅ 安全</button>'
+    + '<button class="sbtn unsafe" data-i="'+i+'">❌ 唔安全</button></div>'
+    + '<div class="scen-fb" id="sf'+i+'"></div>';
+  scBox.appendChild(d);
+});
+scBox.addEventListener('click', function(e){
+  var t = e.target;
+  if(!t.classList.contains('sbtn')) return;
+  var i = parseInt(t.dataset.i, 10), s = SCENS[i];
+  var guessSafe = t.classList.contains('safe');
+  var card = t.closest('.scen-card');
+  var btns = card.querySelectorAll('.sbtn');
+  for(var k=0;k<btns.length;k++) btns[k].disabled = true;
+  var fb = document.getElementById('sf'+i);
+  fb.style.display = 'block';
+  var right = (guessSafe === s.safe);
+  if(right) sScore++;
+  fb.innerHTML = (right ? '<b>✅ 啱！</b> ' : '<b>❌ 唔啱。</b> ') + s.why;
+  document.getElementById('sScore').textContent = sScore;
+  if(i === 5){
+    fb.innerHTML += '<br><br>🏁 完成！總分 <b>'+sScore+'/6</b>。' + (sScore>=5
+      ? '你識得保護自己！遇到網絡安全問題：唔亂撳，話俾信任嘅成人知。'
+      : '再溫習私隱自保四招：唔亂上傳相片、閂定位、強密碼、唔亂撳連結。')
+      + '<br>📚 免費自學：HKIRC 網絡安全學生培訓 cyberhub.hk/tc/student-training';
+  }
+});
+</script>
+</body>
+</html>

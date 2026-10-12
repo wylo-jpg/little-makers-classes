@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L01 逆向拆解實驗室 | Teardown Lab</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.steps{display:flex;gap:.4rem;flex-wrap:wrap;margin:1rem 0}
+.step{flex:1;min-width:9rem;text-align:center;padding:.6rem .4rem;border-radius:10px;background:#eef3f8;color:#7a8a9a;font-weight:700;font-size:.95rem;border:2px solid transparent}
+.step .en{display:block;font-weight:400;font-size:.75rem}
+.step.done{background:#dff5e1;color:#1e7e34;border-color:#1e7e34}
+.step.now{background:#fff3e0;color:#b26a00;border-color:#e67e22}
+#carSvg{width:100%;height:auto;max-width:560px;display:block;margin:0 auto;touch-action:manipulation}
+.part{cursor:pointer;transition:opacity .45s ease}
+.part.removed{opacity:.1;pointer-events:none}
+.part:hover{filter:brightness(1.12)}
+.part.next{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{filter:none}50%{filter:drop-shadow(0 0 6px #e67e22)}}
+#tray{display:flex;flex-wrap:wrap;gap:.5rem;min-height:2.6rem;margin:.6rem 0}
+.chip{background:#1a5276;color:#fff;border-radius:20px;padding:.25rem .8rem;font-size:.88rem;animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+#msg{min-height:2.2rem;font-weight:700;color:#1a5276;margin:.4rem 0}
+#msg.warn{color:#c0392b}
+.optbtn{display:block;width:100%;text-align:left;margin:.45rem 0;padding:.7rem .9rem;border:2px solid #dfe6ee;border-radius:10px;background:#fff;font-size:1rem;cursor:pointer;line-height:1.6}
+.optbtn:hover{border-color:#2e86c1}
+.optbtn.right{border-color:#1e7e34;background:#eafbe7}
+.optbtn.wrong{border-color:#c0392b;background:#fdecea}
+.optbtn:disabled{cursor:default;opacity:.95}
+.explain{background:#eaf6ff;border-left:5px solid #2e86c1;padding:.7rem .9rem;border-radius:0 8px 8px 0;margin:.6rem 0;display:none}
+.explain.show{display:block}
+.scorebar{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.6rem .9rem;margin:.6rem 0;font-weight:700}
+.resetbtn{background:#95a5a6;color:#fff;border:none;border-radius:8px;padding:.55rem 1.1rem;font-size:.95rem;cursor:pointer;font-weight:700}
+.resetbtn:hover{background:#7f8c8d}
+.rec-table td:first-child{font-weight:700;color:#1a5276}
+.bigscore{font-size:2.2rem;color:#1a5276;font-weight:800}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-01.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L01 逆向拆解實驗室 <span class="en">Teardown Lab: Reverse Engineering in Action</span></h2>
+<div class="card">
+<b>玩法 How to play</b><br>
+呢度有一架（已移除電池嘅）玩具車。請跟住逆向工程三個步驟：<b>①拆解</b>——按「由外而內」嘅次序撳車上嘅部件；<b>②記錄</b>——拆解記錄表會自動填好；<b>③分析</b>——挑戰設計意圖推測題，睇下你估唔估到設計師點諗！
+<p class="en">A (battery-removed) toy car is waiting. Follow the three reverse-engineering steps: ① Disassemble — click the parts outside-in; ② Document — the record sheet fills itself; ③ Analyse — take the design-intention challenge.</p>
+</div>
+
+<div class="steps">
+<div class="step now" id="st1">① 拆解<span class="en">Disassemble</span></div>
+<div class="step" id="st2">② 記錄<span class="en">Document</span></div>
+<div class="step" id="st3">③ 分析<span class="en">Analyse</span></div>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0">第一步：拆解 <span class="en">Step 1: Disassemble (outside-in 由外而內)</span></h2>
+<p>撳下面玩具車嘅部件嚟拆解，要按正確次序！<span class="en">Click the parts in the correct outside-in order.</span></p>
+<svg id="carSvg" viewBox="0 0 440 300" role="img" aria-label="玩具車結構圖">
+<!-- 底盤 chassis -->
+<g class="part" data-part="chassis"><title>底盤 Chassis</title>
+<rect x="60" y="204" width="320" height="24" rx="8" fill="#8d99ae"/></g>
+<!-- 車軸 axle -->
+<g class="part" data-part="axle"><title>車軸 Axle</title>
+<rect x="112" y="196" width="216" height="10" rx="4" fill="#5d6d7e"/></g>
+<!-- 車輪 wheels -->
+<g class="part" data-part="wheels"><title>車輪 Wheels</title>
+<circle cx="132" cy="242" r="32" fill="#2c3e50"/><circle cx="132" cy="242" r="13" fill="#95a5a6"/>
+<circle cx="308" cy="242" r="32" fill="#2c3e50"/><circle cx="308" cy="242" r="13" fill="#95a5a6"/></g>
+<!-- 馬達 motor -->
+<g class="part" data-part="motor"><title>馬達 Motor</title>
+<rect x="168" y="148" width="96" height="46" rx="8" fill="#e9c46a" stroke="#9c7c1e" stroke-width="3"/>
+<line x1="182" y1="156" x2="182" y2="186" stroke="#9c7c1e" stroke-width="3"/>
+<line x1="196" y1="156" x2="196" y2="186" stroke="#9c7c1e" stroke-width="3"/>
+<line x1="210" y1="156" x2="210" y2="186" stroke="#9c7c1e" stroke-width="3"/></g>
+<!-- 齒輪組 gears -->
+<g class="part" data-part="gears"><title>齒輪組 Gear set</title>
+<circle cx="312" cy="168" r="24" fill="#f4a261" stroke="#9c5a1e" stroke-width="3" stroke-dasharray="6 4"/>
+<circle cx="312" cy="168" r="8" fill="#9c5a1e"/>
+<circle cx="352" cy="146" r="15" fill="#f4a261" stroke="#9c5a1e" stroke-width="3" stroke-dasharray="5 4"/>
+<circle cx="352" cy="146" r="5" fill="#9c5a1e"/></g>
+<!-- 車殼 shell -->
+<g class="part" data-part="shell"><title>車殼 Body shell</title>
+<rect x="58" y="88" width="344" height="108" rx="42" fill="#e63946" opacity="0.92"/>
+<rect x="186" y="104" width="118" height="32" rx="10" fill="#a8dad8"/></g>
+<!-- 螺絲 screws -->
+<g class="part" data-part="screws"><title>螺絲 Screws</title>
+<circle cx="96" cy="120" r="7" fill="#dfe6ee" stroke="#333" stroke-width="2"/>
+<circle cx="364" cy="120" r="7" fill="#dfe6ee" stroke="#333" stroke-width="2"/>
+<circle cx="96" cy="168" r="7" fill="#dfe6ee" stroke="#333" stroke-width="2"/>
+<circle cx="364" cy="168" r="7" fill="#dfe6ee" stroke="#333" stroke-width="2"/></g>
+</svg>
+<div id="msg">由最外層開始：應該先拆咩？ <span class="en">Start from the outermost layer — what comes off first?</span></div>
+<div><b>零件盤 Parts tray</b> <span class="en">(拆出嚟嘅零件會放喺度)</span></div>
+<div id="tray"></div>
+<div class="scorebar"><span>拆解進度 Disassembly: <span id="prog">0 / 7</span></span><button class="resetbtn" id="resetBtn">重設 Reset</button></div>
+</div>
+
+<div class="card hidden" id="recordCard">
+<h2 style="margin-top:0">第二步：記錄 <span class="en">Step 2: Document — 拆解記錄表</span></h2>
+<p>你每拆一個部件，記錄表就自動加一行——就係咁，邊拆邊記，唔好靠記性！<span class="en">Each removed part is logged automatically — record as you dismantle!</span></p>
+<table class="rec-table"><thead><tr><th>拆解次序<br><span style="font-weight:400">Order</span></th><th>部件名稱<br><span style="font-weight:400">Part</span></th><th>數量<br><span style="font-weight:400">Qty</span></th><th>物料<br><span style="font-weight:400">Material</span></th><th>觀察所得<br><span style="font-weight:400">Observations</span></th></tr></thead>
+<tbody id="recBody"></tbody></table>
+</div>
+
+<div class="card hidden" id="quizCard">
+<h2 style="margin-top:0">第三步：分析 <span class="en">Step 3: Analyse — 設計意圖大猜謎</span></h2>
+<p>拆解完成！而家由成品倒推：估下設計師當初點解咁設計？<span class="en">Teardown complete! Now reason backwards — guess the designer's intention.</span></p>
+<div id="quizBox"></div>
+<div class="scorebar"><span>分析得分 Analysis score: <span id="qscore">0 / 3</span></span></div>
+</div>
+
+<div class="card hidden" id="sumCard">
+<h2 style="margin-top:0">總結 <span class="en">Summary</span></h2>
+<div class="bigscore" id="finalScore"></div>
+<p id="finalMsg"></p>
+<p>✅ 逆向工程三個步驟：<b>拆解 → 記錄 → 分析</b>，你啱啱親身做咗一次！下次拎起一件產品，試下問自己：「設計師點解咁設計？」<br><span class="en">You have just completed the three steps: disassemble → document → analyse. Next time you pick up a product, ask: "Why did the designer do it this way?"</span></p>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+var PARTS=[
+ {id:'screws', name:'螺絲', en:'Screws', qty:'4 顆', mat:'金屬 Metal', obs:'以螺絲批扭開；負責固定車殼'},
+ {id:'shell', name:'車殼', en:'Body shell', qty:'1 個', mat:'塑膠 Plastic', obs:'卡榫＋螺絲接合；保護內部零件'},
+ {id:'wheels', name:'車輪', en:'Wheels', qty:'4 個', mat:'橡膠 Rubber', obs:'以車軸接合；負責抓地行走'},
+ {id:'motor', name:'馬達', en:'Motor', qty:'1 個', mat:'金屬＋銅線', obs:'以螺絲固定喺底盤；提供動力'},
+ {id:'gears', name:'齒輪組', en:'Gear set', qty:'1 組', mat:'塑膠 Plastic', obs:'互相咬合；傳動同減速'},
+ {id:'axle', name:'車軸', en:'Axles', qty:'2 條', mat:'金屬 Metal', obs:'穿過底盤；連接車輪'},
+ {id:'chassis', name:'底盤', en:'Chassis', qty:'1 塊', mat:'塑膠 Plastic', obs:'承載所有部件；主結構'}
+];
+var QUIZ=[
+ {q:'車輪用橡膠，而唔用塑膠，設計師最可能諗緊咩？',en:'Why are the wheels rubber instead of plastic?',
+  opts:['橡膠摩擦力較大，抓地力強，防止車輪打滑','橡膠平過塑膠，慳成本','橡膠顏色靚啲，賣相好啲'],ans:0,
+  why:'從「物料選擇」倒推設計意圖：橡膠摩擦力大 → 抓地力強 → 防止打滑。設計意圖同性能有關。'},
+ {q:'車殼用 3 顆螺絲固定，而唔係 2 顆，點解？',en:'Why fix the shell with 3 screws instead of 2?',
+  opts:['慳返物料，輕啲','三點固定更穩固，受力更平均，車殼唔易鬆脫變形','螺絲愈多愈易拆，方便維修'],ans:1,
+  why:'從「結構安排」倒推：三點固定比兩點穩，受力平均，車殼唔易鬆脫或變形。'},
+ {q:'車身用塑膠而唔用金屬，最可能嘅原因係？',en:'Why is the body plastic instead of metal?',
+  opts:['塑膠硬過金屬','輕身、安全（唔會割傷小朋友）、成本低，適合玩具','金屬唔可以上色'],ans:1,
+  why:'從物料倒推：塑膠輕、唔割手、成本低——一件設計可以同時滿足多個意圖，逆向工程講求合理推論。'}
+];
+var order=PARTS.map(function(p){return p.id;});
+var removed=[], qDone=0, qScore=0;
+var msg=document.getElementById('msg'), tray=document.getElementById('tray'),
+    prog=document.getElementById('prog'), recBody=document.getElementById('recBody');
+function say(t,warn){msg.innerHTML=t;msg.className=warn?'warn':'';}
+function refreshPulse(){
+ document.querySelectorAll('.part').forEach(function(g){g.classList.remove('next');});
+ if(removed.length<order.length){
+  var nx=order[removed.length];
+  var g=document.querySelector('.part[data-part="'+nx+'"]');
+  if(g&&!g.classList.contains('removed'))g.classList.add('next');
+ }
+}
+function renderRecord(){
+ recBody.innerHTML=removed.map(function(id,i){
+  var p=PARTS.filter(function(x){return x.id===id;})[0];
+  return '<tr><td>'+(i+1)+'</td><td>'+p.name+'<br><span style="color:#888;font-size:.8rem">'+p.en+'</span></td><td>'+p.qty+'</td><td>'+p.mat+'</td><td>'+p.obs+'</td></tr>';
+ }).join('');
+ document.getElementById('recordCard').classList.remove('hidden');
+ document.getElementById('st2').classList.add('done');
+}
+function renderQuiz(){
+ var box=document.getElementById('quizBox');
+ box.innerHTML=QUIZ.map(function(qm,qi){
+  return '<div style="margin:1rem 0;padding-bottom:.6rem;border-bottom:1px dashed #dfe6ee">'
+  +'<p><b>Q'+(qi+1)+'. '+qm.q+'</b><br><span class="en" style="font-size:.85rem;color:#666">'+qm.en+'</span></p>'
+  +qm.opts.map(function(o,oi){return '<button class="optbtn" data-q="'+qi+'" data-o="'+oi+'">'+o+'</button>';}).join('')
+  +'<div class="explain" id="ex'+qi+'"></div></div>';
+ }).join('');
+ document.getElementById('quizCard').classList.remove('hidden');
+ document.getElementById('st3').classList.add('now');
+ box.onclick=function(e){
+  var b=e.target.closest('.optbtn');if(!b||b.disabled)return;
+  var qi=+b.dataset.q,oi=+b.dataset.o,qm=QUIZ[qi];
+  var btns=box.querySelectorAll('.optbtn[data-q="'+qi+'"]');
+  btns.forEach(function(x){x.disabled=true;});
+  qDone++;
+  if(oi===qm.ans){b.classList.add('right');qScore++;say('✅ 答啱！'+qm.why,false);}
+  else{b.classList.add('wrong');btns[qm.ans].classList.add('right');say('❌ 唔係呢個——'+qm.why,true);}
+  document.getElementById('qscore').textContent=qScore+' / 3';
+  var ex=document.getElementById('ex'+qi);ex.innerHTML='<b>解說 Explanation：</b>'+qm.why;ex.classList.add('show');
+  if(qDone===QUIZ.length)finish();
+ };
+}
+function finish(){
+ document.getElementById('st3').classList.remove('now');document.getElementById('st3').classList.add('done');
+ var s=document.getElementById('sumCard');s.classList.remove('hidden');
+ document.getElementById('finalScore').textContent='分析得分：'+qScore+' / 3';
+ document.getElementById('finalMsg').innerHTML=qScore===3
+  ?'🌟 滿分！你已經識得由成品倒推設計意圖，係真正嘅逆向思維！<br><span class="en">Perfect! You can reason backwards from a product like a real reverse engineer.</span>'
+  :'唔錯！記住分析嘅竅門：由「物料選擇」同「結構安排」兩方面入手，諗下設計師想解決咩問題。<br><span class="en">Good effort! Analyse via material choice and structural arrangement — what problem was the designer solving?</span>';
+ s.scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('carSvg').addEventListener('click',function(e){
+ var g=e.target.closest('.part');if(!g)return;
+ var id=g.dataset.part;
+ if(removed.indexOf(id)>-1)return;
+ if(removed.length>=order.length)return;
+ var next=order[removed.length];
+ if(id!==next){
+  var need=PARTS.filter(function(p){return p.id===next;})[0];
+  say('⚠️ 次序唔啱！由外而內，應該先拆「'+need.name+'」('+need.en+')。<br><span class="en" style="font-weight:400">Wrong order! Outside-in: remove the '+need.en+' first.</span>',true);
+  return;
+ }
+ removed.push(id);g.classList.add('removed');g.classList.remove('next');
+ var p=PARTS.filter(function(x){return x.id===id;})[0];
+ var chip=document.createElement('span');chip.className='chip';chip.textContent='✔ '+p.name+' '+p.en;tray.appendChild(chip);
+ prog.textContent=removed.length+' / '+order.length;
+ say('✅ 拆出「'+p.name+'」！已記入記錄表。<br><span style="font-weight:400;font-size:.85rem">Removed the '+p.en+' — logged in the record sheet.</span>',false);
+ renderRecord();refreshPulse();
+ if(removed.length===order.length){
+  document.getElementById('st1').classList.remove('now');document.getElementById('st1').classList.add('done');
+  say('🎉 拆解完成！記錄表已經填好，去第三步挑戰分析題啦！<br><span class="en" style="font-weight:400">Teardown complete! The record sheet is done — on to analysis.</span>',false);
+  renderQuiz();
+  document.getElementById('quizCard').scrollIntoView({behavior:'smooth',block:'start'});
+ }
+});
+document.getElementById('resetBtn').addEventListener('click',function(){
+ removed=[];qDone=0;qScore=0;
+ document.querySelectorAll('.part').forEach(function(g){g.classList.remove('removed');});
+ tray.innerHTML='';recBody.innerHTML='';
+ document.getElementById('recordCard').classList.add('hidden');
+ document.getElementById('quizCard').classList.add('hidden');
+ document.getElementById('quizBox').innerHTML='';
+ document.getElementById('sumCard').classList.add('hidden');
+ document.getElementById('qscore').textContent='0 / 3';
+ prog.textContent='0 / 7';
+ ['st1','st2','st3'].forEach(function(id,i){var s=document.getElementById(id);s.classList.remove('done','now');if(i===0)s.classList.add('now');});
+ say('由最外層開始：應該先拆咩？ <span class="en">Start from the outermost layer — what comes off first?</span>',false);
+ refreshPulse();
+});
+refreshPulse();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>無障礙校園大挑戰 | L03 Barrier-Free Campus Challenge</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;display:block;border:1px solid #dfe6ee;border-radius:10px;background:#eef7ee;touch-action:manipulation}
+.ctrl{margin:.7rem 0}
+.ctrl .lab{font-weight:700;margin-bottom:.25rem;display:block}
+.ctrl input[type=range]{width:100%;height:2.2rem}
+.seg{display:flex;gap:.5rem;flex-wrap:wrap;margin:.4rem 0}
+.seg button{flex:1;min-width:8rem;background:#fff;border:2px solid #dfe6ee;border-radius:8px;padding:.55rem .4rem;font-size:.95rem;cursor:pointer}
+.seg button.sel{border-color:#1a5276;background:#eaf6ff;font-weight:700}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+.abtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.2rem;font-size:1rem;font-weight:700;cursor:pointer}
+.abtn.alt{background:#2e86c1}
+.abtn:disabled{opacity:.45;cursor:default}
+#msg{background:#fffbe8;border:1px solid #f0d27a;border-radius:8px;padding:.7rem .9rem;margin:.6rem 0;min-height:3.2rem}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.7rem .9rem;margin:.6rem 0}
+.readout b{color:#1a5276}
+#events{list-style:none;padding:0;margin:.4rem 0}
+#events li{background:#fff;border-left:4px solid #e67e22;border-radius:0 8px 8px 0;padding:.4rem .7rem;margin:.3rem 0;font-size:.93rem}
+#events li.ok{border-left-color:#27ae60}
+.rampbox{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+.note{font-size:.85rem;color:#666}
+.grade{font-size:1.3rem;font-weight:700}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-03.html">← 返回課堂 Back to lesson</a></nav>
+<h2>無障礙校園大挑戰 <span class="en">Barrier-Free Campus Challenge</span></h2>
+<div class="card">
+<p><b>玩法 How to play</b></p>
+<ol>
+<li>揀一位體驗者：<b>輪椅使用者</b> 或 <b>長者</b>。<br><span class="en">Choose who travels: a wheelchair user or an elderly person.</span></li>
+<li>用開關同滑桿設計校園環境：門檻、窄通道、斜道、斜度、扶手。<br><span class="en">Design the campus: threshold, narrow corridor, ramp, ramp slope, handrail.</span></li>
+<li>按「🚀 出發」，睇下佢由校門去課室會遇到咩困難！<br><span class="en">Press "Go" and watch the journey from the school gate to the classroom!</span></li>
+</ol>
+<p class="note">💡 佢哋嘅困難唔係佢哋嘅錯，而係環境設計冇照顧到佢哋——而呢個正正係創科可以幫手嘅地方。</p>
+</div>
+<div class="card">
+<div class="ctrl"><span class="lab">體驗者 Who travels</span>
+<div class="seg" id="whoSeg">
+<button data-w="wheel" class="sel">🦽 輪椅使用者<br><span class="en" style="font-size:.8rem">Wheelchair user</span></button>
+<button data-w="elder">🧓 長者<br><span class="en" style="font-size:.8rem">Elderly person</span></button>
+</div></div>
+<div class="ctrl"><span class="lab">門檻（走廊入口）Threshold</span>
+<div class="seg" id="thSeg">
+<button data-v="1" class="sel">有門檻 Keep</button>
+<button data-v="0">移除 Remove</button>
+</div></div>
+<div class="ctrl"><span class="lab">走廊闊度 Corridor width</span>
+<div class="seg" id="corSeg">
+<button data-v="0" class="sel">闊 Wide</button>
+<button data-v="1">窄 Narrow</button>
+</div></div>
+<div class="ctrl"><span class="lab">樓梯旁有冇斜道 Ramp beside stairs</span>
+<div class="seg" id="rampSeg">
+<button data-v="1" class="sel">有斜道 Yes</button>
+<button data-v="0">冇斜道 No</button>
+</div></div>
+<div class="ctrl"><span class="lab">斜道斜度 Ramp slope（1 : <span id="slopeV" style="color:#1a5276">12</span>）</span>
+<div class="rampbox">
+<input type="range" id="rSlope" min="6" max="20" step="1" value="12" style="flex:1;min-width:10rem">
+<svg id="rampSvg" width="130" height="70" viewBox="0 0 130 70" aria-hidden="true"></svg>
+</div>
+<div class="note">數字愈細愈斜（1:6 好斜，1:20 好平）。無障礙標準一般建議唔斜過 1:12。</div>
+</div>
+<div class="ctrl"><span class="lab">斜道扶手 Handrail on ramp</span>
+<div class="seg" id="railSeg">
+<button data-v="1" class="sel">有扶手 Yes</button>
+<button data-v="0">冇扶手 No</button>
+</div></div>
+<div class="btnrow">
+<button class="abtn" id="bGo">🚀 出發 <span class="en" style="font-weight:400;font-size:.85rem">Go!</span></button>
+<button class="abtn alt" id="bReset">↺ 重置 <span class="en" style="font-weight:400;font-size:.85rem">Reset</span></button>
+</div>
+<canvas id="cv"></canvas>
+<div id="msg">👆 設定好環境，按「出發」開始旅程。<br><span class="en">Set up the campus, then press "Go".</span></div>
+<div class="readout">
+<b>狀態 Status：</b><span id="rStatus">未出發</span><br>
+<b>已用時間 Time：</b><span id="rTime">0.0</span> 秒<br>
+<b>無障礙評分 Accessibility score：</b><span class="grade" id="rGrade">–</span>
+<ul id="events"></ul>
+</div>
+<p class="note">🤔 諗一諗：短短幾分鐘嘅模擬都咁多障礙，弱勢社群每日、長期面對呢啲困難，感受會係點？體驗只係起點，真正嘅了解要長期接觸同聆聽。</p>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var VW=0,VH=0;
+function fit(){
+  var dpr=Math.min(2,window.devicePixelRatio||1);
+  var w=cv.clientWidth||300; VW=w; VH=Math.round(w*0.61);
+  cv.width=Math.round(w*dpr); cv.height=Math.round(VH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',fit);
+function $(id){return document.getElementById(id);}
+
+/* settings */
+var S={who:'wheel',th:1,cor:0,ramp:1,slope:12,rail:1};
+/* journey state */
+var J={run:false,done:false,seg:0,t:0,time:0,events:[],blocked:false};
+
+var PTS=[[70,0.78],[205,0.78],[360,0.78],[360,0.42],[590,0.42]]; // fractions of VW,VH
+function P(i){return [PTS[i][0]/720*VW, PTS[i][1]*VH];}
+function segLen(i){var a=P(i),b=P(i+1);return Math.hypot(b[0]-a[0],b[1]-a[1]);}
+
+function segBtn(id,key,parse){
+  var el=$(id),bs=el.querySelectorAll('button');
+  for(var i=0;i<bs.length;i++){bs[i].addEventListener('click',function(){
+    var all=el.querySelectorAll('button');
+    for(var j=0;j<all.length;j++)all[j].classList.remove('sel');
+    this.classList.add('sel');
+    S[key]=parse?parse(this.getAttribute('data-v')||this.getAttribute('data-w')):(this.getAttribute('data-v')||this.getAttribute('data-w'));
+    reset(true);
+  });}
+}
+segBtn('whoSeg','who');segBtn('thSeg','th',Number);segBtn('corSeg','cor',Number);
+segBtn('rampSeg','ramp',Number);segBtn('railSeg','rail',Number);
+$('rSlope').addEventListener('input',function(){S.slope=+this.value;$('slopeV').textContent=S.slope;drawRampSvg();reset(true);});
+
+function drawRampSvg(){
+  var s=$('rampSvg'),N=S.slope,run=100,rise=100/N;
+  var w=130,h=70,bx=10,by=60;
+  s.innerHTML='<line x1="'+bx+'" y1="'+by+'" x2="'+(bx+run)+'" y2="'+by+'" stroke="#7f8c8d" stroke-width="2"/>'+
+   '<line x1="'+bx+'" y1="'+by+'" x2="'+(bx+run)+'" y2="'+(by-rise)+'" stroke="#1a5276" stroke-width="4"/>'+
+   '<line x1="'+(bx+run)+'" y1="'+by+'" x2="'+(bx+run)+'" y2="'+(by-rise)+'" stroke="#7f8c8d" stroke-width="2"/>'+
+   '<text x="'+(bx+run/2-14)+'" y="'+(by+14)+'" font-size="11" fill="#1a5276">1:'+N+'</text>';
+}
+
+function addEvent(txt,ok){
+  J.events.push({t:txt,ok:!!ok});
+  var li=document.createElement('li');if(ok)li.className='ok';li.textContent=(ok?'✅ ':'⚠️ ')+txt;
+  $('events').appendChild(li);
+}
+function say(html){$('msg').innerHTML=html;}
+
+/* speed (px per second, scaled by VW/720) */
+function baseSpeed(){return (S.who==='wheel'?95:62)*(VW/720);}
+function segFactor(i,atStart){
+  // returns {f: speed factor, block: message or null, note: message or null}
+  if(i===0){
+    if(S.th&&S.who==='wheel')return{f:0,block:'門檻擋住咗輪椅，過唔到！Threshold blocks the wheelchair.'};
+    if(S.th)return{f:0.7,note:'門檻：長者要小心翼翼跨過，慢咗。Elderly person slows at the threshold.'};
+    return{f:1};
+  }
+  if(i===1){
+    if(S.cor)return{f:S.who==='wheel'?0.45:0.8,note:'窄通道：輪椅要慢慢「捱」過去，好辛苦。Narrow corridor slows the wheelchair right down.'};
+    return{f:1};
+  }
+  if(i===2){
+    if(S.who==='wheel'){
+      if(!S.ramp)return{f:0,block:'樓梯：輪椅冇可能自己上樓梯！Stairs are impassable for the wheelchair.'};
+      if(S.slope<8&&!S.rail)return{f:0,block:'斜道太斜（1:'+S.slope+'）又冇扶手，好危險，唔可以上！Ramp too steep and no handrail — unsafe!'};
+      var hard=S.slope<10;
+      return{f:S.slope>=12?0.8:0.5,note:hard?'斜道較斜：要用好大力推輪椅上，好攰。Steep ramp: hard pushing.':'斜道平緩：輪椅順利上斜。Gentle ramp: smooth ride up.'};
+    }else{
+      if(S.ramp)return{f:S.slope>=12?0.7:0.5,note:'長者用斜道慢慢行。Elderly person uses the ramp.'};
+      return{f:0.35,note:'冇斜道，長者要逐級上樓梯，好攰。No ramp: elderly climbs stairs step by step.'};
+    }
+  }
+  return{f:1};
+}
+
+function reset(silent){
+  J={run:false,done:false,seg:0,t:0,time:0,events:[],blocked:false};
+  $('events').innerHTML='';$('rTime').textContent='0.0';$('rStatus').textContent='未出發';
+  $('bGo').disabled=false;
+  if(!silent)say('👆 設定好環境，按「出發」開始旅程。<br><span class="en">Set up the campus, then press "Go".</span>');
+  grade();
+}
+$('bReset').addEventListener('click',function(){reset(false);});
+
+function grade(){
+  var sc=100;
+  if(S.th)sc-=20;
+  if(!S.ramp)sc-=30;
+  if(S.cor)sc-=15;
+  if(S.ramp&&S.slope<10)sc-=10;
+  if(S.ramp&&!S.rail&&S.slope<12)sc-=5;
+  var g=$('rGrade');g.textContent=sc+' / 100';
+  g.style.color=sc>=90?'#1e8449':(sc>=70?'#b7950b':'#c0392b');
+  return sc;
+}
+
+$('bGo').addEventListener('click',function(){
+  reset(true);
+  J.run=true;J.done=false;
+  $('bGo').disabled=true;
+  $('rStatus').textContent='旅程中…';
+  say(S.who==='wheel'?'🦽 輪椅使用者由校門出發，目的地：課室。':'🧓 長者由校門出發，目的地：課室。');
+});
+
+function step(dt){
+  if(!J.run||J.done)return;
+  J.time+=dt;$('rTime').textContent=J.time.toFixed(1);
+  var info=segFactor(J.seg,true);
+  if(info.block){
+    J.run=false;J.blocked=true;
+    addEvent(info.block,false);
+    say('🛑 <b>旅程受阻！</b>'+info.block+'<br>試下改良環境（移除門檻／加斜道／加扶手／調平斜度），再出發一次。');
+    $('rStatus').textContent='受阻 Blocked';
+    $('bGo').disabled=false;
+    return;
+  }
+  if(info.note&&!J['n'+J.seg]){J['n'+J.seg]=true;addEvent(info.note,info.f>=0.7);}
+  var sp=baseSpeed()*info.f;
+  J.t+=sp*dt;
+  var L=segLen(J.seg);
+  if(J.t>=L){
+    J.seg++;J.t=0;
+    if(J.seg>=4){
+      J.run=false;J.done=true;
+      var sc=grade();
+      addEvent('成功到達課室！用時 '+J.time.toFixed(1)+' 秒。Reached the classroom!',true);
+      say('🏁 <b>到達課室！</b>總用時 '+J.time.toFixed(1)+' 秒，無障礙評分 <b>'+sc+'/100</b>。'+
+        (sc>=90?'👏 呢個校園對弱勢社群好友善！':(sc>=70?'🙂 基本合格，仲有改善空間。':'💪 改善空間好大——邊個環境因素最阻礙？試下逐個改良佢。')));
+      $('rStatus').textContent='已到達 Arrived ✔';
+      $('bGo').disabled=false;
+    }
+  }
+}
+
+/* ---------- drawing ---------- */
+function drawPerson(x,y){
+  if(S.who==='wheel'){
+    ctx.strokeStyle='#2c3e50';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x,y-26,8,0,Math.PI*2);ctx.stroke(); // head
+    ctx.beginPath();ctx.moveTo(x,y-17);ctx.lineTo(x,y+2);ctx.stroke(); // body
+    ctx.beginPath();ctx.moveTo(x,y+2);ctx.lineTo(x+12,y+2);ctx.stroke(); // seat
+    ctx.strokeStyle='#1a5276';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x-2,y+12,11,0,Math.PI*2);ctx.stroke(); // big wheel
+    ctx.beginPath();ctx.arc(x+14,y+16,5,0,Math.PI*2);ctx.stroke(); // small wheel
+  }else{
+    ctx.strokeStyle='#6e2c00';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x,y-28,8,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y-19);ctx.lineTo(x,y+2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y+2);ctx.lineTo(x-8,y+20);ctx.moveTo(x,y+2);ctx.lineTo(x+8,y+20);ctx.stroke();
+    ctx.strokeStyle='#7d6608';ctx.beginPath();ctx.moveTo(x+10,y-8);ctx.lineTo(x+14,y+22);ctx.stroke(); // stick
+  }
+}
+function draw(){
+  ctx.clearRect(0,0,VW,VH);
+  var sc=VW/720;
+  // grass + buildings
+  ctx.fillStyle='#e8f5e9';ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle='#d7dbdd';
+  ctx.fillRect(430*sc,60*sc,240*sc,120*sc); // classroom block
+  ctx.fillStyle='#1a5276';ctx.font='bold '+(13*sc+6)+'px sans-serif';ctx.textAlign='center';
+  ctx.fillText('課室大樓',550*sc,125*sc);
+  ctx.fillStyle='#d7dbdd';ctx.fillRect(40*sc,380*sc,140*sc,90*sc);
+  ctx.fillStyle='#1a5276';ctx.fillText('校門',110*sc,430*sc);
+  // path
+  ctx.strokeStyle='#f7dc6f';ctx.lineWidth=34*sc;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();
+  var p0=P(0);ctx.moveTo(p0[0],p0[1]);
+  for(var i=1;i<5;i++){var p=P(i);ctx.lineTo(p[0],p[1]);}
+  ctx.stroke();
+  ctx.strokeStyle='#b7950b';ctx.lineWidth=2*sc;ctx.setLineDash([8*sc,6*sc]);
+  ctx.beginPath();ctx.moveTo(p0[0],p0[1]);
+  for(var j=1;j<5;j++){var q=P(j);ctx.lineTo(q[0],q[1]);}
+  ctx.stroke();ctx.setLineDash([]);
+  // threshold
+  var pt=P(1);
+  if(S.th){
+    ctx.fillStyle='#935116';
+    ctx.fillRect(pt[0]-8*sc,pt[1]-24*sc,16*sc,48*sc);
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+    ctx.fillText('門檻',pt[0],pt[1]-30*sc);
+  }
+  // narrow corridor walls
+  if(S.cor){
+    ctx.fillStyle='#7b7d7d';
+    var a=P(1),b=P(2);
+    ctx.fillRect(a[0]+45*sc,a[1]-30*sc,(b[0]-a[0])-45*sc,8*sc);
+    ctx.fillRect(a[0]+45*sc,a[1]+22*sc,(b[0]-a[0])-45*sc,8*sc);
+    ctx.fillStyle='#c0392b';ctx.font='bold 11px sans-serif';
+    ctx.fillText('窄通道',(a[0]+b[0])/2,b[1]-36*sc);
+  }
+  // stairs + ramp (vertical segment at x=360)
+  var sx=360*sc,y0=0.78*VH,y1=0.42*VH;
+  ctx.fillStyle='#aab7b8';
+  for(var s2=0;s2<8;s2++){
+    var yy=y0-(y0-y1)*(s2+1)/8;
+    ctx.fillRect(sx-26*sc,yy,(52)*sc,(y0-y1)/8);
+  }
+  ctx.fillStyle='#2c3e50';ctx.font='bold 11px sans-serif';
+  ctx.fillText('樓梯',sx-52*sc,(y0+y1)/2);
+  if(S.ramp){
+    var rx=sx+34*sc;
+    ctx.fillStyle='#85c1e9';
+    ctx.beginPath();ctx.moveTo(rx,y0);ctx.lineTo(rx+40*sc,y0);ctx.lineTo(rx+40*sc,y1);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#1a5276';ctx.lineWidth=2*sc;ctx.stroke();
+    if(S.rail){ctx.strokeStyle='#e67e22';ctx.lineWidth=4*sc;
+      ctx.beginPath();ctx.moveTo(rx+4*sc,y0-8*sc);ctx.lineTo(rx+36*sc,y1-8*sc);ctx.stroke();}
+    ctx.fillStyle='#1a5276';ctx.font='bold 11px sans-serif';
+    ctx.fillText('斜道 1:'+S.slope,rx+20*sc,(y0+y1)/2+30*sc);
+  }
+  // traveller position
+  var a2=P(J.seg),b2=P(J.seg+1);
+  var L=Math.hypot(b2[0]-a2[0],b2[1]-a2[1])||1;
+  var rr=Math.min(1,J.t/L);
+  var x=a2[0]+(b2[0]-a2[0])*rr, y=a2[1]+(b2[1]-a2[1])*rr;
+  if(!J.run&&!J.done&&J.time===0){x=a2[0];y=a2[1];}
+  // bobbing
+  var bob=J.run?Math.sin(J.time*10)*2*sc:0;
+  drawPerson(x,y+bob);
+  // destination flag
+  var pd=P(4);
+  ctx.fillStyle='#c0392b';
+  ctx.fillRect(pd[0]-2*sc,pd[1]-58*sc,4*sc,34*sc);
+  ctx.beginPath();ctx.moveTo(pd[0]+2*sc,pd[1]-58*sc);ctx.lineTo(pd[0]+26*sc,pd[1]-50*sc);ctx.lineTo(pd[0]+2*sc,pd[1]-42*sc);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1a5276';ctx.font='bold 12px sans-serif';
+  ctx.fillText('課室',pd[0],pd[1]+24*sc);
+}
+
+var last=0;
+function loop(ts){
+  var dt=Math.min(0.05,(ts-last)/1000||0.016);last=ts;
+  step(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+fit();drawRampSvg();grade();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L24 AI測試實驗室 | AI Testing Lab</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:20px;padding:.15rem.7rem;margin:.15rem.2rem}
+.b-ok{background:#d5f5e3;color:#1e8449}.b-warn{background:#fdebd0;color:#b9770e}.b-bad{background:#fadbd8;color:#922b21}.b-info{background:#d6eaf8;color:#1a5276}
+.accbox{text-align:center;background:#1a5276;color:#fff;border-radius:12px;padding:1rem;margin:.8rem 0}
+.accbox.num{font-size:2.6rem;font-weight:800}
+.classcard{background:#f8fafc;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem;margin:.5rem 0}
+.counter{display:flex;align-items:center;gap:.5rem;margin:.4rem 0}
+.counter button{width:2.4rem;height:2.4rem;font-size:1.2rem;font-weight:800;border-radius:8px;border:1px solid #1a5276;background:#fff;color:#1a5276}
+.counter.n{font-size:1.6rem;font-weight:800;min-width:3rem;text-align:center;color:#1a5276}
+input[type=text],input[type=number],select,textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #bcd9f2;border-radius:6px;font-size:.95rem;margin:.25rem 0;font-family:inherit}
+textarea{min-height:2.4rem;resize:vertical}
+.tblwrap{overflow-x:auto}
+table input,table select,table textarea{margin:0;font-size:.88rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+label.ck{display:flex;gap:.5rem;align-items:flex-start;margin:.3rem 0;font-size:.88rem}
+label.ck input{width:1.05rem;height:1.05rem;margin-top:.15rem;flex:none}
+.small{font-size:.82rem;color:#666}
+.count-pill{display:inline-block;background:#1a5276;color:#fff;border-radius:20px;padding:.2rem.9rem;font-weight:700}
+.cbtn{border:none;border-radius:8px;padding:.4rem.8rem;font-weight:700;font-size:1rem}
+.yes{background:#27ae60;color:#fff}.no{background:#e74c3c;color:#fff}
+.iter{background:#fffbe6;border:1px solid #f0c929;border-radius:8px;padding:.6rem;margin:.4rem 0}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-24.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L24 AI測試實驗室 <span class="en">Lesson 24 · AI Testing Lab — 動手做（二）：人工智能＋用家測試</span></h2>
+
+<div class="theme"><b>玩法 How to play：</b>
+1️⃣ 為兩個類別命名，用計數器數訓練樣本（每類 ≥20）→ 2️⃣ 剔齊多樣性四項（角度／光線／背景／人物）→
+3️⃣ 做 ≥3 次用家測試並記錄 → 4️⃣ 睇自動計算嘅準確率 → 5️⃣ 改良後複測，對比前後準確率。<br>
+<span class="en">Name two classes, count ≥20 samples each with diversity checked, run ≥3 user tests, auto-calculate accuracy, improve and re-test.</span></div>
+
+<div class="card">
+<h3>1 · 模型設定 <span class="en">Model setup — Teachable Machine</span></h3>
+<p class="small">類別名稱要具體，一看就明（例：「揮手求助」「手放下安好」）。<span class="en">Name classes concretely.</span></p>
+<div class="grid2">
+<div class="classcard">
+<label><b>類別一 Class 1</b><input type="text" id="cA" placeholder="例：揮手求助"></label>
+<div class="counter"><button onclick="chS('A',-1)">−</button><span class="n" id="nA">0</span><button onclick="chS('A',1)">＋</button><button onclick="chS('A',5)" style="width:auto;padding:0.8rem;font-size:.9rem">＋5</button></div>
+<div class="small">訓練樣本 <span class="en">samples</span> <span id="rA"></span></div>
+<div class="small" style="margin-top:.4rem"><b>多樣性 Diversity</b>（每項至少 2 種變化）：</div>
+<label class="ck"><input type="checkbox" data-c="A" data-d="ang"> 角度：正面／側面 <span class="en">angles</span></label>
+<label class="ck"><input type="checkbox" data-c="A" data-d="lig"> 光線：光亮／陰暗 <span class="en">lighting</span></label>
+<label class="ck"><input type="checkbox" data-c="A" data-d="bg"> 背景：≥2 種 <span class="en">backgrounds</span></label>
+<label class="ck"><input type="checkbox" data-c="A" data-d="ppl"> 人物：組員輪流 <span class="en">people</span></label>
+</div>
+<div class="classcard">
+<label><b>類別二 Class 2</b><input type="text" id="cB" placeholder="例：手放下安好"></label>
+<div class="counter"><button onclick="chS('B',-1)">−</button><span class="n" id="nB">0</span><button onclick="chS('B',1)">＋</button><button onclick="chS('B',5)" style="width:auto;padding:0.8rem;font-size:.9rem">＋5</button></div>
+<div class="small">訓練樣本 <span class="en">samples</span> <span id="rB"></span></div>
+<div class="small" style="margin-top:.4rem"><b>多樣性 Diversity</b>（每項至少 2 種變化）：</div>
+<label class="ck"><input type="checkbox" data-c="B" data-d="ang"> 角度：正面／側面 <span class="en">angles</span></label>
+<label class="ck"><input type="checkbox" data-c="B" data-d="lig"> 光線：光亮／陰暗 <span class="en">lighting</span></label>
+<label class="ck"><input type="checkbox" data-c="B" data-d="bg"> 背景：≥2 種 <span class="en">backgrounds</span></label>
+<label class="ck"><input type="checkbox" data-c="B" data-d="ppl"> 人物：組員輪流 <span class="en">people</span></label>
+</div>
+</div>
+<div id="readyBox" style="margin-top:.5rem"></div>
+<label class="ck" style="background:#fef9e7;border:1px solid #f0c929;border-radius:8px;padding:.6rem"><input type="checkbox" id="priv"><span><b>私隱承諾 Privacy pledge：</b>只拍攝手勢／物件，絕不拍人樣；課後立即刪除所有樣本相片。<br><span class="en">Gestures/objects only, never faces; delete all samples after class.</span></span></label>
+</div>
+
+<div class="card">
+<h3>2 · 用家測試記錄 <span class="en">User testing log</span> <span class="count-pill" id="tCount">0 次（目標 ≥3）</span></h3>
+<div class="accbox"><div class="small" style="color:#d6eaf8">準確率 Accuracy ＝ 答對 ÷ 測試總次數 × 100%</div><div class="num" id="accNum">—</div><div class="small" style="color:#d6eaf8" id="accDetail">未有測試</div></div>
+<div class="tblwrap"><table>
+<thead><tr><th style="width:6%">次數</th><th>輸入情況 <span class="en">Input</span></th><th>模型判斷 <span class="en">Judgement</span></th><th style="width:14%">正確？</th><th>改良建議 <span class="en">Fix</span></th><th style="width:8%"></th></tr></thead>
+<tbody id="tBody"></tbody></table></div>
+<button class="btn alt" onclick="addT()">＋ 加入一次測試 Add test</button>
+</div>
+
+<div class="card">
+<h3>3 · 迭代改良 <span class="en">Iterate &amp; re-test</span> <span class="count-pill" id="iCount">0 回合</span></h3>
+<p class="small">按測試結果即場改良（加樣本／調類別定義），再複測。撳掣記錄每次改良前後嘅準確率。<br><span class="en">Improve on the spot, re-test, and log before/after accuracy.</span></p>
+<button class="btn" onclick="addI()">🔧 記錄一次改良 Log improvement</button>
+<div id="iList" style="margin-top:.5rem"></div>
+</div>
+
+<div class="card">
+<h3>4 · 匯出 <span class="en">Export</span></h3>
+<button class="btn" onclick="doExport()">📄 生成文字 Generate text</button>
+<button class="btn alt" onclick="copyOut()">📋 複製 Copy</button>
+<button class="btn alt" onclick="dlOut()">⬇ 下載.txt</button>
+<textarea id="outBox" style="min-height:9rem;margin-top:.6rem" readonly placeholder="撳「生成文字」匯出模型設定＋測試記錄。"></textarea>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+"use strict";
+var LS='lmc-s2l24';
+var S={cA:'',cB:'',sA:0,sB:0,div:{A:{ang:false,lig:false,bg:false,ppl:false},B:{ang:false,lig:false,bg:false,ppl:false}},priv:false,tests:[],iters:[]};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem(LS);if(d)S=Object.assign(S,JSON.parse(d));}catch(e){}}
+function classOK(k){var n=k==='A'?S.sA:S.sB;var d=S.div[k];return n>=20&&d.ang&&d.lig&&d.bg&&d.ppl;}
+
+/* ---------- samples ---------- */
+function chS(k,d){var key='s'+k;S[key]=Math.max(0,S[key]+d);save();renderS();}
+function renderS(){
+document.getElementById('nA').textContent=S.sA;
+document.getElementById('nB').textContent=S.sB;
+document.getElementById('rA').innerHTML=S.sA>=20?'<span class="badge b-ok">≥20 ✓</span>':'<span class="badge b-warn">'+S.sA+' / 20</span>';
+document.getElementById('rB').innerHTML=S.sB>=20?'<span class="badge b-ok">≥20 ✓</span>':'<span class="badge b-warn">'+S.sB+' / 20</span>';
+var okA=classOK('A'),okB=classOK('B');
+document.getElementById('readyBox').innerHTML=(okA&&okB)
+?'<span class="badge b-ok" style="font-size:1rem">✅ 兩個類別樣本合格，可以按「訓練模型」喇！</span>'
+:'<span class="badge b-info">樣本檢查：每類 ≥20 張＋多樣性四項剔齊，先係合格。</span> '+
+'<span class="badge '+(okA?'b-ok':'b-warn')+'">類別一 '+(okA?'✓':'未合格')+'</span> '+
+'<span class="badge '+(okB?'b-ok':'b-warn')+'">類別二 '+(okB?'✓':'未合格')+'</span>';
+renderT();
+}
+
+/* ---------- tests ---------- */
+function acc(){if(!S.tests.length)return null;var c=S.tests.filter(function(t){return t.ok;}).length;return {c:c,n:S.tests.length,v:Math.round(c/S.tests.length*100)};}
+function addT(){S.tests.push({input:'',judge:'A',ok:true,fix:''});save();renderT();}
+function delT(i){S.tests.splice(i,1);save();renderT();}
+function names(){return {A:S.cA.trim()||'類別一',B:S.cB.trim()||'類別二'};}
+function updAcc(){
+var a=acc();
+document.getElementById('accNum').textContent=a?(a.v+'%'):'—';
+document.getElementById('accDetail').textContent=a?(a.c+' ÷ '+a.n+' × 100% = '+a.v+'%'):'未有測試';
+document.getElementById('tCount').textContent=S.tests.length+' 次'+(S.tests.length>=3?' ✓ 達標':'（目標 ≥3）');
+}
+function renderT(){
+var tb=document.getElementById('tBody');tb.innerHTML='';
+var nm=names();
+S.tests.forEach(function(t,i){
+var tr=document.createElement('tr');
+tr.innerHTML='<td><b>'+(i+1)+'</b></td>'+
+'<td><input type="text" data-i="'+i+'" data-k="input" value="'+esc(t.input)+'" placeholder="例：側面揮手，背景雜亂"></td>'+
+'<td><select data-i="'+i+'" data-k="judge"><option value="A"'+(t.judge==='A'?' selected':'')+'>'+esc(nm.A)+'</option><option value="B"'+(t.judge==='B'?' selected':'')+'>'+esc(nm.B)+'</option></select></td>'+
+'<td><button class="cbtn '+(t.ok?'yes':'no')+'" onclick="flipT('+i+')">'+(t.ok?'✓ 正確':'✘ 錯誤')+'</button></td>'+
+'<td><input type="text" data-i="'+i+'" data-k="fix" value="'+esc(t.fix)+'" placeholder="例：加側面樣本"></td>'+
+'<td><button class="btn alt" style="padding:.25rem.6rem;font-size:.78rem" onclick="delT('+i+')">刪</button></td>';
+tb.appendChild(tr);
+});
+updAcc();
+tb.querySelectorAll('input[type=text]').forEach(function(inp){
+inp.addEventListener('input',function(){S.tests[+this.dataset.i][this.dataset.k]=this.value;save();updAcc();});
+});
+tb.querySelectorAll('select').forEach(function(s){
+s.addEventListener('change',function(){S.tests[+this.dataset.i].judge=this.value;save();renderT();});
+});
+renderI();
+}
+function flipT(i){S.tests[i].ok=!S.tests[i].ok;save();renderT();}
+
+/* ---------- iterations ---------- */
+function addI(){
+var a=acc();
+S.iters.push({before:a?a.v+'%':'—',after:'',note:''});
+save();renderI();
+}
+function delI(i){S.iters.splice(i,1);save();renderI();}
+function renderI(){
+var el=document.getElementById('iList');el.innerHTML='';
+S.iters.forEach(function(it,i){
+var d=document.createElement('div');d.className='iter';
+d.innerHTML='<b>改良回合 '+(i+1)+'</b> <button class="btn alt" style="padding:.2rem.6rem;font-size:.78rem;float:right" onclick="delI('+i+')">刪除</button><div style="clear:both"></div>'+
+'<div class="grid2"><label>改良前準確率 <input type="text" data-i="'+i+'" data-k="before" value="'+esc(it.before)+'"></label>'+
+'<label>改良後準確率（複測後填）<input type="text" data-i="'+i+'" data-k="after" value="'+esc(it.after)+'" placeholder="例：100%"></label></div>'+
+'<label>改良內容 <span class="en">What you changed</span><input type="text" data-i="'+i+'" data-k="note" value="'+esc(it.note)+'" placeholder="例：補拍 10 張側面揮手樣本"></label>';
+el.appendChild(d);
+});
+if(!S.iters.length)el.innerHTML='<p class="small">未有改良記錄。準確率唔理想就即場改（加樣本／調類別），再複測。</p>';
+document.getElementById('iCount').textContent=S.iters.length+' 回合';
+el.querySelectorAll('input').forEach(function(inp){
+inp.addEventListener('input',function(){S.iters[+this.dataset.i][this.dataset.k]=this.value;save();});
+});
+}
+
+/* ---------- export ---------- */
+function buildText(){
+var L=['',''];
+var nm=names();
+L.push('類別一：'+nm.A+'｜樣本 '+S.sA+' 張｜多樣性 '+(classOK('A')?'合格 ✓':'未合格'));
+L.push('類別二：'+nm.B+'｜樣本 '+S.sB+' 張｜多樣性 '+(classOK('B')?'合格 ✓':'未合格'));
+L.push('私隱承諾：'+(S.priv?'已簽署 ✓':'未簽署'));
+L.push('');L.push('── 用家測試記錄 ──');
+S.tests.forEach(function(t,i){
+L.push((i+1)+'. 輸入：'+t.input+'｜模型判斷：'+nm[t.judge]+'｜'+(t.ok?'✓ 正確':'✘ 錯誤')+(t.fix?'｜改良：'+t.fix:''));
+});
+var a=acc();L.push('準確率：'+(a?(a.c+' ÷ '+a.n+' × 100% = '+a.v+'%'):'—'));
+L.push('');L.push('── 迭代改良 ──');
+S.iters.forEach(function(it,i){L.push((i+1)+'. '+it.note+'｜'+it.before+' → '+(it.after||'?'));});
+return L.join('\n');
+}
+function doExport(){document.getElementById('outBox').value=buildText();}
+function copyOut(){
+var t=document.getElementById('outBox').value||buildText();document.getElementById('outBox').value=t;
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製！');},function(){fb(t);});}else fb(t);
+}
+function fb(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('已複製！');}catch(e){alert('複製失敗，請手動選取。');}document.body.removeChild(ta);}
+function dlOut(){
+var t=document.getElementById('outBox').value||buildText();
+var b=new Blob(['\ufeff'+t],{type:'text/plain;charset=utf-8'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='s2-l24-AI測試.txt';a.click();
+setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+/* ---------- init ---------- */
+load();
+document.getElementById('cA').value=S.cA;document.getElementById('cB').value=S.cB;
+document.getElementById('cA').addEventListener('input',function(){S.cA=this.value;save();renderT();});
+document.getElementById('cB').addEventListener('input',function(){S.cB=this.value;save();renderT();});
+document.getElementById('priv').checked=S.priv;
+document.getElementById('priv').addEventListener('change',function(){S.priv=this.checked;save();});
+document.querySelectorAll('[data-c]').forEach(function(c){
+c.checked=S.div[c.dataset.c][c.dataset.d];
+c.addEventListener('change',function(){S.div[this.dataset.c][this.dataset.d]=this.checked;save();renderS();});
+});
+renderS();renderI();
+</script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L25 匯報教練 | Showcase Coach</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:20px;padding:.15rem.7rem;margin:.15rem.2rem}
+.b-ok{background:#d5f5e3;color:#1e8449}.b-warn{background:#fdebd0;color:#b9770e}.b-bad{background:#fadbd8;color:#922b21}.b-info{background:#d6eaf8;color:#1a5276}
+.bigclock{font-size:3rem;font-weight:800;color:#1a5276;text-align:center;margin:.3rem 0;letter-spacing:.1rem}
+.bigclock.over{color:#e74c3c}
+.part{border:2px solid #dfe6ee;border-radius:10px;padding:.6rem;margin:.4rem 0;background:#f8fafc}
+.part.active{border-color:#e67e22;background:#fef9e7;box-shadow:0 0 8px #f0c929}
+.part.done{border-color:#27ae60;background:#eafaf1}
+.pbar{background:#e5e8ec;border-radius:8px;height:.7rem;margin-top:.35rem;overflow:hidden}
+.pbar.f{background:#2e86c1;height:100%;width:0}
+.part.active.pbar.f{background:#e67e22}
+.star{font-size:1.7rem;cursor:pointer;color:#d5dbdb;background:none;border:none;padding:.1rem}
+.star.on{color:#f1c40f}
+input[type=text],select,textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #bcd9f2;border-radius:6px;font-size:.95rem;margin:.25rem 0;font-family:inherit}
+textarea{min-height:3rem;resize:vertical}
+.tblwrap{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+label.ck{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-size:.92rem;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.55rem}
+label.ck input{width:1.1rem;height:1.1rem;margin-top:.15rem;flex:none}
+label.ck.done{border-color:#27ae60;background:#eafaf1}
+.stepcard{background:#fff;border:2px solid #2e86c1;border-radius:10px;padding:.7rem;text-align:center}
+.stepcard b{color:#1a5276;font-size:1.05rem}
+.small{font-size:.82rem;color:#666}
+.count-pill{display:inline-block;background:#1a5276;color:#fff;border-radius:20px;padding:.2rem.9rem;font-weight:700}
+.qbox{background:#eaf6ff;border-radius:10px;padding:1rem;margin:.6rem 0;font-size:1.1rem;font-weight:700;color:#1a5276;min-height:3rem}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-25.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L25 匯報教練 <span class="en">Lesson 25 · Showcase Coach — 社區成果展</span></h2>
+
+<div class="theme"><b>玩法 How to play：</b>
+1️⃣ 用四段計時綵排三分鐘報告（40／40／50／50 秒）→ 2️⃣ 數講稿字數，估算時間（約 500 字）→
+3️⃣ 練習應對提問（複述→簡答→舉例）→ 4️⃣ 用互評表為其他組評分（評語要具體，唔好空泛）→ 5️⃣ 檢查展位清單。<br>
+<span class="en">Rehearse the 3-minute talk with the 4-part timer, check your script length, practise Q&amp;A, score other groups with specific comments, and clear the booth checklist.</span></div>
+
+<div class="card">
+<h3>1 · 三分鐘報告計時 <span class="en">3-minute talk timer</span></h3>
+<div class="bigclock" id="clock">03:00</div>
+<div class="small" style="text-align:center" id="nowPart">未開始 — 撳「開始綵排」<br><span class="en">Not started</span></div>
+<div id="parts"></div>
+<div class="btns" style="justify-content:center">
+<button class="btn" onclick="tmStart()">▶ 開始綵排 Start</button>
+<button class="btn alt" onclick="tmPause()">⏸ 暫停 Pause</button>
+<button class="btn alt" onclick="tmReset()">↺ 重設 Reset</button>
+</div>
+<p class="small" style="text-align:center">每段完結會響鈴；最後 10 秒有提示聲。超時刪例子，唔刪結構！<span class="en">Chimes at each part boundary; warning beeps in the final 10 s.</span></p>
+</div>
+
+<div class="card">
+<h3>2 · 講稿字數檢查 <span class="en">Script length check</span></h3>
+<p class="small">中文每分鐘約講 160–180 字，三分鐘講稿約 500 字。貼上講稿即時估算。<br><span class="en">~160–180 chars per minute; aim for ~500 characters.</span></p>
+<textarea id="script" style="min-height:6rem" placeholder="貼上講稿（四部分一齊）…"></textarea>
+<div id="wcOut" style="margin-top:.5rem"></div>
+</div>
+
+<div class="card">
+<h3>3 · 應對提問練習 <span class="en">Q&amp;A coach</span></h3>
+<div class="grid2">
+<div class="stepcard"><b>① 複述 Repeat</b><br><span class="small">「你嘅問題係…，對嗎？」爭取思考時間</span></div>
+<div class="stepcard"><b>② 簡答 Answer</b><br><span class="small">直接答核心，最多兩句</span></div>
+<div class="stepcard"><b>③ 舉例 Illustrate</b><br><span class="small">用一個具體例子或數據支持</span></div>
+<div class="stepcard"><b>😶 唔識點答？</b><br><span class="small">「呢個我哋未試過，展示後會再試，多謝你嘅建議。」切忌亂編！</span></div>
+</div>
+<button class="btn alt" style="margin-top:.6rem" onclick="drawQ()">🎲 隨機抽一條觀眾提問 Draw a question</button>
+<div class="qbox" id="qBox">撳掣抽題，練習用三步回應。<br><span class="en">Draw a question and practise the 3-step response.</span></div>
+</div>
+
+<div class="card">
+<h3>4 · 互評表 <span class="en">Peer assessment</span> <span class="count-pill" id="paCount">已評 0 組（目標 ≥2）</span></h3>
+<p class="small">唔評自己組別！每項 1–5 分，評語要具體（唔好「做得很好」），加一項改善建議。<br><span class="en">Never score your own group. Be specific — no vague praise.</span></p>
+<label>組別 <span class="en">Group</span><input type="text" id="paGroup" placeholder="例：第 3 組 — 服藥提示盒"></label>
+<div id="stars"></div>
+<label>具體評語 <span class="en">Specific comment</span><textarea id="paComment" placeholder="例：按鈕加大到 3cm 後，長者用家能單手準確按下。"></textarea></label>
+<div id="vagueWarn"></div>
+<label>一項改善建議 <span class="en">One suggestion</span><textarea id="paSug" placeholder="例：建議把手柄再加粗 1cm，手掌較大嘅用家更易握。"></textarea></label>
+<div style="margin:.5rem 0"><b>總分 Total：<span id="paTotal">0</span> / 20</b></div>
+<button class="btn" onclick="addPA()">✅ 加入呢份評分 Save score</button>
+<div class="tblwrap"><table style="margin-top:.6rem"><thead><tr><th>組別</th><th>關愛</th><th>創意</th><th>製作</th><th>表達</th><th>總分</th><th></th></tr></thead><tbody id="paBody"></tbody></table></div>
+</div>
+
+<div class="card">
+<h3>5 · 展位清單 <span class="en">Booth checklist</span> <span class="count-pill" id="bCount">0 / 6</span></h3>
+<div id="bList"></div>
+</div>
+
+<div class="card">
+<h3>6 · 匯出互評 <span class="en">Export peer scores</span></h3>
+<button class="btn" onclick="doExport()">📄 生成文字 Generate text</button>
+<button class="btn alt" onclick="copyOut()">📋 複製 Copy</button>
+<button class="btn alt" onclick="dlOut()">⬇ 下載.txt</button>
+<textarea id="outBox" style="min-height:8rem;margin-top:.6rem" readonly placeholder="撳「生成文字」匯出互評記錄。"></textarea>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+"use strict";
+var LS='lmc-s2l25';
+var S={scores:[],booth:[false,false,false,false,false,false]};
+var CRIT=[['care','關愛切合度','Care relevance'],['crea','創意','Creativity'],['craft','製作質素','Craftsmanship'],['pres','表達清晰度','Presentation clarity']];
+var BOOTH=['枱布鋪平、名牌放正 <span class="en">Tablecloth flat, name card upright</span>',
+'作品放中央，設計圖立起展示 <span class="en">Product centre-stage, drawings propped up</span>',
+'危險尖角以膠紙包裹 <span class="en">Sharp corners taped</span>',
+'嘉賓感謝卡準備好 <span class="en">Thank-you cards ready</span>',
+'接待組到門口就位 <span class="en">Reception team at the entrance</span>',
+'全程保持展位整潔 <span class="en">Keep the booth tidy</span>'];
+var SAMPLEQ=['點解你哋唔直接買現成產品，而要自己整？','你哋嘅產品成本大約幾多？','如果實物示範即場失敗，你會點處理？','點解揀呢個用家群，而唔係其他人？','有咩困難係你哋到而家都未解決到嘅？','你哋點樣證明用家真係需要呢個設計？','如果有多一個月，你會再改邊個部分？'];
+var PARTS=[{n:'設計意念 Design idea',s:40},{n:'用家回饋 User feedback',s:40},{n:'改良之處 Improvements',s:50},{n:'實物示範 Live demo',s:50}];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem(LS);if(d){var t=JSON.parse(d);if(t.booth&&t.booth.length===6)S=t;else S.scores=t.scores||[];}}catch(e){}}
+
+/* ---------- audio ---------- */
+var AC=null;
+function beep(f,d){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='sine';o.frequency.value=f||880;g.gain.setValueAtTime(0.001,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.3,AC.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+(d||0.15));o.start();o.stop(AC.currentTime+(d||0.15)+0.05);}catch(e){}}
+function chime(){beep(880,.18);setTimeout(function(){beep(1175,.3);},220);}
+
+/* ---------- 4-part timer ---------- */
+var TOTAL=180,elapsed=0,tInt=null,warned10=false,started=false;
+function fmt(s){var m=Math.floor(Math.abs(s)/60),ss=Math.abs(s)%60;return (s<0?'-':'')+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function partAt(e){var a=0;for(var i=0;i<PARTS.length;i++){if(e<PARTS[i].s+a)return {i:i,into:e-a};a+=PARTS[i].s;}return {i:3,into:PARTS[3].s};}
+function renderParts(){
+var el=document.getElementById('parts');el.innerHTML='';
+var cur=partAt(elapsed),a=0;
+PARTS.forEach(function(p,i){
+var fill=0;
+if(elapsed>=a+p.s)fill=100;else if(i===cur.i)fill=Math.round(cur.into/p.s*100);
+var d=document.createElement('div');
+d.className='part'+(i===cur.i&&elapsed<TOTAL?' active':'')+(elapsed>=a+p.s?' done':'');
+d.innerHTML='<b>'+(i+1)+'. '+esc(p.n)+'</b> <span class="small">約 '+p.s+' 秒</span><div class="pbar"><div class="f" style="width:'+fill+'%"></div></div>';
+el.appendChild(d);a+=p.s;
+});
+var ck=document.getElementById('clock');
+ck.textContent=fmt(TOTAL-elapsed);
+ck.className='bigclock'+(elapsed>TOTAL?' over':'');
+var np=document.getElementById('nowPart');
+if(elapsed>=TOTAL)np.innerHTML='<b style="color:#e74c3c">⏰ 時間到！三分鐘完結。</b><br><span class="en">Time’s up.</span>';
+else if(!started)np.innerHTML='未開始 — 撳「開始綵排」<br><span class="en">Not started</span>';
+else np.innerHTML='進行中：<b>'+esc(PARTS[cur.i].n)+'</b>（第 '+(cur.into+1)+' / '+PARTS[cur.i].s+' 秒）<br><span class="en">Now: '+esc(PARTS[cur.i].n)+'</span>';
+}
+function tmTick(){
+var prev=partAt(elapsed).i;
+elapsed+=1;
+var now=partAt(elapsed).i;
+var left=TOTAL-elapsed;
+if(left===10){warned10=true;beep(660,.12);setTimeout(function(){beep(660,.12);},180);}
+if(elapsed<=TOTAL&&now!==prev){chime();}
+if(elapsed===TOTAL){chime();setTimeout(chime,600);}
+renderParts();
+}
+function tmStart(){if(tInt)return;started=true;beep(660,.12);tInt=setInterval(tmTick,1000);}
+function tmPause(){if(tInt){clearInterval(tInt);tInt=null;}}
+function tmReset(){tmPause();elapsed=0;warned10=false;started=false;renderParts();}
+
+/* ---------- word count ---------- */
+document.getElementById('script').addEventListener('input',function(){
+var t=this.value.replace(/\s/g,'');
+var n=t.length,min=(n/170).toFixed(1);
+var ok=n>=420&&n<=580;
+document.getElementById('wcOut').innerHTML=
+'<span class="badge '+(ok?'b-ok':'b-warn')+'">字數 '+n+' 字（目標約 500）'+(ok?' ✓':'')+'</span> '+
+'<span class="badge b-info">預計 '+min+' 分鐘（按每分鐘 170 字）</span>'+
+(n>580?'<div class="small" style="margin-top:.3rem">⚠ 超時喇！刪例子，唔刪結構（四部分都要保留）。</div>':'');
+});
+
+/* ---------- Q&A draw ---------- */
+function drawQ(){
+var q=SAMPLEQ[Math.floor(Math.random()*SAMPLEQ.length)];
+document.getElementById('qBox').innerHTML='🎤 「'+esc(q)+'」<br><span class="en">Try: 複述 → 簡答 → 舉例</span>';
+beep(520,.08);
+}
+
+/* ---------- peer assessment ---------- */
+var cur={care:0,crea:0,craft:0,pres:0};
+function renderStars(){
+var el=document.getElementById('stars');el.innerHTML='';
+CRIT.forEach(function(c){
+var row=document.createElement('div');
+row.innerHTML='<b>'+c[1]+'</b> <span class="en">'+c[2]+'</span><br>';
+for(var i=1;i<=5;i++){
+var b=document.createElement('button');
+b.className='star'+(i<=cur[c[0]]?' on':'');b.textContent='★';
+(function(k,v){b.onclick=function(){cur[k]=v;renderStars();paTotal();};})(c[0],i);
+row.appendChild(b);
+}
+el.appendChild(row);
+});
+}
+function paTotal(){
+var t=cur.care+cur.crea+cur.craft+cur.pres;
+document.getElementById('paTotal').textContent=t;return t;
+}
+var VAGUE=[/做得很好/,/好有創意/,/加油/,/幾好/,/好正/,/好叻/,/好靚/];
+function checkVague(){
+var t=document.getElementById('paComment').value;
+var w=document.getElementById('vagueWarn');
+if(!t.trim()){w.innerHTML='';return;}
+var vague=VAGUE.some(function(p){return p.test(t);});
+var concrete=/\d/.test(t)||/「|」/.test(t)||/按鈕|轉盤|尺寸|厘米|cm|長者|用家/.test(t);
+w.innerHTML=(vague&&!concrete)
+?'<span class="badge b-bad">⚠ 評語太空泛！加具體數字或事例（例：邊個部分、幾多 cm、用家點樣用）。</span>'
+:(concrete?'<span class="badge b-ok">✓ 評語具體，好！</span>':'');
+}
+document.getElementById('paComment').addEventListener('input',checkVague);
+function addPA(){
+var g=document.getElementById('paGroup').value.trim();
+var cm=document.getElementById('paComment').value.trim();
+var sg=document.getElementById('paSug').value.trim();
+if(!g){alert('請填組別。');return;}
+if(!cur.care||!cur.crea||!cur.craft||!cur.pres){alert('四項都要評分（1–5 星）。');return;}
+if(!cm){alert('請寫具體評語。');return;}
+if(!sg){alert('請寫一項改善建議。');return;}
+S.scores.push({g:g,care:cur.care,crea:cur.crea,craft:cur.craft,pres:cur.pres,cm:cm,sg:sg});
+cur={care:0,crea:0,craft:0,pres:0};
+document.getElementById('paGroup').value='';document.getElementById('paComment').value='';document.getElementById('paSug').value='';
+checkVague();save();renderStars();paTotal();renderPA();
+}
+function delPA(i){S.scores.splice(i,1);save();renderPA();}
+function renderPA(){
+var tb=document.getElementById('paBody');tb.innerHTML='';
+S.scores.forEach(function(s,i){
+var tr=document.createElement('tr');
+tr.innerHTML='<td><b>'+esc(s.g)+'</b><br><span class="small">'+esc(s.cm.slice(0,40))+(s.cm.length>40?'…':'')+'</span></td><td>'+s.care+'</td><td>'+s.crea+'</td><td>'+s.craft+'</td><td>'+s.pres+'</td><td><b>'+(s.care+s.crea+s.craft+s.pres)+'</b></td><td><button class="btn alt" style="padding:.25rem.6rem;font-size:.78rem" onclick="delPA('+i+')">刪</button></td>';
+tb.appendChild(tr);
+});
+if(!S.scores.length)tb.innerHTML='<tr><td colspan="7" class="small">未評分。記住：唔評自己組別！</td></tr>';
+document.getElementById('paCount').textContent='已評 '+S.scores.length+' 組'+(S.scores.length>=2?' ✓ 達標':'（目標 ≥2）');
+}
+
+/* ---------- booth ---------- */
+function renderB(){
+var el=document.getElementById('bList');el.innerHTML='';
+BOOTH.forEach(function(txt,i){
+var lab=document.createElement('label');lab.className='ck'+(S.booth[i]?' done':'');
+lab.innerHTML='<input type="checkbox" data-i="'+i+'"'+(S.booth[i]?' checked':'')+'><span>'+txt+'</span>';
+el.appendChild(lab);
+});
+var n=S.booth.filter(Boolean).length;
+document.getElementById('bCount').textContent=n+' / 6';
+el.querySelectorAll('input').forEach(function(c){
+c.addEventListener('change',function(){S.booth[+this.dataset.i]=this.checked;save();renderB();});
+});
+}
+
+/* ---------- export ---------- */
+function buildText(){
+var L=['',''];
+S.scores.forEach(function(s,i){
+L.push('總分 '+(s.care+s.crea+s.craft+s.pres)+'/20');
+L.push('關愛切合度 '+s.care+'｜創意 '+s.crea+'｜製作質素 '+s.craft+'｜表達清晰度 '+s.pres);
+L.push('評語：'+s.cm);L.push('改善建議：'+s.sg);L.push('');
+});
+return L.join('\n');
+}
+function doExport(){document.getElementById('outBox').value=buildText();}
+function copyOut(){
+var t=document.getElementById('outBox').value||buildText();document.getElementById('outBox').value=t;
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製！');},function(){fb(t);});}else fb(t);
+}
+function fb(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('已複製！');}catch(e){alert('複製失敗，請手動選取。');}document.body.removeChild(ta);}
+function dlOut(){
+var t=document.getElementById('outBox').value||buildText();
+var b=new Blob(['\ufeff'+t],{type:'text/plain;charset=utf-8'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='s2-l25-互評.txt';a.click();
+setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+/* ---------- init ---------- */
+load();renderParts();renderStars();paTotal();renderPA();renderB();
+</script>
+</body>
+</html>

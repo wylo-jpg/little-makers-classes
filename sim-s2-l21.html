@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L21 訪談工具箱 | Interview Toolkit</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.bigclock{font-size:3rem;font-weight:800;color:#1a5276;text-align:center;margin:.4rem 0;letter-spacing:.1rem}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:20px;padding:.15rem.7rem;margin:.15rem.2rem}
+.b-ok{background:#d5f5e3;color:#1e8449}.b-warn{background:#fdebd0;color:#b9770e}.b-bad{background:#fadbd8;color:#922b21}.b-mid{background:#eaf2f8;color:#2471a3}
+.qrow,.nrow{background:#f8fafc;border:1px solid #dfe6ee;border-radius:8px;padding:.7rem;margin:.5rem 0}
+.probe-card{background:#fff;border:2px solid #2e86c1;border-radius:10px;padding:.7rem;cursor:pointer;text-align:center;font-weight:700;color:#1a5276}
+.probe-card:active{transform:scale(.97)}
+#probeShow{background:#eaf6ff;border-radius:10px;padding:1rem;margin:.6rem 0;font-size:1.15rem;font-weight:700;color:#1a5276;min-height:3rem}
+input[type=text],input[type=date],select,textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #bcd9f2;border-radius:6px;font-size:.95rem;margin:.25rem 0;font-family:inherit}
+textarea{min-height:3.2rem;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.tblwrap{overflow-x:auto}
+label.ck{display:flex;gap:.5rem;align-items:flex-start;margin:.3rem 0;font-size:.9rem}
+label.ck input{width:auto;margin-top:.25rem}
+.small{font-size:.82rem;color:#666}
+.count-pill{display:inline-block;background:#1a5276;color:#fff;border-radius:20px;padding:.2rem.9rem;font-weight:700}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-21.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L21 訪談工具箱 <span class="en">Lesson 21 · Interview Toolkit — 社區實測：探訪／訪問</span></h2>
+
+<div class="theme"><b>玩法 How to play：</b>
+1️⃣ 填好受訪者資料 → 2️⃣ 加入 5–6 條問題（系統自動檢查引導式／封閉式）→
+3️⃣ 按「開始」進行 15 分鐘訪問 → 4️⃣ 用三欄表記低用家回應＋重點，標記有無具體事例 →
+5️⃣ 匯出文字記錄交功課。<br><span class="en">Fill in the interviewee profile, draft 5–6 questions (auto-checked for leading/closed questions), run the 15-minute timer, take 3-column notes, then export.</span></div>
+
+<div class="card">
+<h3>1 · 受訪者資料 <span class="en">Interviewee profile</span></h3>
+<div class="grid2">
+<div><label>受訪者稱呼 <span class="en">Name / nickname</span><input type="text" id="p_name" placeholder="例：陳婆婆"></label></div>
+<div><label>受訪者類別 <span class="en">Type</span><select id="p_type"><option>長者中心長者 Elderly centre user</option><option>校內工友 School worker</option><option>其他 Other</option></select></label></div>
+<div><label>日期 <span class="en">Date</span><input type="date" id="p_date"></label></div>
+<div><label>提問員 <span class="en">Interviewer</span><input type="text" id="p_ask" placeholder="組員姓名"></label></div>
+<div><label>記錄員 <span class="en">Note-taker</span><input type="text" id="p_rec" placeholder="組員姓名"></label></div>
+<div><label>觀察員 <span class="en">Observer</span><input type="text" id="p_obs" placeholder="組員姓名"></label></div>
+</div>
+</div>
+
+<div class="card">
+<h3>2 · 問卷設計器 <span class="en">Questionnaire builder</span> <span class="count-pill" id="qCount">0 / 6 條</span></h3>
+<p class="small">三原則：<b>開放式為主</b>、<b>不問引導式問題</b>、<b>由淺入深 5–6 條</b>。加入問題後系統會即時檢查。<br>
+<span class="en">Principles: mainly open-ended, no leading questions, easy-to-deep, 5–6 questions.</span></p>
+<div style="display:flex;gap:.5rem"><input type="text" id="qInput" placeholder="輸入一條問題，例如：你使用＿＿時遇到最大的困難是什麼？"><button class="btn" onclick="addQ()">加入</button></div>
+<div id="qList"></div>
+<div class="theme" style="margin-top:.6rem"><b>檢查說明：</b>
+<span class="badge b-bad">⚠️ 引導式</span> 問題暗示了答案（例：含「係咪／是不是」）→ 重寫！
+<span class="badge b-warn">🔒 封閉式</span> 只能答係／否 → 盡量改開放式。
+<span class="badge b-ok">✅ 開放式</span> 用家用自己說話回答 → 好！
+<span class="badge b-mid">➖ 中性</span> 可再開放啲（加「什麼／點樣／舉例」）。</div>
+</div>
+
+<div class="card">
+<h3>3 · 訪問計時 <span class="en">Session timer（15 分鐘）</span></h3>
+<div class="bigclock" id="clock">15:00</div>
+<div class="btns" style="justify-content:center">
+<button class="btn" id="tStart" onclick="tStart()">▶ 開始 Start</button>
+<button class="btn alt" onclick="tPause()">⏸ 暫停 Pause</button>
+<button class="btn alt" onclick="tReset()">↺ 重設 Reset</button>
+</div>
+<p class="small" style="text-align:center">時間到會響鈴。先問日常問題建立關係，再問產品問題。<span class="en">Chimes at 0:00. Start with daily-life questions, then product questions.</span></p>
+</div>
+
+<div class="card">
+<h3>4 · 追問提示卡 <span class="en">Probing prompts</span></h3>
+<p class="small">用家答得值得深入，撳卡即睇追問句式。<span class="en">Tap a card when an answer deserves follow-up.</span></p>
+<div class="grid2">
+<div class="probe-card" onclick="showProbe('「可以舉一個具體的例子嗎？」<br><span class=en>Could you give a specific example?</span>')">🔍 舉個例子<br><span class="en">Ask for an example</span></div>
+<div class="probe-card" onclick="showProbe('「這件事通常在什麼情況下出現？」<br><span class=en>In what situations does this usually happen?</span>')">📍 什麼情況下<br><span class="en">Find the context</span></div>
+<div class="probe-card" onclick="showProbe('「這件事對你造成多大的不便？」<br><span class=en>How much inconvenience does this cause you?</span>')">⚡ 多大不便<br><span class="en">Judge urgency</span></div>
+<div class="probe-card" onclick="showProbe('用家：「幾好呀。」（客套）→ 你：「多謝！如果只能改善一個地方，你最希望係邊一個？」<br><span class=en>User: “It’s quite good.” (polite) → You: “Thanks! If only one thing could be improved, which would it be?”</span>')">🎭 拆解客套話<br><span class="en">Dig past politeness</span></div>
+</div>
+<div id="probeShow">撳上面卡片，追問句式會喺度放大顯示。<br><span class="en">Tap a card — the probe appears here, large.</span></div>
+</div>
+
+<div class="card">
+<h3>5 · 三欄訪問記錄 <span class="en">3-column notes</span> <span class="count-pill" id="nCount">0 項回饋</span></h3>
+<p class="small">提問／用家回應／重點摘要。重點摘要填好即計為一項回饋（目標 ≥3 項）。只有附帶具體事例的回應先係可靠設計依據！<br>
+<span class="en">Question / response / key points. Only responses with concrete examples count as design evidence.</span></p>
+<div class="tblwrap"><div id="nList"></div></div>
+<button class="btn alt" onclick="addN()">＋ 加入記錄行 Add row</button>
+</div>
+
+<div class="card">
+<h3>6 · 匯出記錄 <span class="en">Export</span></h3>
+<button class="btn" onclick="doExport()">📄 生成文字記錄 Generate text</button>
+<button class="btn alt" onclick="copyOut()">📋 複製 Copy</button>
+<button class="btn alt" onclick="dlOut()">⬇ 下載.txt</button>
+<textarea id="outBox" style="min-height:10rem;margin-top:.6rem" readonly placeholder="撳「生成文字記錄」，匯出內容會喺度出現。"></textarea>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+"use strict";
+var LS='lmc-s2l21';
+var S={profile:{},qs:[],notes:[]};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem(LS);if(d)S=JSON.parse(d);}catch(e){}}
+
+/* ---------- audio ---------- */
+var AC=null;
+function beep(f,d){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='sine';o.frequency.value=f||880;g.gain.setValueAtTime(0.001,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.3,AC.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+(d||0.18));o.start();o.stop(AC.currentTime+(d||0.18)+0.05);}catch(e){}}
+function chime(){beep(880,.18);setTimeout(function(){beep(1175,.3);},220);}
+
+/* ---------- profile ---------- */
+['p_name','p_type','p_date','p_ask','p_rec','p_obs'].forEach(function(id){
+document.getElementById(id).addEventListener('input',function(){S.profile[id]=this.value;save();});
+});
+
+/* ---------- question checker ---------- */
+var LEAD=[/係咪/,/是不是/,/同唔同意/,/對嗎/,/對不對/,/你覺得.{0,5}(太|好|唔好|唔啱|唔得)/,/係咪都/,/唔係咩/];
+var CLOSED=[/係咪/,/是不是/,/對不對/,/好唔好[？?]?$/,/得唔得[？?]?$/,/[嗎吗][？?]?$/];
+var OPEN=[/什麼/,/甚麼/,/點樣/,/點解/,/為何/,/為甚麼/,/如何/,/邊/,/幾時/,/舉/,/例子/,/方法/,/應付/];
+function checkQ(q){
+var lead=LEAD.some(function(p){return p.test(q);});
+var closed=CLOSED.some(function(p){return p.test(q);});
+var open=OPEN.some(function(p){return p.test(q);});
+if(lead)return '<span class="badge b-bad">⚠️ 引導式 Leading — 重寫！</span>';
+if(closed&&!open)return '<span class="badge b-warn">🔒 封閉式 Closed — 只答係／否</span>';
+if(open)return '<span class="badge b-ok">✅ 開放式 Open-ended</span>';
+return '<span class="badge b-mid">➖ 中性 — 可加「什麼／點樣／舉例」</span>';
+}
+function addQ(){
+var v=document.getElementById('qInput').value.trim();
+if(!v)return;
+if(S.qs.length>=8){alert('問卷建議 5–6 條，最多 8 條。');return;}
+S.qs.push(v);document.getElementById('qInput').value='';save();renderQ();renderN();
+}
+function delQ(i){S.qs.splice(i,1);save();renderQ();renderN();}
+function renderQ(){
+var el=document.getElementById('qList');el.innerHTML='';
+document.getElementById('qCount').textContent=S.qs.length+' / 6 條';
+if(!S.qs.length){el.innerHTML='<p class="small">未有問題。先由日常問題入手，例如：「平時你點樣記低要食藥嘅時間？」</p>';return;}
+S.qs.forEach(function(q,i){
+var d=document.createElement('div');d.className='qrow';
+d.innerHTML='<b>Q'+(i+1)+'.</b> '+esc(q)+'<br>'+checkQ(q)+
+' <button class="btn alt" style="padding:.25rem.7rem;font-size:.8rem" onclick="delQ('+i+')">刪除</button>';
+el.appendChild(d);
+});
+}
+
+/* ---------- timer ---------- */
+var tLeft=900,tInt=null;
+function fmt(s){s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function drawT(){document.getElementById('clock').textContent=fmt(tLeft);}
+function tStart(){
+if(tInt)return;beep(660,.12);
+tInt=setInterval(function(){tLeft--;drawT();if(tLeft<=0){clearInterval(tInt);tInt=null;chime();alert('⏰ 15 分鐘到！做最後總結，唔好超時。');}},1000);
+}
+function tPause(){if(tInt){clearInterval(tInt);tInt=null;}}
+function tReset(){tPause();tLeft=900;drawT();}
+
+/* ---------- probes ---------- */
+function showProbe(html){document.getElementById('probeShow').innerHTML=html;beep(520,.08);}
+
+/* ---------- 3-column notes ---------- */
+function addN(){S.notes.push({q:0,resp:'',key:'',concrete:false,polite:false});save();renderN();}
+function delN(i){S.notes.splice(i,1);save();renderN();}
+function updNCount(){var cnt=S.notes.filter(function(n){return n.key&&n.key.trim();}).length;
+document.getElementById('nCount').textContent=cnt+' 項回饋'+(cnt>=3?' ✓ 達標':'（目標 ≥3）');}
+function renderN(){
+var el=document.getElementById('nList');el.innerHTML='';
+S.notes.forEach(function(n,i){
+var opts=S.qs.map(function(q,qi){return '<option value="'+qi+'"'+(qi==n.q?' selected':'')+'>Q'+(qi+1)+'. '+esc(q.slice(0,28))+'</option>';}).join('');
+var d=document.createElement('div');d.className='nrow';
+d.innerHTML=
+'<div><b>記錄 '+(i+1)+'</b> <button class="btn alt" style="padding:.2rem.6rem;font-size:.78rem;float:right" onclick="delN('+i+')">刪除</button></div>'+
+'<label>提問 <span class="en">Question</span><select data-k="q" data-i="'+i+'">'+(opts||'<option value="0">（先喺上面加入問題）</option>')+'</select></label>'+
+'<label>用家回應（原話） <span class="en">User’s words</span><textarea data-k="resp" data-i="'+i+'">'+esc(n.resp)+'</textarea></label>'+
+'<label>重點摘要 <span class="en">Key points</span><textarea data-k="key" data-i="'+i+'">'+esc(n.key)+'</textarea></label>'+
+'<label class="ck"><input type="checkbox" data-k="concrete" data-i="'+i+'"'+(n.concrete?' checked':'')+'> 有具體事例／困難描述 <span class="en">has concrete example</span> → 可靠依據 ✓</label>'+
+'<label class="ck"><input type="checkbox" data-k="polite" data-i="'+i+'"'+(n.polite?' checked':'')+'> 似客套話（「幾好呀」之類）<span class="en">sounds polite</span> → 要追問！</label>';
+el.appendChild(d);
+});
+if(!S.notes.length)el.innerHTML='<p class="small">未有記錄。撳「加入記錄行」開始記。</p>';
+updNCount();
+el.querySelectorAll('[data-k]').forEach(function(inp){
+inp.addEventListener(inp.type==='checkbox'?'change':'input',function(){
+var i=+this.dataset.i,k=this.dataset.k;
+S.notes[i][k]=(this.type==='checkbox')?this.checked:(k==='q'?+this.value:this.value);
+save();updNCount();
+});
+});
+}
+
+/* ---------- export ---------- */
+function buildText(){
+var p=S.profile,L=[];
+L.push('');
+L.push('受訪者：'+(p.p_name||'＿＿')+'（'+(p.p_type||'')+'）　日期：'+(p.p_date||'＿＿'));
+L.push('提問員：'+(p.p_ask||'＿＿')+'　記錄員：'+(p.p_rec||'＿＿')+'　觀察員：'+(p.p_obs||'＿＿'));
+L.push('');L.push('── 問卷（'+S.qs.length+' 條）──');
+S.qs.forEach(function(q,i){L.push((i+1)+'. '+q);});
+L.push('');L.push('── 訪問記錄 ──');
+S.notes.forEach(function(n,i){
+L.push('提問：'+(S.qs[n.q]||'（未選）'));
+L.push('用家回應：'+(n.resp||'—'));
+L.push('重點摘要：'+(n.key||'—')+(n.concrete?' [有具體事例✓]':'')+(n.polite?' [似客套話，需追問]':''));
+L.push('');
+});
+return L.join('\n');
+}
+function doExport(){document.getElementById('outBox').value=buildText();}
+function copyOut(){
+var t=document.getElementById('outBox').value||buildText();
+document.getElementById('outBox').value=t;
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製！');},function(){fallbackCopy(t);});}
+else fallbackCopy(t);
+}
+function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('已複製！');}catch(e){alert('複製失敗，請手動選取。');}document.body.removeChild(ta);}
+function dlOut(){
+var t=document.getElementById('outBox').value||buildText();
+var b=new Blob(['\ufeff'+t],{type:'text/plain;charset=utf-8'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='s2-l21-訪談記錄.txt';a.click();
+setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+/* ---------- init ---------- */
+load();
+['p_name','p_type','p_date','p_ask','p_rec','p_obs'].forEach(function(id){if(S.profile[id])document.getElementById(id).value=S.profile[id];});
+if(!S.notes.length)addN();else renderN();
+renderQ();drawT();
+</script>
+</body>
+</html>

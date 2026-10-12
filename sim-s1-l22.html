@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>製作計劃表工具 | L22 | 創科班</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+label.f{display:block;font-weight:700;margin:.6rem 0 .25rem}
+input[type=text],input[type=number],input[type=date]{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #c8d3e0;border-radius:8px;font-size:1rem;font-family:inherit}
+.btn.sm{padding:.35rem .8rem;font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.prog{height:16px;background:#e6edf5;border-radius:8px;overflow:hidden;margin:.5rem 0}
+.prog>div{height:100%;background:#27ae60;width:0;transition:width .3s}
+.step{background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem;margin:.5rem 0}
+.step.done{opacity:.65;background:#f0faf3}
+.step .n{display:inline-block;background:#1a5276;color:#fff;border-radius:50%;width:1.7rem;height:1.7rem;text-align:center;line-height:1.7rem;font-weight:700;margin-right:.4rem}
+.step.done .n{background:#27ae60}
+.step .nm{font-weight:700;font-size:1.05rem}
+.step .dt{font-size:.88rem;color:#555;margin:.25rem 0}
+.chk{font-size:1.05rem;margin:.35rem 0}
+.chk input{transform:scale(1.4);margin-right:.5rem}
+table.cost{width:100%;border-collapse:collapse;margin:.5rem 0}
+table.cost th,table.cost td{border:1px solid #dfe6ee;padding:.45rem;font-size:.95rem;text-align:left}
+table.cost th{background:#eaf4fd}
+.total{font-size:1.2rem;font-weight:700;color:#1a5276}
+.en{font-size:.85rem;color:#666;font-weight:400}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-22.html">← 返回課堂 Back to lesson</a></nav>
+<h2>製作計劃表工具 <span class="en">Production Plan Builder</span></h2>
+<div class="card">
+<p><b>玩法 How to play：</b>① 在「製作計劃」加入步驟（動詞開頭、按先後次序，至少五步）；② 填寫負責人、所需材料、預計完成日期；③ 完成一步就剔 ✓，進度條會即時更新；④ 在「成本估算」計出總成本；⑤ 動手前用三條問題檢查可行性。所有資料會自動儲存在此裝置。</p>
+<p class="en">Add steps in order (at least five), name an owner, materials and a target date for each. Tick off steps as you finish; the progress bar updates live. Estimate costs and run the 3-question feasibility check. Everything is saved on this device.</p>
+</div>
+
+<div class="card">
+<h3>📋 製作計劃 Production plan</h3>
+<label class="f">步驟名稱（用動詞開頭） <span class="en">Step (start with a verb)</span></label>
+<input type="text" id="sName" placeholder="例如：裁剪卡紙">
+<label class="f">負責人 <span class="en">Owner</span></label>
+<input type="text" id="sOwner" placeholder="例如：陳小明">
+<label class="f">所需材料 <span class="en">Materials needed</span></label>
+<input type="text" id="sMat" placeholder="例如：A3 卡紙 2 張">
+<label class="f">預計完成日期 <span class="en">Target date</span></label>
+<input type="date" id="sDate">
+<div class="row">
+<button class="btn" id="addStep">➕ 加入步驟 Add step</button>
+<button class="btn sm alt" id="loadEx">載入示例五步 Load example</button>
+</div>
+<div class="prog"><div id="pbar"></div></div>
+<div id="pstats" style="font-weight:700">已完成 0 / 0 步</div>
+<div id="steps"></div>
+<div class="row"><button class="btn sm" id="clearSteps">清空全部 Clear all</button></div>
+</div>
+
+<div class="card">
+<h3>💰 成本估算 Cost estimation</h3>
+<div class="row" style="align-items:flex-end">
+<div style="flex:2;min-width:120px"><label class="f">材料品名</label><input type="text" id="cName" placeholder="例如：卡紙"></div>
+<div style="flex:1;min-width:70px"><label class="f">數量</label><input type="number" id="cQty" min="1" value="1"></div>
+<div style="flex:1;min-width:90px"><label class="f">單價 HK$</label><input type="number" id="cPrice" min="0" step="0.5" value="0"></div>
+<div><button class="btn" id="addCost">➕</button></div>
+</div>
+<table class="cost"><thead><tr><th>品名 Item</th><th>數量 Qty</th><th>單價 Price</th><th>小計 Subtotal</th><th></th></tr></thead><tbody id="costBody"></tbody></table>
+<div class="total">總成本 Total：HK$ <span id="ctotal">0</span></div>
+</div>
+
+<div class="card">
+<h3>✅ 可行性三問 Feasibility check</h3>
+<div class="chk"><input type="checkbox" id="f1"> 材料買得到嗎？<span class="en">Can we get the materials?</span></div>
+<div class="chk"><input type="checkbox" id="f2"> 我們做得到嗎？<span class="en">Can we actually build it?</span></div>
+<div class="chk"><input type="checkbox" id="f3"> 時間夠嗎？<span class="en">Is there enough time?</span></div>
+<div id="fmsg" style="margin-top:.5rem;font-weight:700"></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+function load(k){try{return JSON.parse(localStorage.getItem(k)||"[]");}catch(e){return[];}}
+function store(k,a){localStorage.setItem(k,JSON.stringify(a));}
+var steps=load("l22-plan"),costs=load("l22-cost");
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function renderSteps(){var box=document.getElementById("steps");box.innerHTML="";
+var done=steps.filter(function(s){return s.done;}).length;
+document.getElementById("pbar").style.width=(steps.length?Math.round(done/steps.length*100):0)+"%";
+document.getElementById("pstats").textContent="已完成 "+done+" / "+steps.length+" 步";
+steps.forEach(function(s,i){var d=document.createElement("div");d.className="step"+(s.done?" done":"");
+d.innerHTML='<span class="n">'+(i+1)+'</span><span class="nm">'+esc(s.name)+'</span>'+
+'<div class="dt">👤 '+esc(s.owner||"—")+'　🧰 '+esc(s.mat||"—")+'　📅 '+esc(s.date||"—")+'</div>';
+var row=document.createElement("div");row.className="row";
+var tgl=document.createElement("button");tgl.className="btn sm"+(s.done?" alt":"");tgl.textContent=s.done?"✓ 已完成":"剔完成 ✓";tgl.addEventListener("click",function(){s.done=!s.done;store("l22-plan",steps);renderSteps();});
+var up=document.createElement("button");up.className="btn sm";up.textContent="↑";up.title="上移";up.addEventListener("click",function(){if(i>0){var t=steps[i-1];steps[i-1]=steps[i];steps[i]=t;store("l22-plan",steps);renderSteps();}});
+var dn=document.createElement("button");dn.className="btn sm";dn.textContent="↓";dn.title="下移";dn.addEventListener("click",function(){if(i<steps.length-1){var t=steps[i+1];steps[i+1]=steps[i];steps[i]=t;store("l22-plan",steps);renderSteps();}});
+var del=document.createElement("button");del.className="btn sm";del.textContent="刪除";del.addEventListener("click",function(){steps.splice(i,1);store("l22-plan",steps);renderSteps();});
+row.appendChild(tgl);row.appendChild(up);row.appendChild(dn);row.appendChild(del);d.appendChild(row);box.appendChild(d);});
+if(!steps.length)box.innerHTML='<p style="color:#888">暫無步驟，先加入或載入示例。No steps yet.</p>';}
+document.getElementById("addStep").addEventListener("click",function(){var n=document.getElementById("sName").value.trim();if(!n){alert("請先填寫步驟名稱");return;}
+steps.push({name:n,owner:document.getElementById("sOwner").value.trim(),mat:document.getElementById("sMat").value.trim(),date:document.getElementById("sDate").value,done:false});
+document.getElementById("sName").value="";document.getElementById("sOwner").value="";document.getElementById("sMat").value="";document.getElementById("sDate").value="";
+store("l22-plan",steps);renderSteps();});
+document.getElementById("loadEx").addEventListener("click",function(){var ex=[["裁剪卡紙","陳小明","A3 卡紙 2 張",""],["貼上反光貼紙","李小美","反光貼紙 1 張",""],["裝嵌支架","陳小明","雪條棍 10 枝",""],["測試能否穩固豎立","全組","—",""],["改良並記錄","全組","—",""]];
+ex.forEach(function(e){steps.push({name:e[0],owner:e[1],mat:e[2],date:e[3],done:false});});store("l22-plan",steps);renderSteps();});
+document.getElementById("clearSteps").addEventListener("click",function(){if(confirm("確定清空所有步驟？")){steps=[];store("l22-plan",steps);renderSteps();}});
+function renderCosts(){var tb=document.getElementById("costBody");tb.innerHTML="";var tot=0;
+costs.forEach(function(c,i){var sub=c.qty*c.price;tot+=sub;var tr=document.createElement("tr");
+tr.innerHTML="<td>"+esc(c.name)+"</td><td>"+c.qty+"</td><td>HK$"+c.price+"</td><td>HK$"+(Math.round(sub*100)/100)+"</td>";
+var td=document.createElement("td");var del=document.createElement("button");del.className="btn sm";del.textContent="刪";del.addEventListener("click",function(){costs.splice(i,1);store("l22-cost",costs);renderCosts();});td.appendChild(del);tr.appendChild(td);tb.appendChild(tr);});
+document.getElementById("ctotal").textContent=Math.round(tot*100)/100;}
+document.getElementById("addCost").addEventListener("click",function(){var n=document.getElementById("cName").value.trim();if(!n){alert("請先填寫材料品名");return;}
+costs.push({name:n,qty:parseFloat(document.getElementById("cQty").value)||1,price:parseFloat(document.getElementById("cPrice").value)||0});
+document.getElementById("cName").value="";store("l22-cost",costs);renderCosts();});
+function feas(){var a=["f1","f2","f3"].map(function(id){return document.getElementById(id).checked;});
+var m=document.getElementById("fmsg");
+if(a.every(Boolean))m.innerHTML='<span style="color:#1e8449">✅ 三題都答「是」——可以動手！All yes — go build!</span>';
+else if(a.some(Boolean))m.innerHTML='<span style="color:#b7791f">⚠️ 有一題答「不」——先改設計再動手。Revise the design first.</span>';
+else m.textContent="";}
+["f1","f2","f3"].forEach(function(id){document.getElementById(id).addEventListener("change",feas);});
+renderSteps();renderCosts();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：釣魚電郵偵測＋密碼強度 | L20 網絡安全進階</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl .en,.en2{font-size:.85rem;color:#666;font-weight:400}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act.warn{background:#e67e22}
+button.act.ok{background:#27ae60}
+button.act:disabled{opacity:.5;cursor:default}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox{background:#fef9e7;border:1px solid #f5d76e;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox .en{font-size:.82rem;color:#666}
+.email{background:#fff;border:2px solid #1a5276;border-radius:10px;margin:.8rem 0;overflow:hidden}
+.email .eh{background:#1a5276;color:#fff;padding:.6rem .9rem;font-size:.9rem}
+.email .eb{padding:.9rem 1rem;line-height:1.9}
+.email .eb .hk{cursor:pointer;border-bottom:2px dotted #999;padding:0 .15rem}
+.email .eb .hk:hover{background:#fef9e7}
+.email .eb .hk.circled{background:#f9e79f;border:2px solid #e67e22;border-radius:6px}
+.email .eb .hk.hit{background:#d5f5e3;border:2px solid #27ae60;border-radius:6px}
+.email .eb .hk.miss{background:#fadbd8;border:2px solid #c0392b;border-radius:6px}
+.simtag{background:#7d3c98;color:#fff;font-size:.75rem;border-radius:6px;padding:.15rem .5rem;margin-left:.4rem}
+input[type=text],input[type=password],input[type=number],select{font-size:1.05rem;padding:.45rem .6rem;border:1px solid #bbb;border-radius:6px;max-width:100%}
+.good{color:#27ae60;font-weight:700}.bad{color:#c0392b;font-weight:700}
+.score{font-size:1.1rem;font-weight:700;color:#1a5276}
+.klabel{display:inline-block;background:#eee;border-radius:6px;padding:.1rem .5rem;font-size:.8rem;margin:.15rem .2rem}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-20.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：釣魚電郵偵測挑戰 <span class="en">Interactive Simulation: Phishing Email Challenge</span></h2>
+<div class="howto"><b>玩法 How to play：</b>下面三封電郵<b>全部係仿真教材</b>（唔係真電郵）。逐封判斷係<b>真／假</b>，再撳一撳電郵入面你覺得可疑的字句，將五個特徵（可疑寄件人／緊急語氣／奇怪連結／附件陷阱／索取個人資料）圈出嚟！<br><span class="en">All three emails below are <b>simulated teaching materials</b>. Judge each as genuine or phishing, then tap suspicious phrases to circle the hallmarks!</span>
+<div class="score" id="pScore" style="margin-top:.5rem">得分 Score：0</div></div>
+
+<div id="emailBox"></div>
+<div class="btnrow">
+<button class="act warn" id="bVerdictG">✅ 係真電郵 Genuine</button>
+<button class="act" id="bVerdictP" style="background:#c0392b">🎣 係釣魚電郵 Phishing</button>
+<button class="act alt" id="bCheck" disabled>🔍 對答案 Check</button>
+<button class="act ok" id="bNext" disabled>下一封 Next →</button>
+</div>
+<div class="readout" id="pFb">先判斷第 1 封電郵係真定假。<br><span class="en">Judge email 1: genuine or phishing?</span></div>
+
+<div class="tipbox">💡 五個特徵：<span class="klabel">可疑寄件人</span><span class="klabel">緊急語氣</span><span class="klabel">奇怪連結</span><span class="klabel">附件陷阱</span><span class="klabel">索取個人資料</span><br>🔗 檢查連結：<b>懸停睇真正網址、核對域名串法</b>（例如 micorsoft ≠ microsoft），有懷疑就唔好撳！<br><span class="en">Hover to see the real URL; check domain spelling. When in doubt, don't click!</span></div>
+
+<h2>第二部分：密碼強度測試機 <span class="en">Part 2: Password Strength Tester</span></h2>
+<div class="ctl">
+<label>輸入一個<b>假密碼</b>測試強度 <span class="en2">（⚠ 切勿輸入你的真實密碼！）</span></label><br>
+<input type="password" id="pw" placeholder="例如：藍天_單車_圖書館_2026" style="width:100%;margin:.4rem 0" autocomplete="off">
+<label style="font-weight:400"><input type="checkbox" id="showPw" style="transform:scale(1.2);margin-right:.3rem">顯示密碼 Show</label>
+<canvas id="cv" class="sim" width="700" height="120"></canvas>
+<div class="readout" id="pwOut">輸入密碼，即時睇強度。<br><span class="en">Type a (fake) password to see its strength live.</span></div>
+</div>
+<div class="ctl">
+<label>🔐 口令短語產生器 Passphrase generator <span class="en2">（三個不相關的詞＋數字＋符號＝又長又好記）</span></label><br>
+<select id="w1"></select> <select id="w2"></select> <select id="w3"></select><br>
+數字 <input type="number" id="wn" value="2026" style="width:5rem">　符號 <select id="ws"><option>_</option><option>-</option><option>!</option><option>#</option></select>
+<div class="btnrow"><button class="act alt" id="bGenPw">生成口令短語 Generate</button></div>
+<div class="readout" id="genOut" style="display:none"></div>
+</div>
+<div class="tipbox">💡 密碼三原則：<b>夠長</b>（至少 12 個字元）、<b>獨特</b>（唔用生日／電話／名字）、<b>不同網站用不同密碼</b>。<br>🛑 最重要：<b>懷疑就停手</b>——停手、唔撳、問老師或家長；任何人（包括自稱客服）都唔應該問你攞密碼！<br><span class="en">When in doubt, stop. Never share your password with anyone.</span></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+/* ---------- Part 1: phishing ---------- */
+var EMAILS=[
+ {phish:true,keys:['sender','urgent','link'],
+  head:'寄件人 From: <b>support@micorsoft-support.com</b>　主旨 Subject: 帳戶出現異常',
+  body:'親愛的用戶：<br>你的帳戶出現異常活動，<span class="hk" data-k="urgent">請在 <b>24 小時內</b>點擊以下連結驗證，<b>否則帳戶將被停用</b></span>。<br><br><span class="hk" data-k="link">👉 <b><u>立即驗證</u></b></span>　<span class="en2">（懸停顯示真正網址：http://micorsoft-support.com.verify-account.ru/login）</span><br><br>Microsoft 客戶服務團隊'},
+ {phish:false,keys:[],
+  head:'寄件人 From: <b>學校內聯網系統通知</b>　主旨 Subject: 下週測驗時間表',
+  body:'各位同學：<br><span class="hk" data-k="decoy">下週測驗時間表已上載到學校內聯網</span>，請同學查閱。<br><br>教務處啟'},
+ {phish:true,keys:['attach','urgent','data'],
+  head:'寄件人 From: <b>exam-office123@gmail.com</b>　主旨 Subject: 你的成績有誤',
+  body:'同學：<br>你的成績有誤，<span class="hk" data-k="urgent">請<b>立即</b>開啟附件核對</span>。<br><br>📎 附件：<span class="hk" data-k="attach"><b>成績單.exe</b></span>（⚠ .exe 係可執行檔）<br><br>核對後請<span class="hk" data-k="data">回覆你的<b>學生編號及密碼</b></span>。'}
+];
+var KEYNAME={sender:'可疑寄件人',urgent:'緊急語氣',link:'奇怪連結',attach:'附件陷阱',data:'索取個人資料',decoy:'（呢句冇問題）'};
+var idx=0,verdict=null,score=0,lockQ=false;
+function renderEmail(){
+  var e=EMAILS[idx],box=$('emailBox');
+  box.innerHTML='<div class="email"><div class="eh">📧 示例電郵 '+(idx+1)+' / 3 <span class="simtag">仿真教材 Simulated</span></div>'+
+    '<div style="padding:.5rem .9rem;border-bottom:1px solid #dfe6ee;font-size:.9rem;color:#555">'+e.head+'</div>'+
+    '<div class="eb">'+e.body+'</div></div>'+
+    '<div class="en2">💡 撳一撳上面電郵入面可疑的字句嚟圈出特徵（可再撳取消）。先判斷真／假，再圈特徵，最後對答案。</div>';
+  box.querySelectorAll('.hk').forEach(function(s){
+    s.onclick=function(){if(lockQ)return;s.classList.toggle('circled');};
+  });
+  verdict=null;lockQ=false;
+  $('bVerdictG').disabled=false;$('bVerdictP').disabled=false;
+  $('bCheck').disabled=true;$('bNext').disabled=true;
+  $('pFb').innerHTML='先判斷第 '+(idx+1)+' 封電郵係真定假。<br><span class="en">Judge email '+(idx+1)+': genuine or phishing?</span>';
+}
+function setVerdict(v){
+  verdict=v;
+  $('bVerdictG').disabled=true;$('bVerdictP').disabled=true;$('bCheck').disabled=false;
+  $('pFb').innerHTML='你判斷：<b>'+(v?'🎣 釣魚電郵 Phishing':'✅ 真電郵 Genuine')+'</b>。而家撳電郵入面的可疑字句圈出特徵，然後按「🔍 對答案」。';
+}
+$('bVerdictG').onclick=function(){setVerdict(false);};
+$('bVerdictP').onclick=function(){setVerdict(true);};
+$('bCheck').onclick=function(){
+  lockQ=true;var e=EMAILS[idx],gain=0,notes=[];
+  if(verdict===e.phish){gain+=2;notes.push('<span class="good">✓</span> 真／假判斷正確 ＋2 分');}
+  else notes.push('<span class="bad">✗</span> 真／假判斷錯誤（正確答案：'+(e.phish?'🎣 釣魚電郵':'✅ 真電郵')+'）');
+  var spans=document.querySelectorAll('#emailBox .hk');
+  spans.forEach(function(s){
+    var k=s.getAttribute('data-k'),circled=s.classList.contains('circled');
+    s.classList.remove('circled');
+    if(k==='decoy'){if(circled){s.classList.add('miss');gain-=1;notes.push('<span class="bad">✗</span> 誤圈：呢句冇問題 −1 分');}}
+    else if(e.keys.indexOf(k)>=0){
+      if(circled){s.classList.add('hit');gain+=1;notes.push('<span class="good">✓</span> 圈中「'+KEYNAME[k]+'」 ＋1 分');}
+      else{s.classList.add('miss');notes.push('<span class="bad">✗</span> 漏圈：「'+KEYNAME[k]+'」');}
+    }
+  });
+  score+=gain;
+  $('pScore').textContent='得分 Score：'+score;
+  $('pFb').innerHTML='<b>第 '+(idx+1)+' 封：'+(e.phish?'🎣 釣魚電郵 Phishing':'✅ 真電郵 Genuine')+'</b><br>'+notes.join('<br>')+'<br>本封得分：<b>'+(gain>=0?'+':'')+gain+'</b>';
+  $('bCheck').disabled=true;$('bNext').disabled=false;
+  if(idx===2)$('bNext').textContent='🎉 完成挑戰';
+};
+$('bNext').onclick=function(){
+  if(idx<2){idx++;renderEmail();}
+  else{
+    $('pFb').innerHTML='🎉 <b>挑戰完成！總分：'+score+' 分</b><br>'+(score>=10?'全部特徵都圈得好準，你係釣魚電郵剋星！':score>=5?'唔錯！再挑戰一次，試下攞滿分。':'重溫五個特徵（可疑寄件人／緊急語氣／奇怪連結／附件陷阱／索取個人資料），再挑戰一次！')+'<br><span class="en">Remember: when in doubt, stop and ask a teacher.</span>';
+    $('bNext').disabled=true;
+  }
+};
+renderEmail();
+/* ---------- Part 2: password ---------- */
+var cv=$('cv'),ctx=cv.getContext('2d');
+var curShown=0,shownAnim=null;
+function scorePw(pw){
+  var s=0,notes=[];
+  var len=pw.length;
+  if(len>=16){s+=3;notes.push('長度 ≥16 ＋3');}
+  else if(len>=12){s+=2;notes.push('長度 12–15 ＋2');}
+  else if(len>=8){s+=1;notes.push('長度 8–11 ＋1');}
+  else notes.push('太短（<8） ＋0');
+  var cls=0;
+  if(/[a-z]/.test(pw))cls++;if(/[A-Z]/.test(pw))cls++;
+  if(/[0-9]/.test(pw))cls++;if(/[^a-zA-Z0-9]/.test(pw))cls++;
+  if(/[\u4e00-\u9fff]/.test(pw))cls++;
+  s+=cls;notes.push('字符種類 '+cls+' 種 ＋'+cls);
+  var low=pw.toLowerCase(),pen=0;
+  if(/123456|password|qwerty|abc123|111111/.test(low)){pen+=3;notes.push('常見弱密碼組合 −3');}
+  if(/(19|20)\d{2}/.test(pw)){pen+=2;notes.push('似生日年份 −2');}
+  if(/^(.)\1+$/.test(pw)){pen+=3;notes.push('全部相同字符 −3');}
+  s-=pen;
+  var lv=s<=1?['弱 Weak','#c0392b']:s<=3?['中 Medium','#e67e22']:s<=5?['強 Strong','#2e86c1']:['極強 Very strong','#27ae60'];
+  return {s:s,lv:lv,notes:notes};
+}
+function drawMeter(){
+  var W=700,H=120;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  var target=Math.max(0,Math.min(1,curShown/7));
+  ctx.fillStyle='#ecf0f1';ctx.fillRect(40,40,W-80,26);
+  var col=curShown<=1?'#c0392b':curShown<=3?'#e67e22':curShown<=5?'#2e86c1':'#27ae60';
+  ctx.fillStyle=col;ctx.fillRect(40,40,(W-80)*target,26);
+  ctx.fillStyle='#1a5276';ctx.font='bold 17px sans-serif';ctx.textAlign='center';
+  ctx.fillText($('pw').value?('強度：'+scorePw($('pw').value).lv[0]):'—',W/2,100);
+}
+$('pw').addEventListener('input',function(){
+  var r=scorePw($('pw').value);
+  if(shownAnim)cancelAnimationFrame(shownAnim);
+  var from=curShown,to=Math.max(0,r.s);
+  var t0=performance.now();
+  (function fr(t){
+    var p=Math.min(1,(t-t0)/400);curShown=from+(to-from)*p;drawMeter();
+    if(p<1)shownAnim=requestAnimationFrame(fr);
+  })(t0);
+  $('pwOut').innerHTML='🔑 強度：<b style="color:'+r.lv[1]+'">'+r.lv[0]+'</b>（'+r.s+' 分）<br>'+r.notes.join('；')+
+    '<br>三原則自查：'+( $('pw').value.length>=12?'<span class="good">✓</span> 夠長':'<span class="bad">✗</span> 未夠長（至少 12 個字元）');
+});
+$('showPw').onchange=function(){$('pw').type=this.checked?'text':'password';};
+var WORDS=['藍天','單車','圖書館','咖啡','海豚','巴士','月亮','足球','書包','雲'];
+['w1','w2','w3'].forEach(function(id){
+  var s=$(id);
+  WORDS.forEach(function(w){var o=document.createElement('option');o.textContent=w;s.appendChild(o);});
+  s.selectedIndex=Math.floor(Math.random()*WORDS.length);
+});
+$('bGenPw').onclick=function(){
+  var pp=$('w1').value+$('ws').value+$('w2').value+$('ws').value+$('w3').value+$('ws').value+$('wn').value;
+  var r=scorePw(pp),g=$('genOut');g.style.display='block';
+  g.innerHTML='🔐 你的口令短語：<b style="font-size:1.15rem">'+pp+'</b><br>強度：<b style="color:'+r.lv[1]+'">'+r.lv[0]+'</b>（'+r.s+' 分）——又長又好記！<br><span class="en">Long, unique and memorable. Use a different one for each site!</span>';
+};
+drawMeter();
+})();
+</script>
+</body>
+</html>

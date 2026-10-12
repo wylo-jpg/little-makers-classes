@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：發明家日記時間線 | Sim: Inventor's Journal Timeline</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.tl{display:flex;gap:.5rem;overflow-x:auto;padding:.8rem .2rem;margin:.6rem 0}
+.node{flex:0 0 auto;width:7.2rem;background:#fff;border:2px solid #bcd9f2;border-radius:10px;padding:.6rem .5rem;text-align:center;cursor:pointer}
+.node b{display:block;color:#1a5276;font-size:1rem}
+.node small{color:#555;font-size:.78rem}
+.node.on{border-color:#e67e22;background:#fef5e7;box-shadow:0 2px 8px rgba(230,126,34,.25)}
+.detail{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:.6rem 0}
+.detail h3{margin:.2rem 0;color:#1a5276}
+.q{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.6rem 0}
+.q p{font-weight:700;margin:.3rem 0 .5rem}
+.q label{display:block;padding:.3rem .2rem;cursor:pointer}
+.q.correct{border-color:#1e8449;background:#eafaf1}
+.q.wrong{border-color:#c0392b;background:#fdedec}
+.btns{margin:.8rem 0;display:flex;gap:.6rem;flex-wrap:wrap}
+button.big{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.big:active{transform:scale(.97)}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.score{font-size:1.2rem;font-weight:700;margin:.6rem 0;min-height:1.6em}
+textarea{width:100%;min-height:9rem;border:1px solid #bcd9f2;border-radius:8px;padding:.7rem;font-size:1rem;font-family:inherit;line-height:1.7;box-sizing:border-box}
+.count{font-weight:700;color:#1a5276;margin:.4rem 0}
+.ans{font-size:.9rem;margin-top:.4rem;display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-10.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：發明家日記時間線 <span class="en">Interactive Sim: Inventor's Journal Timeline</span></h2>
+<div class="howto"><b>玩法 How to play：</b>① 撳下時間線七個節點，重溫每堂主題同核心概念；② 完成七題自測；③ 寫低你的單元反思（字數計會幫你數夠 150 字）。
+<br><span class="en">Review the 7-lesson timeline, take the 7-question self-test, then draft your unit reflection (150+ characters).</span></div>
+
+<h3>① 單元時間線 <span class="en">Unit timeline</span></h3>
+<div class="tl" id="tl"></div>
+<div class="detail" id="detail"></div>
+
+<h3>② 七堂自測 <span class="en">Self-test: 7 questions</span></h3>
+<div id="quiz"></div>
+<div class="btns"><button class="big" id="bCheck">✅ 交卷 Check answers</button><button class="big" id="bRetry" style="background:#7f8c8d">↺ 重做 Retry</button></div>
+<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+<svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="分數圖">
+<circle cx="60" cy="60" r="48" fill="none" stroke="#dfe6ee" stroke-width="14"/>
+<circle id="ring" cx="60" cy="60" r="48" fill="none" stroke="#e67e22" stroke-width="14" stroke-linecap="round" stroke-dasharray="301.6" stroke-dashoffset="301.6" transform="rotate(-90 60 60)"/>
+<text id="ringTxt" x="60" y="68" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a5276">–/7</text>
+</svg>
+<div class="score" id="score"></div>
+</div>
+
+<h3>③ 單元反思草稿 <span class="en">Reflection draft</span></h3>
+<div class="detail">
+<p>寫出你學到的知識、遇到的困難及解決方法（不少於 150 字）。<br><span class="en">Write what you learned, difficulties you met and how you solved them (≥150 Chinese characters).</span></p>
+<textarea id="refl" placeholder="例如：我學會了以效率值＝承重÷橋重來比較設計……"></textarea>
+<div class="count" id="count">字數：0 ／ 150</div>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+function $(id){return document.getElementById(id);}
+var lessons=[
+ {n:'L4',t:'液壓機械臂',en:'Hydraulic Arm',c:'帕斯卡原理、力的放大',q:'我最滿意／最困難的一刻：推動小針筒時，大針筒的力同行程有咩變化？'},
+ {n:'L5',t:'投石機',en:'Catapult',c:'槓桿三要素、公平測試',q:'我做公平測試時，改變咗邊個變量？點解要計平均射程？'},
+ {n:'L6',t:'意粉橋',en:'Spaghetti Bridge',c:'三角形穩定、效率值、取捨',q:'我嘅橋效率值係幾多？我做過咩取捨決定？'},
+ {n:'L7',t:'雞蛋保護裝置',en:'Egg Drop',c:'空氣阻力、緩衝吸震',q:'我嘅降落傘有冇順利張開？緩衝物料點樣保護隻蛋？'},
+ {n:'L8',t:'串聯並聯',en:'Series & Parallel',c:'電流路徑、開關控制',q:'我用串聯定並聯設計小夜燈？點解咁揀？'},
+ {n:'L9',t:'太陽能小車',en:'Solar Car',c:'能量轉換鏈、調校探究',q:'我調校咗邊個變量？成績前後差幾多？'},
+ {n:'L10',t:'發明家日記 II',en:"Inventor's Journal",c:'整理、反思、表達',q:'七件作品入面，我最滿意邊一件？三個理由係咩？'}
+];
+var tl=$('tl'),detail=$('detail');
+lessons.forEach(function(L,i){
+  var d=document.createElement('div');d.className='node'+(i===0?' on':'');
+  d.innerHTML='<b>'+L.n+'</b>'+L.t+'<br><small>'+L.en+'</small>';
+  d.addEventListener('click',function(){
+    tl.querySelectorAll('.node').forEach(function(x){x.classList.remove('on');});
+    d.classList.add('on');show(i);
+  });
+  tl.appendChild(d);
+});
+function show(i){
+  var L=lessons[i];
+  detail.innerHTML='<h3>'+L.n+' '+L.t+' <span class="en">'+L.en+'</span></h3>'+
+   '<p><b>核心概念 Key concept：</b>'+L.c+'</p>'+
+   '<p><b>反思提示 Reflection prompt：</b>'+L.q+'</p>';
+}
+show(0);
+// quiz
+var quiz=[
+ {q:'L4｜帕斯卡原理是指：',o:['液體受壓會被壓縮','密閉液體所受的壓力會均勻傳遞到各部分','氣體比液體更適合傳遞壓力'],a:1,e:'壓力 P=F/A，兩邊壓力相等，所以 F₂=F₁×(A₂/A₁)。'},
+ {q:'L5｜投石機的支點是指：',o:['橡筋綑綁的位置','發射臂的轉軸','放置發射物的膠匙'],a:1,e:'支點愈靠近發射物端，受力臂愈長，射程愈遠。'},
+ {q:'L6｜某橋重 40 g，最大承重 1,600 g，效率值為：',o:['4','40','400'],a:1,e:'效率值＝1600÷40＝40。'},
+ {q:'L7｜緩衝物料保護雞蛋的原理是：',o:['令雞蛋變輕','延長撞擊時間，減低衝擊力','令雞蛋變硬'],a:1,e:'衝擊力×撞擊時間＝動量變化；時間愈長，力愈細。'},
+ {q:'L8｜兩個相同的燈泡由串聯改為並聯（同一電池），燈泡會：',o:['變暗','光暗不變','變光'],a:2,e:'並聯每個燈泡都得到電池全部電壓。'},
+ {q:'L9｜太陽能小車的能量轉換鏈是：',o:['電能→光能→動能','光能→電能→動能','光能→動能→電能'],a:1,e:'太陽能板：光能→電能；摩打：電能→動能。'},
+ {q:'L10｜好的單元反思應具備：',o:['空泛的感受','具體例子、困難及解決方法','愈短愈好'],a:1,e:'具體＋困難＋解決方法＋證據，先係好反思。'}
+];
+var qz=$('quiz');
+quiz.forEach(function(Q,i){
+  var d=document.createElement('div');d.className='q';d.id='q'+i;
+  var h='<p>'+(i+1)+'. '+Q.q+'</p>';
+  Q.o.forEach(function(opt,j){
+    h+='<label><input type="radio" name="q'+i+'" value="'+j+'"> '+opt+'</label>';
+  });
+  h+='<div class="ans" id="ans'+i+'"></div>';
+  d.innerHTML=h;qz.appendChild(d);
+});
+$('bCheck').addEventListener('click',function(){
+  var score=0;
+  quiz.forEach(function(Q,i){
+    var sel=qz.querySelector('input[name="q'+i+'"]:checked');
+    var box=$('q'+i),ans=$('ans'+i);ans.style.display='block';
+    box.classList.remove('correct','wrong');
+    if(sel&&+sel.value===Q.a){score++;box.classList.add('correct');ans.innerHTML='✅ 正確！'+Q.e;}
+    else{box.classList.add('wrong');ans.innerHTML='❌ 正確答案：'+Q.o[Q.a]+'。'+Q.e;}
+  });
+  var s=$('score');
+  var frac=score/7;
+  $('ring').setAttribute('stroke-dashoffset',(301.6*(1-frac)).toFixed(1));
+  $('ring').setAttribute('stroke',score===7?'#1e8449':(score>=5?'#e67e22':'#c0392b'));
+  $('ringTxt').textContent=score+'/7';
+  if(score===7){s.style.color='#1e8449';s.textContent='🎉 滿分 7/7！你已經掌握晒成個單元！';}
+  else{s.style.color='#1a5276';s.textContent='得分：'+score+' / 7。睇返紅色嗰幾題嘅解釋，再試過！';}
+});
+$('bRetry').addEventListener('click',function(){
+  qz.querySelectorAll('input[type=radio]').forEach(function(r){r.checked=false;});
+  qz.querySelectorAll('.q').forEach(function(b){b.classList.remove('correct','wrong');});
+  qz.querySelectorAll('.ans').forEach(function(a){a.style.display='none';});
+  $('score').textContent='';
+  $('ring').setAttribute('stroke-dashoffset','301.6');
+  $('ringTxt').textContent='–/7';
+});
+// reflection word count
+$('refl').addEventListener('input',function(e){
+  var n=e.target.value.replace(/\s/g,'').length;
+  var c=$('count');
+  c.textContent='字數：'+n+' ／ 150'+(n>=150?' ✅ 夠字數啦！':'（仲差 '+(150-n)+' 字）');
+  c.style.color=n>=150?'#1e8449':'#1a5276';
+});
+})();
+</script>
+</body>
+</html>

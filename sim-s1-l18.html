@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動模擬 · 第 18 堂：教電腦認東西</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:960px;margin:0 auto;padding:0 1rem 3rem}
+.sim-wrap h2{margin:.6rem 0 .2rem}
+.sim-wrap .en-sub{color:#666;font-size:.9rem;margin-bottom:.8rem}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0;font-size:.95rem}
+.howto ol{margin:.4rem 0 .2rem;padding-left:1.4rem}
+#cv{width:100%;max-width:560px;height:auto;border:3px solid #1a5276;border-radius:12px;display:block;margin:.6rem auto;background:#fbfbfb;touch-action:manipulation;cursor:crosshair}
+.ctrls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.8rem 0}
+.bigbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.65rem 1.2rem;font-size:1rem;font-weight:700;cursor:pointer}
+.bigbtn:disabled{background:#aaa;cursor:not-allowed}
+.ghostbtn{background:#fff;border:2px solid #1a5276;color:#1a5276;border-radius:8px;padding:.55rem 1rem;font-size:.95rem;cursor:pointer}
+.classbtn{border:3px solid;border-radius:8px;padding:.55rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer;background:#fff}
+.classbtn.a{border-color:#e74c3c;color:#e74c3c}
+.classbtn.b{border-color:#2980b9;color:#2980b9}
+.classbtn.onA{background:#e74c3c;color:#fff}
+.classbtn.onB{background:#2980b9;color:#fff}
+.sliderbox{margin:.7rem 0}
+.sliderbox input[type=range]{width:min(320px,70vw)}
+.readout{display:flex;flex-wrap:wrap;gap:.8rem;margin:1rem 0}
+.stat{background:#fff;border:2px solid #dfe6ee;border-radius:10px;padding:.7rem 1rem;min-width:150px;text-align:center}
+.stat b{font-size:1.5rem;display:block}
+.accbar{height:22px;background:#eee;border-radius:11px;overflow:hidden;margin-top:.3rem}
+.accbar>div{height:100%;width:0;background:linear-gradient(90deg,#e74c3c,#f1c40f,#27ae60);transition:width .6s}
+.lesson{background:#fef9e7;border:1px solid #f1c40f;border-radius:10px;padding:.9rem 1.1rem;margin-top:1rem;display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<nav class="crumb wrap"><a href="lesson-s1-18.html">← 返回課堂 Back to lesson</a></nav>
+<main class="sim-wrap">
+<h2>🎮 教電腦認嘢：分類機訓練場 <span class="en-sub">Teachable Machine Simulator</span></h2>
+<div class="en-sub">第 18 堂 · 教電腦認東西 Teaching Computers to Recognise</div>
+<div class="howto">
+<b>玩法 How to play：</b>
+<ol>
+<li>揀<b>類別 A（紅）/ 類別 B（藍）</b>，再<b>撳畫布</b>加訓練樣本（模擬 Teachable Machine 影相）。左半係 A 類區，右半係 B 類區。</li>
+<li>撳「<b>訓練</b>」——電腦會計出兩個類別嘅中心，畫出<b>分界線</b>。</li>
+<li>撳「<b>測試</b>」——用電腦未見過嘅新點考佢，睇準確率。</li>
+<li>做<b>偏見實驗</b>：只用左上角訓練 A 類，再全面測試——睇下會發生咩事。</li>
+</ol>
+</div>
+
+<div class="ctrls">
+<button class="classbtn a onA" id="btnA">🔴 類別 A（左區）</button>
+<button class="classbtn b" id="btnB">🔵 類別 B（右區）</button>
+<button class="ghostbtn" id="autoBtn">📸 自動加 20 個樣本</button>
+<button class="ghostbtn" id="clearBtn">🗑 清除</button>
+</div>
+
+<div class="sliderbox">
+<label>📊 每類樣本數（自動加時用）：<b id="nVal">20</b></label><br>
+<input type="range" id="nSamples" min="3" max="60" value="20">
+</div>
+
+<canvas id="cv" width="560" height="360"></canvas>
+
+<div class="ctrls">
+<button class="bigbtn" id="trainBtn">🧠 訓練 Train</button>
+<button class="bigbtn" id="testBtn" disabled>🧪 測試 Test</button>
+<button class="ghostbtn" id="biasBtn">⚠️ 偏見實驗：只用左上角訓練 A 類</button>
+</div>
+
+<div class="readout">
+<div class="stat">A 類樣本<b id="stA">0</b></div>
+<div class="stat">B 類樣本<b id="stB">0</b></div>
+<div class="stat" style="flex:1;min-width:220px">測試準確率 Test accuracy<b id="stAcc">—</b><div class="accbar"><div id="accFill"></div></div></div>
+</div>
+
+<div class="lesson" id="lessonBox"></div>
+</main>
+
+<script>
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+var W = 560, H = 360;
+var ptsA = [], ptsB = [], testPts = [], boundary = null, activeClass = 'A', trained = false;
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // 區域底色
+  ctx.fillStyle = 'rgba(231,76,60,.06)'; ctx.fillRect(0,0,W/2,H);
+  ctx.fillStyle = 'rgba(41,128,185,.06)'; ctx.fillRect(W/2,0,W/2,H);
+  ctx.strokeStyle = '#ccc'; ctx.setLineDash([8,6]);
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#999'; ctx.font = '16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('A 類區', W/4, 24); ctx.fillText('B 類區', W*3/4, 24);
+  // 分界線
+  if(boundary){
+    ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(boundary.x1, boundary.y1); ctx.lineTo(boundary.x2, boundary.y2); ctx.stroke();
+    ctx.fillStyle = '#8e44ad'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('AI 學到的分界線', W/2, H-10);
+  }
+  // 測試點
+  testPts.forEach(function(p){
+    ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+    ctx.fillStyle = p.ok ? 'rgba(39,174,96,.85)' : 'rgba(192,57,43,.9)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    if(!p.ok){ ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(p.x-9,p.y-9); ctx.lineTo(p.x+9,p.y+9);
+      ctx.moveTo(p.x+9,p.y-9); ctx.lineTo(p.x-9,p.y+9); ctx.stroke(); }
+  });
+  // 訓練點
+  function dots(arr, col){
+    arr.forEach(function(p){
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+  }
+  dots(ptsA, '#e74c3c'); dots(ptsB, '#2980b9');
+  // 中心
+  if(boundary){
+    [['#e74c3c', boundary.cA], ['#2980b9', boundary.cB]].forEach(function(pair){
+      ctx.beginPath(); ctx.arc(pair[1].x, pair[1].y, 9, 0, Math.PI*2);
+      ctx.fillStyle = pair[0]; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    });
+  }
+}
+function stats(){
+  document.getElementById('stA').textContent = ptsA.length;
+  document.getElementById('stB').textContent = ptsB.length;
+}
+function centroid(arr){
+  var sx=0, sy=0;
+  arr.forEach(function(p){ sx+=p.x; sy+=p.y; });
+  return {x:sx/arr.length, y:sy/arr.length};
+}
+function addRandom(n, biased){
+  for(var i=0;i<n;i++){
+    if(biased){
+      ptsA.push({x: 30+Math.random()*120, y: 30+Math.random()*100}); // 左上角
+    } else {
+      ptsA.push({x: 20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+    }
+    ptsB.push({x: W/2+20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+  }
+  trained = false; testPts = []; boundary = null;
+  document.getElementById('testBtn').disabled = true;
+  document.getElementById('stAcc').textContent = '—';
+  document.getElementById('accFill').style.width = '0';
+  draw(); stats();
+}
+cv.addEventListener('click', function(e){
+  var r = cv.getBoundingClientRect();
+  var x = (e.clientX - r.left) * (W / r.width);
+  var y = (e.clientY - r.top) * (H / r.height);
+  (activeClass === 'A' ? ptsA : ptsB).push({x:x, y:y});
+  trained = false; boundary = null; testPts = [];
+  document.getElementById('testBtn').disabled = true;
+  document.getElementById('stAcc').textContent = '—';
+  draw(); stats();
+});
+document.getElementById('btnA').onclick = function(){
+  activeClass='A';
+  this.classList.add('onA'); document.getElementById('btnB').classList.remove('onB');
+};
+document.getElementById('btnB').onclick = function(){
+  activeClass='B';
+  this.classList.add('onB'); document.getElementById('btnA').classList.remove('onA');
+};
+document.getElementById('nSamples').oninput = function(){ document.getElementById('nVal').textContent = this.value; };
+document.getElementById('autoBtn').onclick = function(){
+  addRandom(parseInt(document.getElementById('nSamples').value,10), false);
+};
+document.getElementById('clearBtn').onclick = function(){
+  ptsA=[]; ptsB=[]; testPts=[]; boundary=null; trained=false;
+  document.getElementById('testBtn').disabled = true;
+  document.getElementById('stAcc').textContent = '—';
+  document.getElementById('accFill').style.width='0';
+  hideLesson(); draw(); stats();
+};
+document.getElementById('biasBtn').onclick = function(){
+  ptsA=[]; ptsB=[];
+  addRandom(25, true); // A 類只在左上角
+  showLesson('⚠️ <b>偏見實驗開始：</b>A 類嘅 25 個樣本<b>全部來自左上角</b>（好似課堂只用右手影相）。<br>撳「訓練」→「測試」，睇下 AI 會唔會認錯左區其他位置嘅 A 類！');
+  document.getElementById('trainBtn').scrollIntoView({behavior:'smooth', block:'center'});
+};
+function showLesson(html){
+  var box = document.getElementById('lessonBox');
+  box.style.display='block'; box.innerHTML = html;
+}
+function hideLesson(){ document.getElementById('lessonBox').style.display='none'; }
+
+document.getElementById('trainBtn').onclick = function(){
+  if(ptsA.length===0 || ptsB.length===0){ alert('兩類都要有樣本先訓練到！'); return; }
+  var cA = centroid(ptsA), cB = centroid(ptsB);
+  // 分界線：兩中心連線的中垂線
+  var mx=(cA.x+cB.x)/2, my=(cA.y+cB.y)/2;
+  var dx=cB.x-cA.x, dy=cB.y-cA.y;
+  // 中垂線方向 (-dy, dx)
+  var t = 2000, nx=-dy, ny=dx;
+  var len = Math.sqrt(nx*nx+ny*ny)||1; nx/=len; ny/=len;
+  boundary = {x1:mx-nx*t, y1:my-ny*t, x2:mx+nx*t, y2:my+ny*t, cA:cA, cB:cB, dx:dx, dy:dy, mx:mx, my:my};
+  trained = true; testPts = [];
+  document.getElementById('testBtn').disabled = false;
+  document.getElementById('stAcc').textContent = '—';
+  showLesson('🧠 <b>訓練完成！</b>電腦搵到兩類樣本嘅中心（大圓點），畫出紫色<b>分界線</b>——<br>電腦唔係「諗」，只係<b>比對圖案特徵</b>（邊個中心近就歸邊類）。宜家撳「測試」！');
+  draw();
+};
+function classify(x, y){
+  // 邊個中心近
+  var cA = boundary.cA, cB = boundary.cB;
+  var dA = (x-cA.x)*(x-cA.x)+(y-cA.y)*(y-cA.y);
+  var dB = (x-cB.x)*(x-cB.x)+(y-cB.y)*(y-cB.y);
+  return dA < dB ? 'A' : 'B';
+}
+document.getElementById('testBtn').onclick = function(){
+  if(!trained) return;
+  testPts = [];
+  var right = 0, N = 40;
+  for(var i=0;i<N;i++){
+    var left = (i % 2 === 0);
+    var x = left ? 20+Math.random()*(W/2-40) : W/2+20+Math.random()*(W/2-40);
+    var y = 20+Math.random()*(H-40);
+    var truth = left ? 'A' : 'B';
+    var guess = classify(x, y);
+    var ok = (guess === truth);
+    if(ok) right++;
+    testPts.push({x:x, y:y, ok:ok});
+  }
+  var acc = Math.round(right/N*100);
+  document.getElementById('stAcc').textContent = acc + '%（'+right+'/'+N+'）';
+  document.getElementById('accFill').style.width = acc + '%';
+  var biasedCase = ptsA.length>0 && ptsA.every(function(p){ return p.x < 180 && p.y < 140; });
+  if(biasedCase && acc < 90){
+    showLesson('📉 <b>出事啦！準確率得 '+acc+'%。</b>紅色 ✘ 係認錯嘅點——好多喺左區但唔係左上角嘅 A 類都被判錯。<br>原因：<b>訓練數據太單一</b>（只得左上角），AI 以為「A 類＝左上角」，換個位置就認錯。<br>💡 <b>數據偏見：有偏見嘅數據 → 有偏見嘅 AI。</b>好似只用右手訓練、用左手測試咁。試下「清除」再用「自動加樣本」訓練一次，對比下準確率！');
+  } else if(acc >= 90){
+    showLesson('✅ <b>準確率 '+acc+'%！</b>數據又多又分散，AI 學得好。<br>💡 口訣：「<b>有數據、先訓練、再測試</b>」——數據愈多、愈多元，學得愈好。試下將樣本數較到最少（3 個）再訓練測試，睇下穩唔穩定！');
+  } else {
+    showLesson('📊 準確率 '+acc+'%。樣本太少或太集中，模型就會唔穩定。<br>💡 加多啲樣本、分散啲位置，再訓練一次試下。');
+  }
+  draw();
+  document.getElementById('lessonBox').scrollIntoView({behavior:'smooth', block:'nearest'});
+};
+draw(); stats();
+</script>
+</body>
+</html>

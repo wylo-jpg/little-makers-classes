@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L12 互動模擬：二進制卡片 | Binary Cards</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas#bin{width:100%;max-width:600px;display:block;margin:0 auto;touch-action:manipulation;cursor:pointer}
+.cbtn{display:inline-block;padding:.55rem .95rem;border-radius:8px;border:1px solid #bcd9f2;background:#fff;color:#1a5276;font-weight:700;font-size:.95rem;margin:.25rem;cursor:pointer}
+.cbtn:hover{background:#eaf6ff}
+.cbtn.primary{background:#1a5276;color:#fff;border-color:#1a5276}
+.cbtn.primary:hover{background:#14425f}
+.cbtn:disabled{opacity:.45;cursor:default}
+#readout{font-size:1.05rem;font-weight:700}
+#readout .en{font-size:.85rem;font-weight:400;color:#555}
+.big{font-size:2.6rem;font-weight:800;color:#1a5276;letter-spacing:.1rem}
+.mode{display:inline-block;padding:.35rem .8rem;border-radius:20px;font-size:.85rem;font-weight:700;margin-right:.4rem;cursor:pointer;border:1px solid #1a5276;color:#1a5276;background:#fff}
+.mode.on{background:#1a5276;color:#fff}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-12.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L12 互動模擬：二進制卡片 <span class="en">Binary Cards — the computer's language</span></h2>
+
+<div class="card"><b>玩法 How to play</b>
+<ol>
+<li><b>自由探索 Free play</b>：撳卡片翻開／合上（1／0），睇十進制數值點變——記住「逢二進一」！<br><span class="en">Tap cards to flip between 1 and 0 and watch the decimal value change.</span></li>
+<li><b>挑戰模式 Challenge</b>：撳中目標數字嘅卡片組合，再撳「檢查」。<br><span class="en">Flip the cards that add up to the target, then check.</span></li>
+<li>二進制讀作「一零」唔係「十」！例如 10 讀「一零」，等於 2。<br><span class="en">Read 10 as "one-zero", not "ten".</span></li>
+</ol>
+<div><span class="mode on" id="mFree">自由探索 Free play</span><span class="mode" id="mChal">挑戰模式 Challenge</span></div>
+</div>
+
+<div class="card">
+<canvas id="bin" width="600" height="400"></canvas>
+<div id="readout" style="margin-top:.4rem"></div>
+<div id="chalBox" style="display:none;margin-top:.6rem">
+<div style="font-size:1.1rem">🎯 目標 Target：<b id="target" style="font-size:1.8rem;color:#e67e22"></b></div>
+<button class="cbtn primary" id="check">✅ 檢查 <span style="font-weight:400;font-size:.8rem">Check</span></button>
+<button class="cbtn" id="newQ">🎲 換一題 <span style="font-weight:400;font-size:.8rem">New question</span></button>
+<button class="cbtn" id="hint">💡 提示 <span style="font-weight:400;font-size:.8rem">Hint</span></button>
+<span id="score" style="margin-left:.5rem;font-weight:700">得分 Score：0</span>
+<div id="chalMsg" style="margin-top:.4rem;font-weight:700"></div>
+</div>
+</div>
+
+<div class="card"><b>記住 Remember</b>
+<ul>
+<li>每張卡代表 2 嘅次方：16＝2⁴，8＝2³，4＝2²，2＝2¹，1＝2⁰。</li>
+<li>一個 0 或 1 叫做一個 <b>bit</b>（位元）。五張卡最多表示 0 至 31。</li>
+<li>電腦只識開／關兩種狀態，所以用 0 同 1 記錄所有資料。</li>
+</ul><p class="en">Each card is a power of 2. One 0/1 is a bit. Five cards cover 0–31.</p></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var vals=[16,8,4,2,1], pows=["2⁴","2³","2²","2¹","2⁰"];
+var bits=[0,0,0,0,0];           // 0 = face down, 1 = face up
+var flipAnim=[0,0,0,0,0];       // remaining flip frames (sign indicates direction phase)
+var mode="free", target=0, score=0, hintShown=false;
+var canvas=document.getElementById("bin"), ctx=canvas.getContext("2d");
+var W=600,H=400,dpr=window.devicePixelRatio||1;
+canvas.width=W*dpr; canvas.height=H*dpr; ctx.scale(dpr,dpr);
+var CW=96,CH=190,GAP=16,TX=(W-(5*CW+4*GAP))/2,TY=70;
+
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function cardRect(i){ return {x:TX+i*(CW+GAP), y:TY, w:CW, h:CH}; }
+function sum(){ var s=0; for(var i=0;i<5;i++) if(bits[i]) s+=vals[i]; return s; }
+function binStr(){ return bits.map(function(b){return b;}).join(""); }
+var CN=["零","一"];
+function reading(){ return bits.map(function(b){return CN[b];}).join(""); }
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  for(var i=0;i<5;i++){
+    var r=cardRect(i), on=bits[i]===1;
+    var sx=1;
+    if(flipAnim[i]>0){ var ph=flipAnim[i]; sx=Math.abs(Math.cos(ph/8*Math.PI)); sx=Math.max(0.08,sx); }
+    var cx=r.x+r.w/2, cy=r.y+r.h/2;
+    ctx.save(); ctx.translate(cx,cy); ctx.scale(sx,1);
+    var grad=ctx.createLinearGradient(0,-CH/2,0,CH/2);
+    if(on){ grad.addColorStop(0,"#fdebd0"); grad.addColorStop(1,"#f5b041"); }
+    else { grad.addColorStop(0,"#eaf0f6"); grad.addColorStop(1,"#bdc3c7"); }
+    ctx.fillStyle=grad;
+    roundRect(-CW/2,-CH/2,CW,CH,12); ctx.fill();
+    ctx.lineWidth=3; ctx.strokeStyle=on?"#e67e22":"#7f8c8d"; roundRect(-CW/2,-CH/2,CW,CH,12); ctx.stroke();
+    ctx.fillStyle=on?"#7d4e00":"#7f8c8d";
+    ctx.font="bold 44px sans-serif"; ctx.fillText(vals[i],0,-40);
+    ctx.font="20px sans-serif"; ctx.fillText(pows[i],0,-2);
+    // bit badge
+    ctx.fillStyle=on?"#e67e22":"#95a5a6";
+    ctx.beginPath(); ctx.arc(0,52,26,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.fillText(on?"1":"0",0,53);
+    ctx.restore();
+    ctx.fillStyle="#555"; ctx.font="15px sans-serif";
+    ctx.fillText(on?"翻開 face up":"合上 face down",cx,TY+CH+24);
+  }
+  // readouts
+  ctx.fillStyle="#1a5276"; ctx.textAlign="center";
+  ctx.font="bold 20px sans-serif";
+  ctx.fillText("二進制 Binary: "+binStr(), W/2, TY+CH+58);
+  ctx.font="16px sans-serif"; ctx.fillStyle="#555";
+  ctx.fillText("讀法 Read as: "+reading(), W/2, TY+CH+84);
+  updateReadout();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function updateReadout(){
+  var s=sum(), ro=document.getElementById("readout");
+  if(mode==="free"){
+    ro.innerHTML='<span class="big">'+s+'</span> <span style="font-size:1rem">← 十進制 Decimal</span><br><span class="en">Tap a card to flip it. "逢二進一" — carry when reaching two!</span>';
+  }else{
+    ro.innerHTML='你嘅數字 Your number：<span class="big">'+s+'</span><br><span class="en">Flip cards to make '+target+'.</span>';
+  }
+}
+async function toggle(i){
+  if(flipAnim[i]>0) return;
+  flipAnim[i]=8;
+  var timer=setInterval(function(){
+    flipAnim[i]--;
+    if(flipAnim[i]===4){ bits[i]=bits[i]?0:1; }  // swap face half-way
+    if(flipAnim[i]<=0){ flipAnim[i]=0; clearInterval(timer); }
+    draw();
+  },45);
+  draw();
+}
+canvas.addEventListener("click",function(e){
+  var r=canvas.getBoundingClientRect();
+  var mx=(e.clientX-r.left)*(W/r.width), my=(e.clientY-r.top)*(H/r.height);
+  for(var i=0;i<5;i++){ var c=cardRect(i);
+    if(mx>=c.x&&mx<=c.x+c.w&&my>=c.y&&my<=c.y+c.h){ toggle(i); break; } }
+});
+function newQuestion(){
+  target=Math.floor(Math.random()*32);
+  bits=[0,0,0,0,0]; hintShown=false;
+  document.getElementById("target").textContent=target;
+  document.getElementById("chalMsg").textContent="";
+  draw();
+}
+document.getElementById("mFree").onclick=function(){ mode="free";
+  this.classList.add("on"); document.getElementById("mChal").classList.remove("on");
+  document.getElementById("chalBox").style.display="none"; draw(); };
+document.getElementById("mChal").onclick=function(){ mode="chal";
+  this.classList.add("on"); document.getElementById("mFree").classList.remove("on");
+  document.getElementById("chalBox").style.display="block"; newQuestion(); };
+document.getElementById("newQ").onclick=newQuestion;
+document.getElementById("check").onclick=function(){
+  var s=sum(), msg=document.getElementById("chalMsg");
+  if(s===target){
+    score++; document.getElementById("score").textContent="得分 Score："+score;
+    msg.style.color="#27ae60";
+    msg.innerHTML="🎉 啱晒！"+target+" ＝ "+binStr()+"（讀作「"+reading()+"」）。再嚟一題？";
+    setTimeout(newQuestion,1600);
+  }else{
+    msg.style.color="#c0392b";
+    msg.innerHTML=(s<target?"📉 太細喇（差 "+(target-s)+"）。":"📈 太大喇（多 "+(s-target)+"）。")+"試下加／減卡片。";
+  }
+};
+document.getElementById("hint").onclick=function(){
+  var msg=document.getElementById("chalMsg"), t=target, parts=[];
+  for(var i=0;i<5;i++){ if(t>=vals[i]){ parts.push(vals[i]); t-=vals[i]; } }
+  msg.style.color="#1a5276";
+  msg.innerHTML="💡 "+target+" ＝ "+parts.join(" ＋ ")+"。翻開呢幾張卡！<br><span class='en' style='font-weight:400'>"+target+" = "+parts.join(" + ")+"</span>";
+};
+draw();
+})();
+</script>
+</body>
+</html>

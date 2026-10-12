@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>製作日誌工具 | L23 | 創科班</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+label.f{display:block;font-weight:700;margin:.6rem 0.25rem}
+input[type=text],textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #c8d3e0;border-radius:8px;font-size:1rem;font-family:inherit}
+textarea{min-height:2.6rem;resize:vertical}
+.btn.sm{padding:.35rem.8rem;font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.log{background:#fff;border:1px solid #dfe6ee;border-left:6px solid #2e86c1;border-radius:8px;padding:.7rem.9rem;margin:.6rem 0}
+.log.col{margin:.3rem 0;font-size:.95rem}
+.log.col b{color:#1a5276;display:inline-block;min-width:7.5rem}
+.log.t{font-size:.8rem;color:#888;margin-bottom:.3rem}
+.safe{background:#fef9e7;border:1px solid #f0d27a;border-radius:8px;padding:.6rem.8rem;margin:.5rem 0}
+.safe input{transform:scale(1.4);margin-right:.5rem}
+.tip{background:#eaf6ff;border-radius:8px;padding:.6rem.8rem;margin:.4rem 0}
+.en{font-size:.85rem;color:#666;font-weight:400}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-23.html">← 返回課堂 Back to lesson</a></nav>
+<h2>製作日誌工具 <span class="en">Making Log</span></h2>
+<div class="card">
+<p><b>玩法 How to play：</b>① 每完成一部分製作，就新增一條日誌，填寫五欄（完成部分／遇到的問題／解決方法／測試結果／下次改良）；② 寫得愈具體愈好——寫「支架黏合後搖晃」，不要只寫「失敗了」；③ 日誌自動儲存在此裝置，可一鍵複製成文字交給老師。</p>
+<p class="en">Add one log entry per making session with all five columns. Be specific — "the stand wobbled after gluing", not just "failed". Entries are saved on this device and can be copied as text.</p>
+</div>
+
+<div class="card">
+<h3>➕ 新增日誌 New entry</h3>
+<label class="f">① 今日完成的製作部分 <span class="en">Part completed today</span></label>
+<textarea id="l1" placeholder="例如：反光提示牌的牌身與支架黏合"></textarea>
+<label class="f">② 遇到的問題 <span class="en">Problem encountered</span></label>
+<textarea id="l2" placeholder="例如：支架用雪條棍黏合後容易搖晃"></textarea>
+<label class="f">③ 嘗試過的解決方法 <span class="en">Solutions tried</span></label>
+<textarea id="l3" placeholder="例如：改為三角形支架結構，底部加闊卡紙座"></textarea>
+<label class="f">④ 測試結果 <span class="en">Test result</span></label>
+<textarea id="l4" placeholder="例如：輕推後不再搖晃，能穩固豎立"></textarea>
+<label class="f">⑤ 下次要改良的地方 <span class="en">To improve next time</span></label>
+<textarea id="l5" placeholder="例如：支架與牌身的接合位再加固"></textarea>
+<div class="row">
+<button class="btn" id="addLog">💾 儲存日誌 Save entry</button>
+<button class="btn sm alt" id="fillEx">填入示例 Fill example</button>
+</div>
+</div>
+
+<div class="card">
+<h3>📒 我的製作日誌 My log <span id="cnt" class="en"></span></h3>
+<div id="logs"></div>
+<div class="row">
+<button class="btn" id="copyAll">📋 複製全部成文字 Copy all as text</button>
+<button class="btn sm" id="clearLogs">清空 Clear</button>
+</div>
+</div>
+
+<div class="card">
+<h3>🦺 安全檢查 Safety check <span class="en">（動手前先剔好）</span></h3>
+<div class="safe"><input type="checkbox" id="s1"> <b>剪刀</b>：傳遞時握住尖端、把手向外；用後放回原處，不可拋擲。<br><span class="en">Pass scissors handles-outward; put them back after use.</span></div>
+<div class="safe"><input type="checkbox" id="s2"> <b>美工刀</b>：只在切割墊上、刀片向外裁切；用後即收回刀片；不確定就請老師協助。<br><span class="en">Cut on the mat, blade outward; retract after use; ask the teacher if unsure.</span></div>
+<div class="safe"><input type="checkbox" id="s3"> <b>低溫膠槍</b>：只用低溫型；勿觸碰出膠口；用後即關電源；燙到即舉手、清水沖洗。<br><span class="en">Low-temperature type only; never touch the nozzle; switch off after use.</span></div>
+<div id="smsg" style="margin-top:.5rem;font-weight:700"></div>
+</div>
+
+<div class="card">
+<h3>💡 卡住時試試 Stuck? Try this</h3>
+<div class="tip">🔄 改用另一種材料 <span class="en">Switch materials</span></div>
+<div class="tip">✂️ 簡化結構（例如改用三角形支架） <span class="en">Simplify the structure</span></div>
+<div class="tip">🙋 向同伴求助，或請教師指導 <span class="en">Ask a classmate or the teacher</span></div>
+<div class="tip">🎯 進度落後？縮小範圍，先完成核心部件 <span class="en">Behind schedule? Finish the core parts first</span></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+function load(){try{return JSON.parse(localStorage.getItem("l23-log")||"[]");}catch(e){return[];}}
+function store(a){localStorage.setItem("l23-log",JSON.stringify(a));}
+var logs=load();
+var labels=["今日完成的製作部分","遇到的問題","嘗試過的解決方法","測試結果","下次要改良的地方"];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function render(){var box=document.getElementById("logs");box.innerHTML="";
+document.getElementById("cnt").textContent="（共 "+logs.length+" 條）";
+logs.forEach(function(e,i){var d=document.createElement("div");d.className="log";
+var t=document.createElement("div");t.className="t";t.textContent="第 "+(logs.length-i)+" 條 · "+new Date(e.ts).toLocaleString("zh-HK");d.appendChild(t);
+e.cols.forEach(function(c,j){var r=document.createElement("div");r.className="col";r.innerHTML="<b>"+(j+1)+". "+labels[j]+"</b><br>"+esc(c||"—");d.appendChild(r);});
+var row=document.createElement("div");row.className="row";
+var del=document.createElement("button");del.className="btn sm";del.textContent="刪除 Delete";del.addEventListener("click",function(){logs.splice(i,1);store(logs);render();});
+row.appendChild(del);d.appendChild(row);box.appendChild(d);});
+if(!logs.length)box.innerHTML='<p style="color:#888">暫無日誌。No entries yet.</p>';}
+document.getElementById("addLog").addEventListener("click",function(){
+var cols=[1,2,3,4,5].map(function(n){return document.getElementById("l"+n).value.trim();});
+if(cols.every(function(c){return!c;})){alert("請至少填寫一欄");return;}
+logs.unshift({cols:cols,ts:Date.now()});store(logs);
+[1,2,3,4,5].forEach(function(n){document.getElementById("l"+n).value="";});render();});
+document.getElementById("fillEx").addEventListener("click",function(){
+var ex=["反光提示牌的牌身與支架黏合","支架用雪條棍黏合後容易搖晃","改為三角形支架結構，並在底部加闊卡紙座","輕推後不再搖晃，能穩固豎立","支架與牌身的接合位再加固"];
+ex.forEach(function(v,i){document.getElementById("l"+(i+1)).value=v;});});
+function copyText(t,cb){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(cb).catch(function(){fallback();});}else fallback();
+function fallback(){var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");cb();}catch(e){alert("複製失敗");}document.body.removeChild(ta);}}
+document.getElementById("copyAll").addEventListener("click",function(){
+if(!logs.length){alert("暫無日誌");return;}
+var txt="製作日誌 Making Log\n";
+logs.slice().reverse().forEach(function(e,i){txt+="\n\n";
+e.cols.forEach(function(c,j){txt+=(j+1)+". "+labels[j]+"："+(c||"—")+"\n";});});
+copyText(txt,function(){alert("已複製全部日誌！Copied!");});});
+document.getElementById("clearLogs").addEventListener("click",function(){if(confirm("確定清空所有日誌？")){logs=[];store(logs);render();}});
+function scheck(){var ok=["s1","s2","s3"].every(function(id){return document.getElementById(id).checked;});
+document.getElementById("smsg").innerHTML=ok?'<span style="color:#1e8449">✅ 安全守則已確認，可以動手！Safety confirmed — go!</span>':"";}
+["s1","s2","s3"].forEach(function(id){document.getElementById(id).addEventListener("change",scheck);});
+render();
+})();
+</script>
+</body>
+</html>

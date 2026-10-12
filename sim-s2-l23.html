@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L23 原型製作日誌 | Prototype Build Log</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:20px;padding:.15rem.7rem;margin:.15rem.2rem}
+.b-ok{background:#d5f5e3;color:#1e8449}.b-warn{background:#fdebd0;color:#b9770e}.b-bad{background:#fadbd8;color:#922b21}.b-info{background:#d6eaf8;color:#1a5276}
+.prog{position:relative;background:#eaf2f8;border-radius:12px;height:2.2rem;margin:.8rem 0;overflow:hidden}
+.prog.fill{background:linear-gradient(90deg,#2e86c1,#1a5276);height:100%;width:0;transition:width.4s;border-radius:12px}
+.prog.goal{position:absolute;top:-4px;bottom:-4px;width:3px;background:#e74c3c;left:70%}
+.prog.plabel{position:absolute;left:70%;top:-1.4rem;transform:translateX(-50%);font-size:.78rem;color:#e74c3c;font-weight:700;white-space:nowrap}
+.prog.pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:#1a5276}
+.trow{background:#f8fafc;border:1px solid #dfe6ee;border-radius:8px;padding:.7rem;margin:.5rem 0}
+.stbtn{border:none;border-radius:20px;padding:.35rem.9rem;font-weight:700;font-size:.85rem;color:#fff}
+.st0{background:#95a5a6}.st1{background:#e67e22}.st2{background:#27ae60}
+input[type=text],select,textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #bcd9f2;border-radius:6px;font-size:.95rem;margin:.25rem 0;font-family:inherit}
+textarea{min-height:2.4rem;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+label.ck{display:flex;gap:.5rem;align-items:flex-start;margin:.45rem 0;font-size:.92rem;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem}
+label.ck input{width:1.1rem;height:1.1rem;margin-top:.15rem;flex:none}
+label.ck.done{border-color:#27ae60;background:#eafaf1}
+.small{font-size:.82rem;color:#666}
+.count-pill{display:inline-block;background:#1a5276;color:#fff;border-radius:20px;padding:.2rem.9rem;font-weight:700}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-23.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L23 原型製作日誌 <span class="en">Lesson 23 · Prototype Build Log — 動手做（一）：實物原型</span></h2>
+
+<div class="theme"><b>玩法 How to play：</b>
+1️⃣ 由第 22 堂製作計劃抄入工序＋負責人 → 2️⃣ 撳狀態掣更新進度（目標：主要結構 ≥70%）→
+3️⃣ 一出問題即用「解難四步」填記錄 → 4️⃣ 開工前剔晒安全清單。<br>
+<span class="en">Track procedures with owners, watch the 70% structure goal, log every problem with the 4-step fix, and clear the safety checklist before starting.</span></div>
+
+<div class="card">
+<h3>1 · 工序進度 <span class="en">Procedure tracker</span></h3>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap">
+<input type="text" id="tName" placeholder="工序，例如：切割紙板部件" style="flex:2;min-width:10rem">
+<input type="text" id="tOwner" placeholder="負責人" style="flex:1;min-width:6rem">
+<button class="btn" onclick="addT()">加入</button>
+</div>
+<p class="small">撳狀態掣循環切換：未開始 → 進行中 → 完成。進度＝已完成工序比例。</p>
+<div class="prog"><div class="goal"></div><div class="plabel">目標 70%</div><div class="fill" id="pFill"></div><div class="pct" id="pPct">0%</div></div>
+<div id="pMsg"></div>
+<div id="tList"></div>
+</div>
+
+<div class="card">
+<h3>2 · 問題解決記錄 <span class="en">Problem-solving log（解難四步）</span> <span class="count-pill" id="gCount">0 項</span></h3>
+<p class="small">發現（具體說出問題）→ 分析原因 → 試行（<b>每次只改一個變量</b>）→ 檢驗效果。例：「轉盤裝上後擰唔郁」，唔好寫「整唔到」。<br>
+<span class="en">Identify precisely → analyse → try one variable at a time → verify.</span></p>
+<div id="gList"></div>
+<button class="btn alt" onclick="addG()">＋ 加入問題記錄 Add</button>
+</div>
+
+<div class="card">
+<h3>3 · 工具安全清單 <span class="en">Tool safety checklist</span> <span class="count-pill" id="sCount">0 / 4</span></h3>
+<p class="small">開工前四項全部剔好先至郁手。<span class="en">Tick all four before you start building.</span></p>
+<div id="sList"></div>
+<div id="sGo" style="margin-top:.6rem"></div>
+</div>
+
+<div class="card">
+<h3>4 · 匯出 <span class="en">Export</span></h3>
+<button class="btn" onclick="doExport()">📄 生成文字 Generate text</button>
+<button class="btn alt" onclick="copyOut()">📋 複製 Copy</button>
+<button class="btn alt" onclick="dlOut()">⬇ 下載.txt</button>
+<textarea id="outBox" style="min-height:9rem;margin-top:.6rem" readonly placeholder="撳「生成文字」匯出進度＋問題記錄。"></textarea>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+"use strict";
+var LS='lmc-s2l23';
+var S={tasks:[],probs:[],safe:[false,false,false,false]};
+var ST=['未開始','進行中','完成'];
+var SAFETY=[
+'美工刀：只由指定組員喺切割墊上用，手指遠離刀鋒，用完即交還教師。<br><span class="en">Craft knife: designated member only, on a cutting mat, return to teacher at once.</span>',
+'熱熔膠槍：槍頭高溫切勿觸碰，用完放回支架，唔用就關電源。<br><span class="en">Glue gun: never touch the nozzle; rest on stand; switch off when idle.</span>',
+'剪刀：刀鋒向外，唔指向人；傳遞時握刀鋒、遞手柄。<br><span class="en">Scissors: blades outward; pass by holding the blades.</span>',
+'受傷即通知教師，唔好自行包紮了事。<br><span class="en">If injured, tell the teacher immediately.</span>'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem(LS);if(d){var t=JSON.parse(d);if(t.safe&&t.safe.length===4)S=t;else{S.tasks=t.tasks||[];S.probs=t.probs||[];}}}catch(e){}}
+
+/* ---------- tasks ---------- */
+function addT(){
+var n=document.getElementById('tName').value.trim(),o=document.getElementById('tOwner').value.trim();
+if(!n){alert('請輸入工序名稱。');return;}
+S.tasks.push({n:n,o:o||'未定',st:0});
+document.getElementById('tName').value='';document.getElementById('tOwner').value='';
+save();renderT();
+}
+function delT(i){S.tasks.splice(i,1);save();renderT();}
+function cycT(i){S.tasks[i].st=(S.tasks[i].st+1)%3;save();renderT();}
+function pct(){if(!S.tasks.length)return 0;var d=S.tasks.filter(function(t){return t.st===2;}).length;return Math.round(d/S.tasks.length*100);}
+function renderT(){
+var el=document.getElementById('tList');el.innerHTML='';
+S.tasks.forEach(function(t,i){
+var d=document.createElement('div');d.className='trow';
+d.innerHTML='<b>'+(i+1)+'. '+esc(t.n)+'</b> <span class="small">負責：'+esc(t.o)+'</span> '+
+'<button class="stbtn st'+t.st+'" style="float:right" onclick="cycT('+i+')">'+ST[t.st]+'</button><div style="clear:both"></div>'+
+' <button class="btn alt" style="padding:.2rem.6rem;font-size:.78rem;margin-top:.3rem" onclick="delT('+i+')">刪除</button>';
+el.appendChild(d);
+});
+if(!S.tasks.length)el.innerHTML='<p class="small">未有工序。由第 22 堂製作計劃抄入（至少 4 步）。</p>';
+var p=pct();
+document.getElementById('pFill').style.width=p+'%';
+document.getElementById('pPct').textContent=p+'%';
+var m=document.getElementById('pMsg');
+if(p>=70)m.innerHTML='<span class="badge b-ok">🎉 主要結構 ≥70% — 達標！剩低部分留待第 24 堂。</span>';
+else if(S.tasks.length)m.innerHTML='<span class="badge b-warn">仲差 '+(70-p)+'% 先到 70% 目標，加油！</span>';
+else m.innerHTML='';
+}
+
+/* ---------- problem log ---------- */
+function addG(){S.probs.push({p:'',c:'',t:'',r:''});save();renderG();}
+function delG(i){S.probs.splice(i,1);save();renderG();}
+function renderG(){
+var el=document.getElementById('gList');el.innerHTML='';
+S.probs.forEach(function(g,i){
+var d=document.createElement('div');d.className='trow';
+d.innerHTML='<div><b>問題 '+(i+1)+'</b> <button class="btn alt" style="padding:.2rem.6rem;font-size:.78rem;float:right" onclick="delG('+i+')">刪除</button><div style="clear:both"></div></div>'+
+'<div class="grid2">'+
+'<label>① 發現問題（具體說出）<textarea data-i="'+i+'" data-k="p" placeholder="例：轉盤裝上後擰唔郁">'+esc(g.p)+'</textarea></label>'+
+'<label>② 分析可能原因<textarea data-i="'+i+'" data-k="c" placeholder="例：軸心太緊？膠水黏住？">'+esc(g.c)+'</textarea></label>'+
+'<label>③ 試行方法（一次改一個變量）<textarea data-i="'+i+'" data-k="t" placeholder="例：先把軸心孔鑽大 1mm 再試">'+esc(g.t)+'</textarea></label>'+
+'<label>④ 結果＋學到嘅教訓<textarea data-i="'+i+'" data-k="r" placeholder="例：轉得順咗；以後先試裝後上膠">'+esc(g.r)+'</textarea></label></div>';
+el.appendChild(d);
+});
+if(!S.probs.length)el.innerHTML='<p class="small">未有記錄。出問題唔好齋唸「整唔到」，即刻開一項記低。</p>';
+document.getElementById('gCount').textContent=S.probs.length+' 項';
+el.querySelectorAll('textarea').forEach(function(t){
+t.addEventListener('input',function(){S.probs[+this.dataset.i][this.dataset.k]=this.value;save();});
+});
+}
+
+/* ---------- safety ---------- */
+function renderS(){
+var el=document.getElementById('sList');el.innerHTML='';
+SAFETY.forEach(function(txt,i){
+var lab=document.createElement('label');lab.className='ck'+(S.safe[i]?' done':'');
+lab.innerHTML='<input type="checkbox" data-i="'+i+'"'+(S.safe[i]?' checked':'')+'><span>'+txt+'</span>';
+el.appendChild(lab);
+});
+var n=S.safe.filter(Boolean).length;
+document.getElementById('sCount').textContent=n+' / 4';
+document.getElementById('sGo').innerHTML=n===4
+?'<span class="badge b-ok" style="font-size:1rem">✅ 安全清單完成，可以開工！記得：先試裝，後上膠水。</span>'
+:'<span class="badge b-warn">仲有 '+(4-n)+' 項未確認</span>';
+el.querySelectorAll('input').forEach(function(c){
+c.addEventListener('change',function(){S.safe[+this.dataset.i]=this.checked;save();renderS();});
+});
+}
+
+/* ---------- export ---------- */
+function buildText(){
+var L=['','主要結構完成度：'+pct()+'%（目標 ≥70%）',''];
+L.push('── 工序進度 ──');
+S.tasks.forEach(function(t,i){L.push((i+1)+'. '+t.n+'｜負責：'+t.o+'｜'+ST[t.st]);});
+L.push('');L.push('── 問題解決記錄 ──');
+S.probs.forEach(function(g,i){L.push(''+g.p);L.push('原因：'+g.c);L.push('試行：'+g.t);L.push('結果／教訓：'+g.r);L.push('');});
+L.push('── 安全清單：'+(S.safe.every(Boolean)?'四項全部確認 ✓':'未完成')+' ──');
+return L.join('\n');
+}
+function doExport(){document.getElementById('outBox').value=buildText();}
+function copyOut(){
+var t=document.getElementById('outBox').value||buildText();document.getElementById('outBox').value=t;
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製！');},function(){fb(t);});}else fb(t);
+}
+function fb(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('已複製！');}catch(e){alert('複製失敗，請手動選取。');}document.body.removeChild(ta);}
+function dlOut(){
+var t=document.getElementById('outBox').value||buildText();
+var b=new Blob(['\ufeff'+t],{type:'text/plain;charset=utf-8'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='s2-l23-製作日誌.txt';a.click();
+setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+/* ---------- init ---------- */
+load();renderT();renderG();renderS();
+</script>
+</body>
+</html>

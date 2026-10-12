@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：職業取代風險分析器 | L19 AI 與社會</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl .en,.en2{font-size:.85rem;color:#666;font-weight:400}
+.ctl .val{color:#1a5276;font-weight:700}
+input[type=range]{width:100%;margin-top:.2rem}
+.f6{display:grid;grid-template-columns:1fr 1fr;gap:.4rem .9rem}
+@media(max-width:520px){.f6{grid-template-columns:1fr}}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act.warn{background:#e67e22}
+button.act:disabled{opacity:.5;cursor:default}
+button.job{background:#fff;border:2px solid #2e86c1;color:#1a5276;border-radius:8px;padding:.5rem .9rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.job.sel{background:#2e86c1;color:#fff}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox{background:#fef9e7;border:1px solid #f5d76e;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox .en{font-size:.82rem;color:#666}
+.skills label{display:block;margin:.3rem 0;cursor:pointer}
+.skills input{margin-right:.5rem;transform:scale(1.2)}
+.vote button{font-size:1.05rem}
+.tag{background:#d6eaf8;color:#1a5276;border-radius:6px;padding:0 .4rem;font-size:.8rem}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-19.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：職業取代風險分析器 <span class="en">Interactive Simulation: Job Replacement Risk Analyser</span></h2>
+<div class="howto"><b>玩法 How to play：</b>揀一個職業（或自己調校六個特徵），先<b>投票</b>估佢被 AI 取代的可能性（高／中／低），再按「查看分析結果」對比！<br><span class="en">Pick an occupation, vote on its AI replacement risk (high / medium / low), then reveal the analysis and compare!</span></div>
+
+<div class="ctl">
+<label>選擇職業 Choose an occupation</label>
+<div class="btnrow" id="jobs"></div>
+<span class="en2">或手動調校以下六個特徵（0 = 好少 · 10 = 好多）</span>
+</div>
+<div class="ctl">
+<label>🤖 易被自動化的特徵 <span class="en2">Automation-prone features</span></label>
+<div class="f6">
+<div>重複性高 Repetitive<br><input type="range" id="f_rep" min="0" max="10" value="9"> <span class="val" id="f_repV">9</span></div>
+<div>規則明確 Rule-based<br><input type="range" id="f_rule" min="0" max="10" value="9"> <span class="val" id="f_ruleV">9</span></div>
+<div>以資料處理為主 Data-processing<br><input type="range" id="f_data" min="0" max="10" value="9"> <span class="val" id="f_dataV">9</span></div>
+</div>
+</div>
+<div class="ctl">
+<label>🧠 AI 難以取代的人類能力 <span class="en2">Human strengths AI struggles with</span></label>
+<div class="f6">
+<div>創意 Creativity<br><input type="range" id="f_crea" min="0" max="10" value="2"> <span class="val" id="f_creaV">2</span></div>
+<div>同理心 Empathy<br><input type="range" id="f_emp" min="0" max="10" value="2"> <span class="val" id="f_empV">2</span></div>
+<div>複雜判斷 Complex judgement<br><input type="range" id="f_judg" min="0" max="10" value="3"> <span class="val" id="f_judgV">3</span></div>
+</div>
+</div>
+
+<div class="ctl vote">
+<label>🗳️ 先投票！你估呢個職業被 AI 取代的可能性？<br><span class="en2">Vote first: how likely is this job to be replaced by AI?</span></label>
+<div class="btnrow">
+<button class="act warn" data-v="高">🔴 高 High</button>
+<button class="act alt" data-v="中">🟡 中 Medium</button>
+<button class="act" data-v="低" style="background:#27ae60">🟢 低 Low</button>
+</div>
+<div id="voteNote" class="en2">（投票後再按「查看分析結果」）</div>
+</div>
+<div class="btnrow">
+<button class="act" id="bGo" style="background:#7d3c98">📊 查看分析結果 Reveal analysis</button>
+</div>
+
+<canvas id="cv" class="sim" width="700" height="330"></canvas>
+<div class="readout" id="result">投票後按「📊 查看分析結果」。<br><span class="en">Vote, then press "Reveal analysis".</span></div>
+
+<div class="ctl skills">
+<label>🌱 我的未來技能清單 My future skills list <span class="en2">（揀 3 項你想培養的技能，🤖＝與 AI 協作相關）</span></label>
+<label><input type="checkbox" value="指揮 AI 完成任務"> 指揮 AI 完成任務 <span class="tag">🤖 與 AI 協作</span></label>
+<label><input type="checkbox" value="審核 AI 輸出"> 審核 AI 輸出、找出錯誤 <span class="tag">🤖 與 AI 協作</span></label>
+<label><input type="checkbox" value="撰寫有效提示詞"> 撰寫有效的提示詞 <span class="tag">🤖 與 AI 協作</span></label>
+<label><input type="checkbox" value="數據素養"> 數據素養（讀懂圖表和數據） <span class="tag">🤖 與 AI 協作</span></label>
+<label><input type="checkbox" value="創意思考"> 創意思考（想出全新點子）</label>
+<label><input type="checkbox" value="同理心溝通"> 同理心溝通（理解他人感受）</label>
+<label><input type="checkbox" value="批判性思考"> 批判性思考（不盲從 AI）</label>
+<label><input type="checkbox" value="解難能力"> 複雜問題解難能力</label>
+<div class="btnrow"><button class="act alt" id="bSkill">生成我的清單</button></div>
+<div class="readout" id="skillOut" style="display:none"></div>
+</div>
+
+<div class="tipbox">💡 <b>重點唔係恐慌，而係適應。</b>科技改變工作而非消滅工作——未來最有價值的人，係「懂得指揮 AI、審核 AI、為 AI 輸出負責」的人。<br><span class="en">Don't panic — adapt. Learn to collaborate with AI, not compete against it.</span></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=330;
+var ids=['rep','rule','data','crea','emp','judg'];
+var F={},vote=null,curRisk=0,tgtRisk=0,anim=null,revealed=false;
+ids.forEach(function(k){
+  F[k]=document.getElementById('f_'+k);
+  F[k].oninput=function(){document.getElementById('f_'+k+'V').textContent=F[k].value;drawBars();};
+});
+var PRESETS={
+  '會計文員 Accounts clerk':[9,9,9,2,2,3],
+  '速遞員 Courier':[8,7,5,2,4,5],
+  '廚師 Chef':[6,5,2,8,5,6],
+  '攝影師 Photographer':[3,3,3,10,6,7],
+  '社工 Social worker':[3,4,4,6,10,9],
+  '醫生 Doctor':[4,6,7,5,9,10]
+};
+var jobBox=document.getElementById('jobs');
+Object.keys(PRESETS).forEach(function(name){
+  var b=document.createElement('button');b.className='job';b.textContent=name;
+  b.onclick=function(){
+    jobBox.querySelectorAll('button').forEach(function(x){x.classList.remove('sel');});
+    b.classList.add('sel');
+    var p=PRESETS[name];
+    ids.forEach(function(k,i){F[k].value=p[i];document.getElementById('f_'+k+'V').textContent=p[i];});
+    revealed=false;drawBars();drawGauge(true);
+    document.getElementById('result').innerHTML='已選擇 <b>'+name+'</b>。先投票，再按「📊 查看分析結果」。';
+  };
+  jobBox.appendChild(b);
+});
+function risk(){
+  var auto=(+F.rep.value+ +F.rule.value+ +F.data.value)/3;
+  var human=(+F.crea.value+ +F.emp.value+ +F.judg.value)/3;
+  return auto*0.6+(10-human)*0.4;
+}
+function level(r){return r>=6.5?'高':(r>=4?'中':'低');}
+function levelEn(r){return r>=6.5?'High':(r>=4?'Medium':'Low');}
+function levelColor(r){return r>=6.5?'#c0392b':(r>=4?'#e67e22':'#27ae60');}
+document.querySelectorAll('.vote button').forEach(function(b){
+  b.onclick=function(){vote=b.getAttribute('data-v');
+    document.getElementById('voteNote').innerHTML='你的投票 Your vote：<b>'+vote+'</b>（'+(vote==='高'?'🔴':vote==='中'?'🟡':'🟢')+'）';
+  };
+});
+document.getElementById('bGo').onclick=function(){
+  var r=risk(),lv=level(r);
+  tgtRisk=r;revealed=true;
+  if(anim)cancelAnimationFrame(anim);
+  (function fr(){
+    curRisk+=(tgtRisk-curRisk)*0.12;
+    drawGauge(false);
+    if(Math.abs(tgtRisk-curRisk)>0.02)anim=requestAnimationFrame(fr);
+    else{curRisk=tgtRisk;drawGauge(false);}
+  })();
+  var cmp=vote?('你的投票：<b>'+vote+'</b>；分析結果：<b>'+lv+'</b> — '+(vote===lv?'🎯 完全估中！':'💡 有出入，睇下下面六個特徵點解')):'（你冇投票，下次記得先估後睇！）';
+  var auto=((+F.rep.value+ +F.rule.value+ +F.data.value)/3).toFixed(1);
+  var human=((+F.crea.value+ +F.emp.value+ +F.judg.value)/3).toFixed(1);
+  document.getElementById('result').innerHTML=
+    '📊 <b>分析結果 Analysis：取代風險 <span style="color:'+levelColor(r)+'">'+lv+' '+levelEn(r)+'（'+r.toFixed(1)+' / 10）</span></b><br>'+
+    '易自動化特徵平均 '+auto+' / 10；人類優勢平均 '+human+' / 10<br>'+cmp+
+    '<br><span class="en">Risk = automation-prone features vs human strengths.</span>';
+};
+function drawBars(){
+  drawGauge(true);
+}
+function drawGauge(staticOnly){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  var cx=W/2,cy=250,R=170;
+  // zones
+  function arc(a0,a1,c){ctx.beginPath();ctx.arc(cx,cy,R,a0,a1);ctx.lineWidth=34;ctx.strokeStyle=c;ctx.stroke();}
+  arc(Math.PI,Math.PI*1.4,'#27ae60');
+  arc(Math.PI*1.4,Math.PI*1.65,'#e67e22');
+  arc(Math.PI*1.65,Math.PI*2,'#c0392b');
+  ctx.fillStyle='#555';ctx.font='13px sans-serif';ctx.textAlign='center';
+  ctx.fillText('低 Low',cx-R+18,cy-8);ctx.fillText('中 Med',cx,cy-R-24);ctx.fillText('高 High',cx+R-18,cy-8);
+  // needle
+  var a=Math.PI+(curRisk/10)*Math.PI;
+  ctx.save();ctx.strokeStyle='#1a5276';ctx.lineWidth=5;ctx.beginPath();
+  ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*(R-24),cy+Math.sin(a)*(R-24));ctx.stroke();ctx.restore();
+  ctx.fillStyle='#1a5276';ctx.beginPath();ctx.arc(cx,cy,10,0,7);ctx.fill();
+  ctx.font='bold 22px sans-serif';ctx.fillStyle=levelColor(curRisk);
+  ctx.fillText(revealed?(level(curRisk)+' '+levelEn(curRisk)):'?',cx,cy-70);
+  ctx.font='14px sans-serif';ctx.fillStyle='#1a5276';
+  ctx.fillText(revealed?('風險值 Risk: '+curRisk.toFixed(1)+' / 10'):'投票後按「查看分析結果」',cx,cy+42);
+  // feature mini-bars
+  var labels=['重複性','規則明確','資料處理','創意','同理心','複雜判斷'];
+  var cols=['#c0392b','#c0392b','#c0392b','#27ae60','#27ae60','#27ae60'];
+  ctx.textAlign='left';
+  ids.forEach(function(k,i){
+    var y=292+(i>2?0:0),x=40+(i%3)*220,row=i>2?1:0;
+    var yy=300+row*0; // single row of 6? use two rows
+    yy=row?318:296; x=40+(i%3)*220;
+    ctx.font='11px sans-serif';ctx.fillStyle='#555';
+    ctx.fillText(labels[i]+' '+F[k].value, x, yy-4);
+    ctx.fillStyle='#ecf0f1';ctx.fillRect(x,yy,180,8);
+    ctx.fillStyle=cols[i];ctx.fillRect(x,yy,180*(+F[k].value/10),8);
+  });
+  void staticOnly;
+}
+document.getElementById('bSkill').onclick=function(){
+  var boxes=document.querySelectorAll('.skills input:checked'),list=[],ai=0;
+  boxes.forEach(function(b){list.push(b.value);if(b.nextElementSibling&&b.nextElementSibling.classList.contains('tag'))ai++;});
+  var out=document.getElementById('skillOut');out.style.display='block';
+  if(!list.length){out.innerHTML='請至少揀一項技能。';return;}
+  out.innerHTML='🌱 <b>我的未來技能清單 My future skills list</b><ol>'+list.map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol>'+
+    (ai>0?'<span class="good">✓</span> 當中有 '+ai+' 項與「與 AI 協作」相關——正係未來最有價值的能力！':'💡 提示：不妨加返至少一項 <span class="tag">🤖 與 AI 協作</span> 相關的技能！');
+};
+// init: select 會計文員
+jobBox.querySelector('button').click();
+curRisk=0;drawGauge(true);
+})();
+</script>
+</body>
+</html>

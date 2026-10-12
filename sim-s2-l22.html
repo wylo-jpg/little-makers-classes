@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L22 迭代設計工作室 | Iteration Studio</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:20px;padding:.15rem.7rem;margin:.15rem.2rem}
+.b-ok{background:#d5f5e3;color:#1e8449}.b-warn{background:#fdebd0;color:#b9770e}.b-bad{background:#fadbd8;color:#922b21}.b-info{background:#d6eaf8;color:#1a5276}
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.6rem 0}
+.quad{border:2px solid #bcd9f2;border-radius:10px;padding:.6rem;min-height:7rem;background:#f8fafc}
+.quad h4{margin:.1rem 0.4rem;font-size:.95rem}
+.q1{border-color:#e74c3c}.q1 h4{color:#922b21}
+.q2{border-color:#e67e22}.q2 h4{color:#b9770e}
+.q3{border-color:#2e86c1}.q3 h4{color:#1a5276}
+.q4{border-color:#aaa}.q4 h4{color:#666}
+.chip{background:#fff;border:1px solid #1a5276;border-radius:16px;padding:.25rem.7rem;margin:.2rem;display:inline-block;font-size:.82rem;color:#1a5276}
+.frow{background:#f8fafc;border:1px solid #dfe6ee;border-radius:8px;padding:.7rem;margin:.5rem 0}
+input[type=text],input[type=number],select,textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #bcd9f2;border-radius:6px;font-size:.95rem;margin:.25rem 0;font-family:inherit}
+textarea{min-height:2.6rem;resize:vertical}
+.tblwrap{overflow-x:auto}
+table input,table select,table textarea{margin:0;font-size:.88rem}
+.small{font-size:.82rem;color:#666}
+.count-pill{display:inline-block;background:#1a5276;color:#fff;border-radius:20px;padding:.2rem.9rem;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.matrix{grid-template-columns:1fr}}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-22.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L22 迭代設計工作室 <span class="en">Lesson 22 · Iteration Studio — 進階設計：迭代改良</span></h2>
+
+<div class="theme"><b>玩法 How to play：</b>
+1️⃣ 輸入第 21 堂收集到的用家回饋原話 → 2️⃣ 用「影響 × 迫切」矩陣排優先次序 →
+3️⃣ 填「回饋 → 改動」對照表（每項改動要有具體數字）→ 4️⃣ 訂立製作計劃（工序 ≥4 步，總時間 ≤120 分鐘）。<br>
+<span class="en">Log user feedback, rank it on the impact × urgency matrix, map each adopted item to a concrete change, then build the production plan.</span></div>
+
+<div class="card">
+<h3>1 · 用家回饋收集 <span class="en">Feedback inbox</span></h3>
+<div style="display:flex;gap:.5rem"><input type="text" id="fInput" placeholder="貼上用家原話，加引號，例如：「按鈕太小，我成日按錯。」"><button class="btn" onclick="addF()">加入</button></div>
+<div id="fList"></div>
+</div>
+
+<div class="card">
+<h3>2 · 影響 × 迫切矩陣 <span class="en">Impact × urgency matrix</span></h3>
+<p class="small">為每項回饋揀「影響」同「迫切」，佢會自動企啱格。先做 <b>高影響＋迫切</b>。<br><span class="en">Set impact &amp; urgency per item — it lands in the right quadrant. Do high-impact + urgent first.</span></p>
+<div class="matrix">
+<div class="quad q1"><h4>🔴 優先做<br><span class="en">High impact + urgent</span></h4><div id="mq1"></div></div>
+<div class="quad q2"><h4>🟠 排第二<br><span class="en">High impact, not urgent</span></h4><div id="mq2"></div></div>
+<div class="quad q3"><h4>🔵 排第三<br><span class="en">Low impact + urgent</span></h4><div id="mq3"></div></div>
+<div class="quad q4"><h4>⚪ 可不做／留待日後<br><span class="en">Low impact, not urgent</span></h4><div id="mq4"></div></div>
+</div>
+<div class="theme"><b>優先次序清單 <span class="en">Priority order</span>：</b><ol id="prioList" style="margin:.4rem 0"></ol>
+<p class="small">唔採納嘅回饋都要記低理由（例：超出成本、技術做唔到），簡介時向用家交代。</p></div>
+</div>
+
+<div class="card">
+<h3>3 · 「回饋 → 改動」對照表 <span class="en">Feedback → change mapping</span> <span class="count-pill" id="mCount">0 項（目標 ≥2）</span></h3>
+<p class="small">每項改動必須有具體數字（尺寸、數量），避免「為改而改」。之後喺設計圖上用紅筆圈出改動並編號。<br><span class="en">Every change needs concrete numbers. Circle changes in red on your drawing, numbered to match.</span></p>
+<div class="tblwrap"><table>
+<thead><tr><th style="width:6%">編號</th><th>用家回饋原話 <span class="en">Quote</span></th><th>對應設計改動（連數字） <span class="en">Change</span></th><th>預期效果 <span class="en">Effect</span></th><th style="width:8%"></th></tr></thead>
+<tbody id="mBody"></tbody></table></div>
+<button class="btn alt" onclick="addM()">＋ 加入一項 Add row</button>
+</div>
+
+<div class="card">
+<h3>4 · 製作計劃表 <span class="en">Production plan</span></h3>
+<p class="small">工序 ≥4 步，總時間 ≤ 兩堂（120 分鐘）。每步寫明負責人。<br><span class="en">At least 4 steps, total within 120 minutes. Name the person in charge of each step.</span></p>
+<div class="tblwrap"><table>
+<thead><tr><th style="width:6%">#</th><th>工序 <span class="en">Procedure</span></th><th>所需物料及數量 <span class="en">Materials</span></th><th>負責人 <span class="en">Owner</span></th><th style="width:12%">預計時間（分）<span class="en">Mins</span></th><th style="width:8%"></th></tr></thead>
+<tbody id="pBody"></tbody></table></div>
+<button class="btn alt" onclick="addP()">＋ 加入工序 Add step</button>
+<div id="pWarn" style="margin-top:.6rem"></div>
+</div>
+
+<div class="card">
+<h3>5 · 匯出 <span class="en">Export</span></h3>
+<button class="btn" onclick="doExport()">📄 生成文字 Generate text</button>
+<button class="btn alt" onclick="copyOut()">📋 複製 Copy</button>
+<button class="btn alt" onclick="dlOut()">⬇ 下載.txt</button>
+<textarea id="outBox" style="min-height:9rem;margin-top:.6rem" readonly placeholder="撳「生成文字」匯出對照表＋製作計劃。"></textarea>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+"use strict";
+var LS='lmc-s2l22';
+var S={fb:[],map:[],plan:[]};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+function load(){try{var d=localStorage.getItem(LS);if(d)S=JSON.parse(d);}catch(e){}}
+function hasDigit(s){return /\d/.test(s||'');}
+
+/* ---------- feedback ---------- */
+function addF(){
+var v=document.getElementById('fInput').value.trim();if(!v)return;
+S.fb.push({q:v,imp:'high',urg:'urgent'});document.getElementById('fInput').value='';
+save();renderF();renderMatrix();renderPrio();
+}
+function delF(i){S.fb.splice(i,1);save();renderF();renderMatrix();renderPrio();}
+function renderF(){
+var el=document.getElementById('fList');el.innerHTML='';
+if(!S.fb.length){el.innerHTML='<p class="small">未有回饋。由第 21 堂嘅「用家回饋摘要」抄過嚟。</p>';return;}
+S.fb.forEach(function(f,i){
+var d=document.createElement('div');d.className='frow';
+d.innerHTML='<div>「'+esc(f.q)+'」 <button class="btn alt" style="padding:.2rem.6rem;font-size:.78rem;float:right" onclick="delF('+i+')">刪除</button></div>'+
+'<div class="grid2"><label>影響 <span class="en">Impact</span><select data-i="'+i+'" data-k="imp">'+
+'<option value="high"'+(f.imp==='high'?' selected':'')+'>大 High（很多人／核心功能）</option>'+
+'<option value="low"'+(f.imp==='low'?' selected':'')+'>小 Low</option></select></label>'+
+'<label>迫切 <span class="en">Urgency</span><select data-i="'+i+'" data-k="urg">'+
+'<option value="urgent"'+(f.urg==='urgent'?' selected':'')+'>迫切 Urgent（唔用會出事）</option>'+
+'<option value="not"'+(f.urg==='not'?' selected':'')+'>不迫切 Not urgent</option></select></label></div>';
+el.appendChild(d);
+});
+el.querySelectorAll('select').forEach(function(s){
+s.addEventListener('change',function(){S.fb[+this.dataset.i][this.dataset.k]=this.value;save();renderMatrix();renderPrio();});
+});
+}
+function quadOf(f){return (f.imp==='high'?'1':'2')+(f.urg==='urgent'?'1':'2');}
+function quadNum(f){return {'11':1,'12':2,'21':3,'22':4}[quadOf(f)];}
+function renderMatrix(){
+var boxes={mq1:[],mq2:[],mq3:[],mq4:[]};
+S.fb.forEach(function(f){boxes['mq'+quadNum(f)].push(f.q);});
+Object.keys(boxes).forEach(function(id){
+document.getElementById(id).innerHTML=boxes[id].map(function(q){
+return '<span class="chip">「'+esc(q.length>22?q.slice(0,22)+'…':q)+'」</span>';
+}).join('')||'<span class="small">（空）</span>';
+});
+}
+function renderPrio(){
+var order=S.fb.slice().sort(function(a,b){return quadOf(a).localeCompare(quadOf(b));});
+var el=document.getElementById('prioList');el.innerHTML='';
+var labels={'11':'🔴 優先做','12':'🟠 排第二','21':'🔵 排第三','22':'⚪ 可不做'};
+order.forEach(function(f){var li=document.createElement('li');li.innerHTML=labels[quadOf(f)]+' — 「'+esc(f.q)+'」';el.appendChild(li);});
+if(!order.length)el.innerHTML='<li class="small">（未有回饋）</li>';
+}
+
+/* ---------- mapping table ---------- */
+function addM(){S.map.push({q:'',c:'',e:''});save();renderM();}
+function delM(i){S.map.splice(i,1);save();renderM();}
+function mDone(){return S.map.filter(function(x){return x.q.trim()&&x.c.trim();}).length;}
+function updM(i){
+var d=mDone();
+document.getElementById('mCount').textContent=d+' 項'+(d>=2?' ✓ 達標':'（目標 ≥2）');
+var row=document.querySelector('#mBody tr:nth-child('+(i+1)+')');
+if(!row)return;
+var cell=row.cells[2],old=cell.querySelector('.badge'),need=S.map[i].c&&!hasDigit(S.map[i].c);
+if(need&&!old){var s=document.createElement('span');s.className='badge b-warn';s.textContent='⚠ 加數字！';cell.appendChild(s);}
+else if(!need&&old){old.parentNode.removeChild(old);}
+}
+function renderM(){
+var tb=document.getElementById('mBody');tb.innerHTML='';
+var done=0;
+S.map.forEach(function(m,i){
+if(m.q.trim()&&m.c.trim())done++;
+var tr=document.createElement('tr');
+var warn=m.c&&!hasDigit(m.c)?' <span class="badge b-warn">⚠ 加數字！</span>':'';
+tr.innerHTML='<td><b>'+(i+1)+'</b></td>'+
+'<td><textarea data-i="'+i+'" data-k="q" placeholder="用家原話，加引號">'+esc(m.q)+'</textarea></td>'+
+'<td><textarea data-i="'+i+'" data-k="c" placeholder="例：按鈕直徑由 1cm 加大至 3cm">'+esc(m.c)+'</textarea>'+warn+'</td>'+
+'<td><textarea data-i="'+i+'" data-k="e" placeholder="改動後用家有咩改善">'+esc(m.e)+'</textarea></td>'+
+'<td><button class="btn alt" style="padding:.25rem.6rem;font-size:.78rem" onclick="delM('+i+')">刪</button></td>';
+tb.appendChild(tr);
+});
+document.getElementById('mCount').textContent=mDone()+' 項'+(mDone()>=2?' ✓ 達標':'（目標 ≥2）');
+tb.querySelectorAll('textarea').forEach(function(t){
+t.addEventListener('input',function(){S.map[+this.dataset.i][this.dataset.k]=this.value;save();updM(+this.dataset.i);});
+});
+}
+
+function updP(){
+var total=S.plan.reduce(function(a,p){return a+(parseInt(p.t,10)||0);},0);
+var w=document.getElementById('pWarn'),msgs=[];
+msgs.push('<span class="badge '+(S.plan.length>=4?'b-ok':'b-warn')+'">工序 '+S.plan.length+' 步 '+(S.plan.length>=4?'✓':'（要 ≥4 步）')+'</span>');
+msgs.push('<span class="badge '+(total<=120&&total>0?'b-ok':'b-bad')+'">總計 '+total+' 分鐘 '+(total>120?'⚠ 超過 120 分鐘！':total>0?'✓ 兩堂內':'（未填時間）')+'</span>');
+w.innerHTML=msgs.join(' ');
+}
+/* ---------- production plan ---------- */
+function addP(){S.plan.push({s:'',m:'',o:'',t:''});save();renderP();}
+function delP(i){S.plan.splice(i,1);save();renderP();}
+function renderP(){
+var tb=document.getElementById('pBody');tb.innerHTML='';
+var total=0;
+S.plan.forEach(function(p,i){
+total+=parseInt(p.t,10)||0;
+var tr=document.createElement('tr');
+tr.innerHTML='<td><b>'+(i+1)+'</b></td>'+
+'<td><input type="text" data-i="'+i+'" data-k="s" value="'+esc(p.s)+'" placeholder="例：量度並標記尺寸"></td>'+
+'<td><input type="text" data-i="'+i+'" data-k="m" value="'+esc(p.m)+'" placeholder="例：瓦楞紙板 2 塊"></td>'+
+'<td><input type="text" data-i="'+i+'" data-k="o" value="'+esc(p.o)+'" placeholder="組員 A"></td>'+
+'<td><input type="number" min="0" data-i="'+i+'" data-k="t" value="'+esc(p.t)+'" placeholder="分"></td>'+
+'<td><button class="btn alt" style="padding:.25rem.6rem;font-size:.78rem" onclick="delP('+i+')">刪</button></td>';
+tb.appendChild(tr);
+});
+updP();
+tb.querySelectorAll('input').forEach(function(inp){
+inp.addEventListener('input',function(){S.plan[+this.dataset.i][this.dataset.k]=this.value;save();updP();});
+});
+}
+
+/* ---------- export ---------- */
+function buildText(){
+var L=['',''];
+L.push('── 用家回饋（優先次序）──');
+var order=S.fb.slice().sort(function(a,b){return quadOf(a).localeCompare(quadOf(b));});
+var labels={'11':'優先做','12':'排第二','21':'排第三','22':'可不做'};
+order.forEach(function(f,i){L.push((i+1)+'. ['+labels[quadOf(f)]+'] 「'+f.q+'」');});
+L.push('');L.push('── 回饋 → 改動對照表 ──');
+S.map.forEach(function(m,i){L.push((i+1)+'. 回饋：「'+m.q+'」');L.push(' 改動：'+m.c);L.push(' 預期效果：'+m.e);});
+L.push('');L.push('── 製作計劃表 ──');
+var total=0;
+S.plan.forEach(function(p,i){total+=parseInt(p.t,10)||0;L.push((i+1)+'. '+p.s+'｜物料：'+p.m+'｜負責：'+p.o+'｜'+(p.t||'?')+' 分鐘');});
+L.push('總計：'+total+' 分鐘');
+return L.join('\n');
+}
+function doExport(){document.getElementById('outBox').value=buildText();}
+function copyOut(){
+var t=document.getElementById('outBox').value||buildText();document.getElementById('outBox').value=t;
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('已複製！');},function(){fb(t);});}else fb(t);
+}
+function fb(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('已複製！');}catch(e){alert('複製失敗，請手動選取。');}document.body.removeChild(ta);}
+function dlOut(){
+var t=document.getElementById('outBox').value||buildText();
+var b=new Blob(['\ufeff'+t],{type:'text/plain;charset=utf-8'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='s2-l22-迭代設計.txt';a.click();
+setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+/* ---------- init ---------- */
+load();renderF();renderMatrix();renderPrio();renderM();renderP();
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：太陽能小車調校賽 | Sim: Solar Car Tuning Race</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;border:1px solid #bcd9f2;border-radius:10px;background:#eaf4fb;display:block}
+.ctrls{display:grid;gap:.6rem;margin:1rem 0}
+.ctrl{display:grid;grid-template-columns:9.5rem 1fr 5.5rem;gap:.6rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+.ctrl label{font-weight:700}
+.ctrl output{font-weight:700;color:#1a5276;text-align:right}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.2rem,1fr));gap:.5rem;margin:1rem 0}
+.ro{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.5rem .7rem}
+.ro b{display:block;font-size:.78rem;color:#1a5276;font-weight:600}
+.ro span{font-size:1.15rem;font-weight:700}
+.btns{margin:.8rem 0;display:flex;gap:.6rem;flex-wrap:wrap}
+button.big{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.big:active{transform:scale(.97)}
+button.big:disabled{background:#95a5b8}
+button.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276;border-radius:8px;padding:.6rem 1.2rem;font-size:.95rem;font-weight:700;cursor:pointer}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.verdict{font-size:1.15rem;font-weight:700;margin:.6rem 0;min-height:1.8em}
+.chain{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin:.6rem 0;font-size:.9rem}
+.bar{height:16px;border-radius:6px;background:#dfe6ee;min-width:70px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:#f39c12}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-09.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：太陽能小車調校賽 <span class="en">Interactive Sim: Solar Car Tuning Race</span></h2>
+<div class="howto"><b>玩法 How to play：</b>調校<b>光照強度、太陽能板角度、車身重量、車軸摩擦</b>四個變量，按「起步」跑 20 米直線賽。睇下邊個配搭最快，仲可以比較調校前後的成績！
+<br><span class="en">Tune light, panel angle, weight and friction, then race 20 m. Energy chain: light → electrical → kinetic.</span></div>
+
+<div class="sim-wrap">
+<div class="ctrls">
+<div class="ctrl"><label>光照強度 Sunlight</label><input type="range" id="sLight" min="0" max="100" step="5" value="100"><output id="oLight">100%</output></div>
+<div class="ctrl"><label>面板偏離正對 Panel tilt-off</label><input type="range" id="sAng" min="0" max="60" step="5" value="0"><output id="oAng">0°</output></div>
+<div class="ctrl"><label>車身重量 Car weight</label><input type="range" id="sWt" min="100" max="400" step="25" value="200"><output id="oWt">200 g</output></div>
+<div class="ctrl"><label>車軸摩擦 Axle friction</label><input type="range" id="sFr" min="0" max="100" step="5" value="15"><output id="oFr">順滑</output></div>
+</div>
+<div class="btns"><button class="big" id="bRace">🏁 起步 Race!</button><button class="ghost" id="bReset">↺ 重設 Reset</button></div>
+<canvas id="cv"></canvas>
+<div class="verdict" id="verdict"></div>
+<h3>能量轉換鏈 <span class="en">Energy chain</span></h3>
+<div class="chain">
+<span>☀️ 光能</span><div class="bar" style="width:110px"><i id="barL"></i></div><span>→</span>
+<span>⚡ 電能</span><div class="bar" style="width:110px"><i id="barE"></i></div><span>→</span>
+<span>🚗 動能</span><div class="bar" style="width:110px"><i id="barK"></i></div>
+</div>
+<div class="readout">
+<div class="ro"><b>太陽能板電功率 Electrical power</b><span id="rP">–</span></div>
+<div class="ro"><b>最高速度 Top speed</b><span id="rV">–</span></div>
+<div class="ro"><b>20 米成績 Race time</b><span id="rT">–</span></div>
+<div class="ro"><b>本節最佳 Best time</b><span id="rB">–</span></div>
+</div>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function fit(){var w=cv.parentElement.clientWidth;cv.width=Math.max(320,w);cv.height=Math.round(cv.width*0.5);draw();}
+window.addEventListener('resize',fit);
+var S={light:100,ang:0,wt:200,fr:15,racing:false,x:0,v:0,t:0,best:null,wheel:0};
+function $(id){return document.getElementById(id);}
+function mu(){return 0.02+(S.fr/100)*0.13;}
+function pElec(){return 0.5*(S.light/100)*Math.cos(S.ang*Math.PI/180);}
+function pMech(){return pElec()*0.7;}
+function topSpeed(){
+  var F=mu()*(S.wt/1000)*9.8;
+  var P=pMech();
+  if(P<=0.0001||F<=0)return 0;
+  return Math.min(3.2,P/F);
+}
+function refresh(){
+  $('oLight').textContent=S.light+'%';
+  $('oAng').textContent=S.ang+'°';
+  $('oWt').textContent=S.wt+' g';
+  $('oFr').textContent=S.fr<25?'順滑 smooth':(S.fr<60?'一般 ok':'粗糙 rough');
+  var P=pElec(),v=topSpeed();
+  $('rP').textContent=(P*1000).toFixed(0)+' mW';
+  $('rV').textContent=v.toFixed(2)+' m/s';
+  $('rB').textContent=S.best===null?'–':S.best.toFixed(2)+' s';
+  setBar('barL',S.light/100);setBar('barE',pElec()/0.5);setBar('barK',v/3.2);
+}
+function setBar(id,f){var e=$(id);f=Math.max(0,Math.min(1,f));e.style.width=(f*100)+'%';}
+function race(){
+  if(S.racing)return;
+  var v=topSpeed();
+  if(v<0.05){var vd=$('verdict');vd.style.color='#c0392b';vd.textContent='🌥️ 太暗／阻力太大，架車郁唔到！試下加強光照、調正面板或減輕重量。';return;}
+  S.racing=true;S.x=0;S.v=0;S.t=0;$('verdict').textContent='';$('bRace').disabled=true;
+  var last=performance.now(),m=S.wt/1000,F=mu()*m*9.8,P=pMech();
+  (function step(now){
+    var dt=Math.min(0.05,(now-last)/1000);last=now;S.t+=dt;
+    var Fm=S.v>0.05?P/S.v:Math.min(P/0.05,F*3);
+    var a=(Fm-F)/m;
+    S.v=Math.max(0,S.v+a*dt);
+    S.v=Math.min(S.v,3.5);
+    S.x+=S.v*dt;S.wheel+=S.v*dt*8;
+    draw();
+    if(S.x<20&&S.t<40){requestAnimationFrame(step);return;}
+    S.racing=false;$('bRace').disabled=false;
+    var vd2=$('verdict');
+    if(S.x>=20){
+      $('rT').textContent=S.t.toFixed(2)+' s';
+      if(S.best===null||S.t<S.best){S.best=S.t;vd2.style.color='#1e8449';vd2.textContent='🏆 新紀錄！'+S.t.toFixed(2)+' 秒完成 20 米！';}
+      else{vd2.style.color='#1a5276';vd2.textContent='✅ 完成！'+S.t.toFixed(2)+' 秒（最佳 '+S.best.toFixed(2)+' 秒）。試下再調校，睇下可唔可以再快！';}
+    }else{vd2.style.color='#c0392b';vd2.textContent='⏱️ 40 秒都未跑完…調校下再試！';}
+    refresh();draw();
+  })(performance.now());
+}
+function draw(){
+  var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  // sun
+  var sx=W-70,sy=56;
+  var glow=S.light/100;
+  ctx.fillStyle='rgba(249,231,159,'+(0.3+0.7*glow)+')';
+  ctx.beginPath();ctx.arc(sx,sy,34,0,7);ctx.fill();
+  ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(sx,sy,20,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(243,156,18,'+glow+')';ctx.lineWidth=3;
+  for(var r=0;r<8;r++){var a=r*Math.PI/4;ctx.beginPath();ctx.moveTo(sx+Math.cos(a)*28,sy+Math.sin(a)*28);ctx.lineTo(sx+Math.cos(a)*40,sy+Math.sin(a)*40);ctx.stroke();}
+  ctx.fillStyle='#1a5276';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('光照 '+S.light+'%',sx,sy+58);
+  // track
+  var ty=H-70;
+  ctx.fillStyle='#aab7b8';ctx.fillRect(20,ty,W-40,10);
+  ctx.fillStyle='#fff';
+  for(var d=0;d<=20;d+=2){var mx=20+(W-40)*(d/20);ctx.fillRect(mx-1,ty,2,10);}
+  ctx.fillStyle='#1a5276';ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('0m',24,ty+28);ctx.fillText('20m 終點',W-44,ty+28);
+  // checkered finish
+  for(var fr=0;fr<4;fr++)for(var fc=0;fc<2;fc++){ctx.fillStyle=(fr+fc)%2?'#222':'#fff';ctx.fillRect(W-40+fc*10,ty-24+fr*8,10,8);}
+  // car
+  var cx=20+(W-40)*Math.min(1,S.x/20);
+  var cy=ty;
+  ctx.save();ctx.translate(cx,cy);
+  // panel (tilted by ang)
+  ctx.save();ctx.translate(0,-52);ctx.rotate(-S.ang*Math.PI/180*0.6);
+  ctx.fillStyle='#2471a3';ctx.strokeStyle='#1a5276';ctx.lineWidth=2;
+  ctx.fillRect(-34,-6,68,12);ctx.strokeRect(-34,-6,68,12);
+  ctx.strokeStyle='#aed6f1';ctx.lineWidth=1;
+  for(var g=-2;g<=2;g++){ctx.beginPath();ctx.moveTo(g*13,-6);ctx.lineTo(g*13,6);ctx.stroke();}
+  ctx.restore();
+  ctx.fillStyle='#1a5276';ctx.fillRect(-6,-52,12,10);
+  // body
+  ctx.fillStyle='#e67e22';ctx.strokeStyle='#7e5109';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(-42,-40,84,26,6);ctx.fill();ctx.stroke();
+  // wheels
+  [-28,28].forEach(function(wx){
+    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(wx,-12,12,0,7);ctx.fill();
+    ctx.strokeStyle='#888';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(wx,-12);ctx.lineTo(wx+10*Math.cos(S.wheel),-12+10*Math.sin(S.wheel));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(wx,-12);ctx.lineTo(wx-10*Math.cos(S.wheel),-12-10*Math.sin(S.wheel));ctx.stroke();
+  });
+  ctx.restore();
+  // sun rays hitting panel
+  if(S.light>0){
+    ctx.strokeStyle='rgba(243,156,18,'+(0.25+0.5*glow)+')';ctx.lineWidth=2;
+    for(var q=-1;q<=1;q++){ctx.beginPath();ctx.moveTo(sx-20+q*18,sy+30);ctx.lineTo(cx+q*20,cy-60);ctx.stroke();}
+  }
+  if(S.racing){
+    ctx.fillStyle='#1a5276';ctx.font='bold 16px sans-serif';ctx.textAlign='left';
+    ctx.fillText('⏱ '+S.t.toFixed(1)+'s   '+S.v.toFixed(2)+' m/s',16,30);
+  }
+  ctx.fillStyle='#1a5276';ctx.font='12px sans-serif';ctx.textAlign='left';
+  ctx.fillText('面板偏離 '+S.ang+'°（愈正對陽光，發電愈多）',12,H-8);
+}
+$('sLight').addEventListener('input',function(e){S.light=+e.target.value;refresh();draw();});
+$('sAng').addEventListener('input',function(e){S.ang=+e.target.value;refresh();draw();});
+$('sWt').addEventListener('input',function(e){S.wt=+e.target.value;refresh();draw();});
+$('sFr').addEventListener('input',function(e){S.fr=+e.target.value;refresh();draw();});
+$('bRace').addEventListener('click',race);
+$('bReset').addEventListener('click',function(){S.racing=false;S.x=0;S.v=0;S.t=0;$('rT').textContent='–';$('verdict').textContent='';$('bRace').disabled=false;refresh();draw();});
+refresh();fit();
+})();
+</script>
+</body>
+</html>

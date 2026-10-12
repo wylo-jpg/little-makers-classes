@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：雞蛋空降實驗室 | Sim: Egg Drop Lab</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;border:1px solid #bcd9f2;border-radius:10px;background:#eaf4fb;display:block}
+.ctrls{display:grid;gap:.6rem;margin:1rem 0}
+.ctrl{display:grid;grid-template-columns:9.5rem 1fr 5.5rem;gap:.6rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+.ctrl label{font-weight:700}
+.ctrl output{font-weight:700;color:#1a5276;text-align:right}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.2rem,1fr));gap:.5rem;margin:1rem 0}
+.ro{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.5rem .7rem}
+.ro b{display:block;font-size:.78rem;color:#1a5276;font-weight:600}
+.ro span{font-size:1.15rem;font-weight:700}
+.btns{margin:.8rem 0;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+button.big{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.big:active{transform:scale(.97)}
+button.big:disabled{background:#95a5b8}
+button.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276;border-radius:8px;padding:.6rem 1.2rem;font-size:.95rem;font-weight:700;cursor:pointer}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.verdict{font-size:1.15rem;font-weight:700;margin:.6rem 0;min-height:1.8em}
+.check{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-07.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：雞蛋空降實驗室 <span class="en">Interactive Sim: Egg Drop Lab</span></h2>
+<div class="howto"><b>玩法 How to play：</b>調校<b>降落傘面積</b>（減速）同<b>緩衝物料厚度</b>（吸震），按「掉落」由 15 米高空掉低隻蛋。衝擊力超過 30 N 隻蛋就會破！仲可以試下「降落傘打唔開」會點。
+<br><span class="en">Tune canopy area (slowing) and cushioning (shock absorption), then drop the egg from 15 m. Over 30 N of impact force cracks it!</span></div>
+
+<div class="sim-wrap">
+<div class="ctrls">
+<div class="ctrl"><label>降落傘面積 Canopy area</label><input type="range" id="sArea" min="0.1" max="1.5" step="0.1" value="0.8"><output id="oArea">0.8 m²</output></div>
+<div class="ctrl"><label>緩衝物料厚度 Cushioning</label><input type="range" id="sCush" min="1" max="15" step="1" value="8"><output id="oCush">8 cm</output></div>
+<div class="check"><input type="checkbox" id="cFail"><label for="cFail"><b>降落傘未能張開</b> Parachute fails to open <span class="en">(會發生咩事？)</span></label></div>
+</div>
+<div class="btns"><button class="big" id="bDrop">🥚 掉落 Drop!</button><button class="ghost" id="bReset">↺ 重設 Reset</button></div>
+<canvas id="cv"></canvas>
+<div class="verdict" id="verdict"></div>
+<div class="readout">
+<div class="ro"><b>終端下墜速度 Terminal velocity</b><span id="rV">–</span></div>
+<div class="ro"><b>撞擊時間 Impact time</b><span id="rT">–</span></div>
+<div class="ro"><b>平均衝擊力 Impact force</b><span id="rF">–</span></div>
+<div class="ro"><b>雞蛋狀態 Egg status</b><span id="rE">–</span></div>
+</div>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function fit(){var w=cv.parentElement.clientWidth;cv.width=Math.max(320,w);cv.height=Math.round(cv.width*0.62);draw();}
+window.addEventListener('resize',fit);
+var S={area:0.8,cush:8,fail:false,phase:'idle',y:0,v:0,crack:false,squash:0};
+function $(id){return document.getElementById(id);}
+var M_DEV=0.4,M_EGG=0.06,HGT=15,CRACK=30;
+function effArea(){return S.fail?0.02:S.area;}
+function termV(){var A=effArea();return Math.sqrt(2*M_DEV*9.8/(1.2*1.5*A));}
+function impact(){
+  var v=termV(),t=2*(S.cush/100)/v;
+  var F=M_EGG*v/t;
+  return {v:v,t:t,F:F};
+}
+function refresh(){
+  $('oArea').textContent=S.area.toFixed(1)+' m²';
+  $('oCush').textContent=S.cush+' cm';
+}
+function drop(){
+  if(S.phase==='fall')return;
+  S.phase='fall';S.y=0;S.v=0;S.crack=false;S.squash=0;$('verdict').textContent='';
+  $('bDrop').disabled=true;
+  var vt=termV(),last=performance.now();
+  (function step(now){
+    var dt=Math.min(0.05,(now-last)/1000);last=now;
+    // approach terminal velocity
+    S.v+=(vt-S.v)*Math.min(1,dt*1.5);
+    S.y+=S.v*dt;
+    draw();
+    if(S.y<HGT){requestAnimationFrame(step);return;}
+    // impact
+    var im=impact();
+    S.phase='land';S.squash=1;
+    $('rV').textContent=im.v.toFixed(2)+' m/s';
+    $('rT').textContent=(im.t*1000).toFixed(1)+' ms';
+    $('rF').textContent=im.F.toFixed(1)+' N';
+    var vEl=$('verdict');
+    if(im.F>CRACK){S.crack=true;vEl.style.color='#c0392b';vEl.textContent='💥 蛋破咗！衝擊力 '+im.F.toFixed(1)+' N（超過 30 N）。試下加大降落傘或加厚緩衝！';$('rE').textContent='破裂 💥';$('rE').style.color='#c0392b';}
+    else{vEl.style.color='#1e8449';vEl.textContent='✅ 隻蛋冇事！衝擊力得 '+im.F.toFixed(1)+' N。記住原理：傘大減速、緩衝延長撞擊時間。';$('rE').textContent='完好 ✅';$('rE').style.color='#1e8449';}
+    setTimeout(function(){S.squash=0;draw();},900);
+    draw();$('bDrop').disabled=false;
+  })(performance.now());
+}
+function drawEgg(x,y,sq,crack){
+  ctx.save();ctx.translate(x,y);ctx.scale(1,1-0.25*sq);
+  ctx.fillStyle=crack?'#f9e79f':'#fef9e7';ctx.strokeStyle='#7d6608';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(0,0,11,14,0,0,7);ctx.fill();ctx.stroke();
+  if(crack){
+    ctx.strokeStyle='#7b241c';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(-6,-10);ctx.lineTo(2,-2);ctx.lineTo(-4,4);ctx.lineTo(4,10);ctx.stroke();
+    ctx.fillStyle='#f5b041';ctx.beginPath();ctx.ellipse(8,10,7,5,0.4,0,7);ctx.fill();
+  }
+  ctx.restore();
+}
+function draw(){
+  var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  var groundY=H-50;
+  // clouds
+  ctx.fillStyle='#fff';
+  [[W*0.2,60],[W*0.7,90],[W*0.45,40]].forEach(function(c){
+    ctx.beginPath();ctx.arc(c[0],c[1],22,0,7);ctx.arc(c[0]+24,c[1],17,0,7);ctx.arc(c[0]-24,c[1],17,0,7);ctx.fill();
+  });
+  // height ruler
+  ctx.fillStyle='#1a5276';ctx.font='11px sans-serif';ctx.textAlign='left';
+  for(var m=0;m<=15;m+=5){
+    var ry=20+(H-110)*(m/15);
+    ctx.fillRect(8,ry,10,2);ctx.fillText((15-m)+'m',22,ry+4);
+  }
+  ctx.fillStyle='#a9dfbf';ctx.fillRect(0,groundY,W,H-groundY);
+  ctx.fillStyle='#7dcea0';ctx.fillRect(0,groundY,W,4);
+  var cx=W*0.55;
+  var yPx=20+(H-110)*(S.y/HGT);
+  if(S.phase==='idle'){yPx=20;}
+  if(S.phase==='land'){yPx=groundY-24;}
+  var A=effArea();
+  var canopyW=Math.sqrt(A)*120+30;
+  // canopy
+  if(!(S.fail&&S.phase!=='idle')){
+    ctx.fillStyle=S.fail?'#b0bec5':'#e74c3c';
+    ctx.strokeStyle='#7b241c';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,yPx-58,canopyW/2,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
+    // shroud lines
+    ctx.strokeStyle='#5d3f1f';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cx-canopyW/2,yPx-58);ctx.lineTo(cx-14,yPx-20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+canopyW/2,yPx-58);ctx.lineTo(cx+14,yPx-20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,yPx-58);ctx.lineTo(cx,yPx-20);ctx.stroke();
+  }
+  // device box (cushioning)
+  var cushH=10+S.cush*2.2-(S.squash?S.cush*1.4:0);
+  ctx.fillStyle='#fdebd0';ctx.strokeStyle='#7d6608';ctx.lineWidth=2;
+  var bx=cx-20,by=yPx-20-cushH;
+  ctx.fillRect(bx,by,40,cushH);ctx.strokeRect(bx,by,40,cushH);
+  ctx.fillStyle='#7d6608';ctx.font='10px sans-serif';ctx.textAlign='center';
+  ctx.fillText('緩衝',cx,by+cushH/2+3);
+  drawEgg(cx,by+cushH/2,S.squash,S.crack);
+  // labels
+  ctx.fillStyle='#1a5276';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('降落傘面積 '+effArea().toFixed(2)+' m² → 空氣阻力減速',12,20);
+  ctx.fillText('緩衝 '+S.cush+' cm → 延長撞擊時間',12,40);
+  if(S.phase==='fall'){
+    ctx.fillStyle='#c0392b';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('下墜中… '+S.v.toFixed(1)+' m/s',cx,yPx+34);
+  }
+}
+$('sArea').addEventListener('input',function(e){S.area=+e.target.value;refresh();draw();});
+$('sCush').addEventListener('input',function(e){S.cush=+e.target.value;refresh();draw();});
+$('cFail').addEventListener('change',function(e){S.fail=e.target.checked;draw();});
+$('bDrop').addEventListener('click',drop);
+$('bReset').addEventListener('click',function(){S.phase='idle';S.y=0;S.v=0;S.crack=false;S.squash=0;$('verdict').textContent='';$('rV').textContent='–';$('rT').textContent='–';$('rF').textContent='–';$('rE').textContent='–';$('rE').style.color='';draw();});
+refresh();fit();
+})();
+</script>
+</body>
+</html>

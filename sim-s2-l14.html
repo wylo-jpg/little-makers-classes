@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L14 排序大比拼 | Lesson 14: Sorting Race</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1.1rem;margin:.8rem 0;font-size:.95rem}
+.panel{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:.8rem 0}
+.ctl{display:flex;gap:.8rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.sbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.2rem;font-weight:700;cursor:pointer;font-size:1rem}
+.sbtn:disabled{background:#aaa;cursor:not-allowed}
+.sbtn.warn{background:#e67e22}
+.sbtn.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276}
+input[type=range]{width:160px;accent-color:#1a5276}
+canvas.lane{width:100%;height:190px;display:block;background:#fdfefe;border:1px solid #dfe6ee;border-radius:8px;margin:.4rem 0}
+.score{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:1rem;margin:.3rem 0}
+.score b{color:#1a5276;font-size:1.25rem}
+.formula{background:#fef9e7;border:1px solid #f5d547;border-radius:10px;padding:.8rem 1.1rem;margin:.8rem 0;font-size:1rem}
+.formula .big{font-size:1.4rem;font-weight:700;color:#a04000}
+.readout{background:#f7f9fc;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.7rem 0;font-size:1rem;min-height:3rem}
+.winner{font-size:1.25rem;font-weight:700;color:#1e8449}
+table.hist{font-size:.88rem}
+label b{color:#1a5276}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s2-14.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L14 排序大比拼 <span class="en">Lesson 14: Sorting Race — Bubble vs Selection</span></h2>
+<div class="howto">🏁 <b>玩法 How to play：</b>較<b>牌數</b>，撳「洗牌」，再撳「開始比賽」——氣泡排序同選擇排序會用<b>同一副牌</b>鬥快！黃色 = 比較緊，紅色 = 交換緊，綠色 = 排好咗。留意兩邊嘅<b>比較次數</b>有咩分別。<br><span class="en">Set the card count, shuffle, then start the race — both methods sort the <b>same shuffled cards</b>. Yellow = comparing, red = swapping, green = sorted. Watch the comparison counters!</span></div>
+
+<div class="panel">
+<div class="ctl">
+<label><b>牌數 Cards (n)：</b><input type="range" id="nR" min="4" max="16" value="8" oninput="setN()"></label>
+<b id="nO" style="font-size:1.3rem;color:#1a5276">8</b>
+<label><b>速度 Speed：</b><input type="range" id="spR" min="2" max="14" value="6" oninput="$('spO').textContent=this.value"></label>
+<b id="spO" style="color:#1a5276">6</b><span style="font-size:.85rem;color:#666">步/秒 ops/s</span>
+</div>
+<div class="ctl">
+<button class="sbtn warn" id="shuffleBtn" onclick="shuffle()">🔀 洗牌 Shuffle</button>
+<button class="sbtn" id="raceBtn" onclick="startRace()">🏁 開始比賽 Start race</button>
+<button class="sbtn ghost" onclick="fullReset()">↺ 重置 Reset</button>
+</div>
+<div class="formula">📐 <b>比較次數公式（本堂方法）：</b>(n−1) + (n−2) + … + 1 ＝ n(n−1)/2<br>
+<span class="en">Predicted comparisons:</span> <span class="big" id="predFormula">8×7/2 = 28</span> 次
+<span class="en">— 跑完對比下實際數字啱唔啱！</span></div>
+</div>
+
+<div class="panel">
+<h2 style="margin-top:0">🫧 氣泡排序 <span class="en">Bubble sort — compare neighbours, swap if left &gt; right</span></h2>
+<canvas class="lane" id="cvB"></canvas>
+<div class="score"><span>比較 Comparisons <b id="cB">0</b></span><span>交換 Swaps <b id="sB">0</b></span><span id="wB" class="winner"></span></div>
+</div>
+
+<div class="panel">
+<h2 style="margin-top:0">👆 選擇排序 <span class="en">Selection sort — pick the smallest each round</span></h2>
+<canvas class="lane" id="cvS"></canvas>
+<div class="score"><span>比較 Comparisons <b id="cS">0</b></span><span>交換 Swaps <b id="sS">0</b></span><span id="wS" class="winner"></span></div>
+</div>
+
+<div class="readout" id="raceOut">撳「洗牌」再「開始比賽」。試下轉牌數：牌由 8 張加到 16 張，比較次數會由 28 變成幾多？<br><span class="en">Shuffle, then start the race. Try more cards: from 8 to 16 cards, how do the comparisons change?</span></div>
+
+<div class="panel">
+<h2 style="margin-top:0">📊 實測紀錄 <span class="en">Trial log — evidence, not feeling!</span></h2>
+<table class="hist"><thead><tr><th>次數 Trial</th><th>牌數 n</th><th>氣泡比較 B-comp</th><th>氣泡交換 B-swap</th><th>選擇比較 S-comp</th><th>選擇交換 S-swap</th></tr></thead>
+<tbody id="histBody"><tr><td colspan="6" style="text-align:center;color:#888">未有紀錄 — 跑一次比賽啦 No trials yet — run a race!</td></tr></tbody></table>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+"use strict";
+function $(id){return document.getElementById(id);}
+var n=8, deck=[], lanes=null, timer=null, running=false, trialNo=0;
+
+function setN(){
+  n=+$("nR").value; $("nO").textContent=n;
+  $("predFormula").textContent=n+"×"+(n-1)+"/2 = "+(n*(n-1)/2);
+  fullReset();
+}
+function fullReset(){
+  stopTimer(); running=false; lanes=null;
+  deck=[]; for(var i=1;i<=n;i++) deck.push(i);
+  $("cB").textContent="0";$("sB").textContent="0";$("cS").textContent="0";$("sS").textContent="0";
+  $("wB").textContent="";$("wS").textContent="";
+  $("raceBtn").disabled=false;$("shuffleBtn").disabled=false;
+  drawLane("cvB",deck,-1,-1,-1,0); drawLane("cvS",deck,-1,-1,-1,0);
+}
+function shuffle(){
+  if(running) return;
+  for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=deck[i];deck[i]=deck[j];deck[j]=t;}
+  drawLane("cvB",deck,-1,-1,-1,0); drawLane("cvS",deck,-1,-1,-1,0);
+  $("raceOut").innerHTML='🔀 洗好牌啦！撳「開始比賽」。同一副牌，兩個方法鬥快，夠公平。<br><span class="en">Shuffled! Both methods will sort this same deck — a fair race.</span>';
+}
+function bubbleOps(a){
+  var arr=a.slice(), ops=[], N=arr.length, r, i;
+  for(r=0;r<N-1;r++){
+    for(i=0;i<N-1-r;i++){
+      ops.push({t:"c",i:i,j:i+1});
+      if(arr[i]>arr[i+1]){var t=arr[i];arr[i]=arr[i+1];arr[i+1]=t;ops.push({t:"s",i:i,j:i+1});}
+    }
+    ops.push({t:"round"});
+  }
+  ops.push({t:"round"}); return ops;
+}
+function selectionOps(a){
+  var arr=a.slice(), ops=[], N=arr.length, r, j, m;
+  for(r=0;r<N-1;r++){
+    m=r;
+    for(j=r+1;j<N;j++){
+      ops.push({t:"c",i:m,j:j});
+      if(arr[j]<arr[m]) m=j;
+    }
+    if(m!==r){var t=arr[r];arr[r]=arr[m];arr[m]=t;ops.push({t:"s",i:r,j:m});}
+    ops.push({t:"round"});
+  }
+  ops.push({t:"round"}); return ops;
+}
+function startRace(){
+  if(running) return;
+  running=true;
+  $("raceBtn").disabled=true; $("shuffleBtn").disabled=true;
+  $("wB").textContent="";$("wS").textContent="";
+  $("cB").textContent="0";$("sB").textContent="0";$("cS").textContent="0";$("sS").textContent="0";
+  lanes=[
+    {cv:"cvB",arr:deck.slice(),ops:bubbleOps(deck),p:0,comps:0,swaps:0,locked:0,dir:1,done:false,cEl:"cB",sEl:"sB",wEl:"wB",name:"氣泡排序 Bubble"},
+    {cv:"cvS",arr:deck.slice(),ops:selectionOps(deck),p:0,comps:0,swaps:0,locked:0,dir:-1,done:false,cEl:"cS",sEl:"sS",wEl:"wS",name:"選擇排序 Selection"}
+  ];
+  $("raceOut").innerHTML='🏁 比賽進行中… <span class="en">Racing…</span>';
+  var delay=Math.round(1000/+$("spR").value);
+  timer=setInterval(stepRace,delay);
+}
+function stepRace(){
+  var allDone=true;
+  for(var k=0;k<lanes.length;k++){
+    var L=lanes[k];
+    if(L.done) continue;
+    allDone=false;
+    var op=L.ops[L.p++];
+    if(op.t==="c"){L.comps++;$(L.cEl).textContent=L.comps;drawLane(L.cv,L.arr,op.i,op.j,-1,L.locked,L.dir);}
+    else if(op.t==="s"){L.swaps++;$(L.sEl).textContent=L.swaps;
+      var t=L.arr[op.i];L.arr[op.i]=L.arr[op.j];L.arr[op.j]=t;
+      drawLane(L.cv,L.arr,op.i,op.j,-1,L.locked,L.dir);}
+    else if(op.t==="round"){L.locked++;drawLane(L.cv,L.arr,-1,-1,-1,L.locked,L.dir);}
+    if(L.p>=L.ops.length){
+      L.done=true; L.locked=n;
+      drawLane(L.cv,L.arr,-1,-1,-1,L.locked,L.dir);
+      var other=lanes[1-k];
+      $(L.wEl).textContent = other.done ? "🏁 完成 Done" : "🏁 先完成！ Finished first!";
+    }
+  }
+  if(allDone){ finishRace(); }
+}
+function finishRace(){
+  stopTimer(); running=false;
+  var B=lanes[0], S=lanes[1], pred=n*(n-1)/2;
+  trialNo++;
+  var tb=$("histBody");
+  if(trialNo===1) tb.innerHTML="";
+  var tr=document.createElement("tr");
+  tr.innerHTML="<td>"+trialNo+"</td><td>"+n+"</td><td>"+B.comps+"</td><td>"+B.swaps+"</td><td>"+S.comps+"</td><td>"+S.swaps+"</td>";
+  tb.prepend(tr);
+  $("raceBtn").disabled=false;$("shuffleBtn").disabled=false;
+  $("raceOut").innerHTML='✅ 第 '+trialNo+' 次比賽完成！<br>'+
+    '比較次數：氣泡 <b>'+B.comps+'</b>，選擇 <b>'+S.comps+'</b>（公式預測 '+pred+' —— '+(B.comps===pred&&S.comps===pred?'啱晒！ Exactly as predicted!':'')+'）<br>'+
+    '交換次數：氣泡 <b>'+B.swaps+'</b>，選擇 <b>'+S.swaps+'</b><br>'+
+    '💡 發現：比較次數<b>唔受洗牌影響</b>（只取決於方法本身——最客觀）；交換次數就睇彩數。撳「洗牌」再跑一次驗證下！<br>'+
+    '<span class="en">Comparisons don\'t change with shuffling — they depend only on the method. Swaps depend on luck. Shuffle and race again to verify!</span>';
+}
+function stopTimer(){ if(timer){clearInterval(timer);timer=null;} }
+function drawLane(cvId,arr,ci,cj,si,locked,dir){
+  var cv=$(cvId), ctx=cv.getContext("2d");
+  var W=cv.clientWidth||600, H=190, dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  var N=arr.length, gap=6, cw=Math.min(52,(W-20)/N-gap);
+  var totalW=N*(cw+gap)-gap, x0=(W-totalW)/2;
+  var maxV=N;
+  ctx.font="bold 14px sans-serif"; ctx.textAlign="center";
+  for(var i=0;i<N;i++){
+    var x=x0+i*(cw+gap), h=40+110*arr[i]/maxV, y=H-14-h;
+    var lockedPos = dir===1 ? (i>=N-locked) : (i<locked);
+    var col="#dfe9f5", bd="#1a5276";
+    if(lockedPos){col="#a9dfbf";bd="#1e8449";}
+    if(i===ci||i===cj){col="#f9e79f";bd="#b7950b";}
+    if(i===si){col="#f5b7b1";bd="#922b21";}
+    ctx.fillStyle=col; ctx.strokeStyle=bd; ctx.lineWidth=2.5;
+    if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,cw,h,7);ctx.fill();ctx.stroke();}
+    else{ctx.fillRect(x,y,cw,h);ctx.strokeRect(x,y,cw,h);}
+    ctx.fillStyle="#1a2a3a";
+    ctx.fillText(arr[i],x+cw/2,y+22);
+  }
+}
+window.addEventListener("resize",function(){
+  if(lanes){for(var k=0;k<lanes.length;k++){var L=lanes[k];drawLane(L.cv,L.arr,-1,-1,-1,L.locked,L.dir);}}
+  else{drawLane("cvB",deck,-1,-1,-1,0);drawLane("cvS",deck,-1,-1,-1,0);}
+});
+setN();
+</script>
+</body>
+</html>

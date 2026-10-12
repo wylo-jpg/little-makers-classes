@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>關愛夜燈電路 互動模擬 | Sim: Glow Doorplate Circuit</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:#fdf6ec;touch-action:manipulation}
+.controls{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0;align-items:center}
+.controls button{padding:.55rem 1rem;border:2px solid #e67e22;border-radius:8px;background:#fff;font-size:1rem;cursor:pointer}
+.controls button.active{background:#e67e22;color:#fff}
+.readout{background:#fff;border-left:5px solid #e67e22;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#e67e22}
+label.slider{display:block;margin:.8rem 0 .3rem;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+.note{font-size:.92rem;color:#555}
+.checklist{background:#fff;border-radius:8px;padding:.8rem 1rem;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.checklist li{margin:.3rem 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-08.html">← 返回課堂 Back to lesson</a></nav>
+<h2>關愛夜燈電路 <span class="en">Glow Doorplate Circuit — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：砌好門牌電路——放入電池、接好銅箔、接啱 LED 正負極。燈唔著？用下面的檢查清單逐步排解故障！<br>
+<span class="en">Build the circuit: insert the battery, close the foil loop, connect the LED with correct polarity. Lamp dark? Use the checklist to troubleshoot!</span></p>
+</div>
+
+<div class="controls">
+<button id="bBat" class="active">🔋 放入電池 Insert cell</button>
+<button id="bFoil" class="active">🧵 銅箔接好 Foil closed</button>
+<button id="bPol" class="active">💡 LED 正接 Correct polarity</button>
+</div>
+<label class="slider">LED 數目 <span class="en">Number of LEDs</span>：<span id="ledVal">1</span> 粒</label>
+<input type="range" id="leds" min="0" max="2" step="1" value="1">
+
+<canvas id="cv" height="380"></canvas>
+
+<div class="readout">
+<div>電路狀態 <span class="en">Circuit</span>：<span class="big" id="rState">？</span></div>
+<div id="rMsg" style="margin-top:.4rem"></div>
+</div>
+
+<div class="checklist">
+<strong>🔧 燈唔著？逐步檢查 Lamp dark? Check step by step:</strong>
+<ol>
+<li>電池有冇放入？<span class="en">Is the battery in?</span></li>
+<li>銅箔有冇完整接通？轉彎處有冇摺疊壓實？<span class="en">Is the foil loop complete? Corners pressed?</span></li>
+<li>LED 長腳（正極）係咪接電池正極？接反唔會著。<span class="en">Long leg (+) to battery (+)? Reversed won't light.</span></li>
+</ol>
+<p class="note">LED 單向導電：接反咗唔會燒壞，調轉再接就得。<br><span class="en">LEDs conduct one way — reversed won't burn out, just flip it.</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=380,battery=true,foil=true,polarity=true,ledCount=1;
+function fit(){var w=cv.clientWidth;cv.width=w;cv.height=Math.round(w*H/W);}
+window.addEventListener('resize',function(){fit();draw();});fit();
+
+function toggle(btnId,fn){var b=document.getElementById(btnId);b.classList.toggle('active');fn(b.classList.contains('active'));}
+var ledEl=document.getElementById('leds');
+ledEl.addEventListener('input',function(){ledCount=+ledEl.value;document.getElementById('ledVal').textContent=ledCount;draw();});
+document.getElementById('bBat').addEventListener('click',function(){toggle('bBat',function(v){battery=v;draw();});});
+document.getElementById('bFoil').addEventListener('click',function(){toggle('bFoil',function(v){foil=v;draw();});});
+document.getElementById('bPol').addEventListener('click',function(){toggle('bPol',function(v){polarity=v;draw();});});
+
+var lightsOn=false;
+function draw(){
+  var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  var s=w/W;ctx.save();ctx.scale(s,s);
+  // card plate
+  ctx.fillStyle='#fff';ctx.strokeStyle='#c9a227';ctx.lineWidth=4;
+  roundRect(60,30,580,320,14);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#c9a227';ctx.font='bold 22px sans-serif';
+  ctx.fillText('夜裡起身不用怕 · 門燈為您照亮路',150,78);
+  ctx.fillStyle='#999';ctx.font='13px sans-serif';ctx.fillText('長者夜光門牌 Glow doorplate',258,102);
+  // copper foil track (rectangle loop)
+  var x0=180,y0=150,x1=520,y1=300;
+  ctx.strokeStyle='#b87333';ctx.lineWidth=10;
+  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.lineTo(x1,y1);ctx.lineTo(x0,y1);ctx.closePath();ctx.stroke();
+  if(!foil){ // gap on bottom edge
+    ctx.fillStyle='#fdf6ec';ctx.fillRect(330,y1-12,60,24);
+    ctx.fillStyle='#e74c3c';ctx.font='bold 13px sans-serif';ctx.fillText('斷開 open',336,y1-16);
+  }
+  // battery position (bottom-left corner of loop)
+  var bx=180,by=300;
+  if(battery){
+    ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(bx,by,26,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#7d5a00';ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.fillText('CR2032',bx-24,by+4);
+    ctx.fillStyle='#e74c3c';ctx.font='bold 15px sans-serif';ctx.fillText('+',bx-32,by-30);
+    ctx.fillStyle='#555';ctx.fillText('−',bx+22,by-30);
+  }else{
+    ctx.strokeStyle='#999';ctx.lineWidth=3;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.arc(bx,by,26,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#999';ctx.font='13px sans-serif';ctx.fillText('未放電池',bx-26,by+44);
+  }
+  // current flow animation dots
+  lightsOn=battery&&foil&&polarity&&ledCount>0;
+  if(lightsOn){ctx.fillStyle='#f7dc6f';
+    var t=Date.now()/300;
+    for(var d=0;d<8;d++){
+      var per=(t*0.2+d/8)%1;var px,py;
+      var total=2*((x1-x0)+(y1-y0)),dist=per*total;
+      if(dist<(x1-x0)){px=x0+dist;py=y0;}
+      else if(dist<(x1-x0)+(y1-y0)){px=x1;py=y0+dist-(x1-x0);}
+      else if(dist<2*(x1-x0)+(y1-y0)){px=x1-(dist-(x1-x0)-(y1-y0));py=y1;}
+      else{px=x0;py=y1-(dist-2*(x1-x0)-(y1-y0));}
+      ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1a6fb5';ctx.font='13px sans-serif';
+    ctx.fillText('電流 current →',x0+8,y0-14);
+  }
+  // LEDs on top edge
+  var ledX=[350,470];
+  for(var i=0;i<2;i++){
+    if(i>=ledCount)continue;
+    var lx=ledX[i],ly=y0;
+    drawLED(lx,ly-14,lightsOn,i);
+  }
+  ctx.restore();
+  // readout
+  var st=document.getElementById('rState'),msg=document.getElementById('rMsg');
+  if(lightsOn){
+    st.textContent='通路 ✓ 亮燈！';st.style.color='#27ae60';
+    msg.innerHTML=(ledCount===2?'兩粒 LED 分享電流，每粒暗啲。<br><span class="en">Two LEDs share the current — each is dimmer.</span>':'LED 發光！電能 → 光能。<br><span class="en">The LED lights: electrical energy → light energy.</span>');
+  }else{
+    st.textContent='斷路 ✕ 不亮';st.style.color='#e74c3c';
+    var why='未知';
+    if(!battery)why='電池未放入——電路冇電源。';
+    else if(!foil)why='銅箔斷開——電流唔流通。';
+    else if(!polarity)why='LED 接反咗——單向導電，調轉再接。';
+    else if(ledCount===0)why='冇裝 LED——冇負載。';
+    msg.innerHTML='原因：'+why+'<br><span class="en">See the checklist above to fix it.</span>';
+  }
+}
+function drawLED(x,y,on,idx){
+  // legs
+  ctx.strokeStyle='#888';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(x-8,y+22);ctx.lineTo(x-8,y);ctx.moveTo(x+8,y+22);ctx.lineTo(x+8,y);ctx.stroke();
+  var longLeft=polarity; // long leg = +, on left when correct
+  ctx.fillStyle='#333';ctx.font='11px sans-serif';
+  ctx.fillText(longLeft?'+  −':'−  +',x-12,y+36);
+  // dome
+  if(on){
+    var g=ctx.createRadialGradient(x,y,4,x,y,52);
+    var bright=ledCount===2?0.55:1;
+    g.addColorStop(0,'rgba(255,235,120,'+bright+')');
+    g.addColorStop(1,'rgba(255,235,120,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,52,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle=on?'#f7dc6f':'#d5dbdb';
+  ctx.beginPath();ctx.arc(x,y,16,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#999';ctx.lineWidth=2;ctx.stroke();
+}
+function roundRect(x,y,ww,hh,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+ww,y,x+ww,y+hh,r);ctx.arcTo(x+ww,y+hh,x,y+hh,r);
+  ctx.arcTo(x,y+hh,x,y,r);ctx.arcTo(x,y,x+ww,y,r);ctx.closePath();
+}
+function tick(){if(lightsOn)draw();requestAnimationFrame(tick);}
+draw();tick();
+})();
+</script>
+</body>
+</html>

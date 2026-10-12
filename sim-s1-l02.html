@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>理想筆袋設計室 | L02 Design Thinking Studio</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.steps{display:flex;gap:.3rem;flex-wrap:wrap;margin:.6rem 0}
+.step{flex:1;min-width:5.2rem;text-align:center;font-size:.82rem;padding:.45rem .2rem;border-radius:8px;background:#eef2f6;color:#888}
+.step.on{background:#1a5276;color:#fff;font-weight:700}
+.step.done{background:#d5f5e3;color:#1e8449}
+.ucard{display:block;width:100%;text-align:left;background:#fff;border:2px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0;cursor:pointer;font-size:1rem}
+.ucard:hover{border-color:#2e86c1}
+.ucard.sel{border-color:#1a5276;background:#eaf6ff}
+.ucard b{font-size:1.1rem}
+.quote{background:#fef9e7;border-left:4px solid #f1c40f;padding:.5rem .8rem;margin:.4rem 0;border-radius:0 8px 8px 0}
+select{width:100%;padding:.6rem;font-size:1rem;border-radius:8px;border:1px solid #bbb;margin:.25rem 0 0.7rem}
+.abtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.2rem;font-size:1rem;font-weight:700;cursor:pointer;margin:.3rem .3rem .3rem 0}
+.abtn.alt{background:#2e86c1}
+.abtn.ghost{background:#95a5a6}
+.abtn:disabled{opacity:.45;cursor:default}
+.dcard{display:block;width:100%;text-align:left;background:#fff;border:2px solid #dfe6ee;border-radius:10px;padding:.7rem;margin:.5rem 0;cursor:pointer}
+.dcard:hover{border-color:#2e86c1}
+.dcard.sel{border-color:#1a5276;background:#eaf6ff}
+.dcard svg{display:block;margin:.3rem auto}
+input[type=range]{width:100%;height:2.2rem}
+#feedback .fb{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.7rem .9rem;margin:.5rem 0}
+#feedback .like{border-left:4px solid #27ae60}
+#feedback .fix{border-left:4px solid #e67e22}
+.stars{font-size:2rem;letter-spacing:.2rem;color:#f39c12}
+.score{font-size:1.4rem;font-weight:700;color:#1a5276}
+.shake{animation:shk .5s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.note{font-size:.85rem;color:#666}
+.needtag{display:inline-block;background:#d6eaf8;color:#1a5276;border-radius:6px;padding:.15rem .5rem;margin:.15rem;font-size:.88rem}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-02.html">← 返回課堂 Back to lesson</a></nav>
+<h2>理想筆袋設計室 <span class="en">Ideal Pencil Case Design Studio</span></h2>
+<div class="card">
+<p><b>玩法 How to play</b>：你會化身設計師，為一位同學設計「理想筆袋」，親身走一遍<b>設計思維五步</b>：同理心 → 定義問題 → 構思 → 原型 → 測試。<br>
+<span class="en">Play designer: walk through the five steps of design thinking to create an ideal pencil case for a classmate.</span></p>
+<p class="note">💡 記住本課金句：好的設計由了解用家的需要開始，唔係由自己嘅喜好出發！</p>
+<div class="steps" id="stepBar"></div>
+</div>
+<div class="card" id="stage"></div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var STEPN=['選用家','同理心','定義問題','構思','原型','測試'];
+var NEEDL={sep:'有分隔間隔',zip:'順滑嘅拉鏈',card:'卡位放學生證',big:'大容量（12支顏色筆）',tough:'堅固唔爆開嘅拉鏈',light:'輕便',small:'細小唔佔位',hook:'可掛喺書包'};
+var USERS={
+ xiaowen:{name:'小文',en:'Man',needs:['sep','zip','card'],
+  quotes:['「我成日唔見筆，唔知跌咗去邊！」','「條拉鏈成日卡住，嬲死我！」','「學生證成日唔知擺咗去邊…」'],
+  reasons:{sep:'佢嘅筆常常唔見',zip:'佢筆袋嘅拉鏈常常卡住',card:'佢想把學生證放埋一齊'}},
+ amei:{name:'阿美',en:'Ah Mei',needs:['big','sep','tough'],
+  quotes:['「我每日帶12支顏色筆返學！」','「文具同擦膠撈埋，好亂呀。」','「個筆袋成日爆開，好尷尬…」'],
+  reasons:{big:'佢每日帶12支顏色筆返學',sep:'佢想分開文具同擦膠',tough:'佢嘅筆袋常常爆開'}},
+ daxiong:{name:'大雄',en:'Dai Hung',needs:['light','small','hook'],
+  quotes:['「我淨係帶3支筆咋。」','「個筆袋大大個，好阻位。」','「想掛喺書包側邊，拎起身方便啲。」'],
+  reasons:{light:'佢只帶3支筆，想要輕便',small:'佢覺得筆袋太大太阻位',hook:'佢想把筆袋掛喺書包'}}
+};
+var DESIGNS={
+ long:{name:'長形多格款',en:'Long multi-compartment',feats:['sep','card','big'],
+  svg:'<svg width="150" height="70" viewBox="0 0 150 70"><rect x="10" y="15" width="130" height="40" rx="6" fill="#aed6f1" stroke="#1a5276" stroke-width="2"/><line x1="53" y1="15" x2="53" y2="55" stroke="#1a5276" stroke-width="2"/><line x1="96" y1="15" x2="96" y2="55" stroke="#1a5276" stroke-width="2"/><rect x="100" y="22" width="34" height="14" rx="2" fill="#f9ebea" stroke="#c0392b"/></svg>'},
+ roll:{name:'捲軸款',en:'Roll-up',feats:['sep','light','hook'],
+  svg:'<svg width="150" height="70" viewBox="0 0 150 70"><rect x="20" y="18" width="90" height="34" rx="17" fill="#a9dfbf" stroke="#1e8449" stroke-width="2"/><line x1="45" y1="18" x2="45" y2="52" stroke="#1e8449" stroke-width="2"/><line x1="70" y1="18" x2="70" y2="52" stroke="#1e8449" stroke-width="2"/><circle cx="125" cy="35" r="9" fill="none" stroke="#7d6608" stroke-width="3"/></svg>'},
+ mini:{name:'迷你掛袋款',en:'Mini hanging pouch',feats:['light','small','hook'],
+  svg:'<svg width="150" height="70" viewBox="0 0 150 70"><rect x="45" y="20" width="60" height="38" rx="8" fill="#f5cba7" stroke="#7e5109" stroke-width="2"/><path d="M75 20 q0 -14 12 -14" fill="none" stroke="#7d6608" stroke-width="3"/><circle cx="90" cy="6" r="4" fill="none" stroke="#7d6608" stroke-width="2"/></svg>'}
+};
+var FB={
+ xiaowen:{sep:['我鍾意有多格分隔，我啲筆終於唔會唔見！','筆冇分隔，好易唔見——加返分隔啦。'],
+  zip:['條拉鏈好順滑，唔會再卡住！','拉鏈卡住好麻煩——要順滑啲嘅拉鏈。'],
+  card:['有卡位放學生證，好方便！','學生證冇位放——加個卡位啦。']},
+ amei:{big:['放到晒我12支顏色筆！','放唔晒12支顏色筆——要大容量啲。'],
+  sep:['文具同擦膠分開放，唔會亂！','冇分隔，啲嘢撈埋一齊——加分隔啦。'],
+  tough:['拉鏈好實淨，唔怕爆開！','筆袋成日爆開——拉鏈要堅固啲。']},
+ daxiong:{light:['好輕，孭住冇負擔！','太重啦——要輕便啲。'],
+  small:['細細個，唔阻位！','太大個，阻住晒——要細啲。'],
+  hook:['可以掛喺書包，好方便！','掛唔到喺書包——加個掛鈎啦。']}
+};
+var G={stage:0,user:null,needOk:false,design:null,time:15,score:null};
+function $(id){return document.getElementById(id);}
+function bar(){
+  var h='';
+  for(var i=0;i<STEPN.length;i++){
+    var c=i===G.stage?'on':(i<G.stage?'done':'');
+    h+='<div class="step '+c+'">'+(i+1)+'. '+STEPN[i]+'</div>';
+  }
+  $('stepBar').innerHTML=h;
+}
+function needTags(u){return USERS[u].needs.map(function(k){return '<span class="needtag">'+NEEDL[k]+'</span>';}).join('');}
+
+function render(){
+  bar();
+  var st=$('stage');
+  if(G.stage===0){
+    st.innerHTML='<h3>① 選擇你的用家 <span class="en">Choose your user</span></h3>'+
+    '<p>兩人一組，揀一位「同學」做你嘅用家。留意：你要為<b>佢</b>設計，唔係為自己！</p>'+
+    Object.keys(USERS).map(function(k){var u=USERS[k];
+      return '<button class="ucard" data-u="'+k+'"><b>'+u.name+'</b> <span class="en">'+u.en+'</span><br><span class="note">按入去睇訪問記錄…</span></button>';}).join('');
+    var bs=st.querySelectorAll('.ucard');
+    for(var i=0;i<bs.length;i++){bs[i].addEventListener('click',function(){G.user=this.getAttribute('data-u');G.needOk=false;G.stage=1;render();});}
+  }
+  else if(G.stage===1){
+    var u=USERS[G.user];
+    st.innerHTML='<h3>② 同理心 <span class="en">Empathise</span> — 訪問'+u.name+'</h3>'+
+    '<p>你訪問咗'+u.name+'，記低咗佢嘅原話同三項需要：</p>'+
+    u.quotes.map(function(q){return '<div class="quote">'+q+'</div>';}).join('')+
+    '<p><b>整理出嘅需要：</b><br>'+needTags(G.user)+'</p>'+
+    '<p class="note">💡 訪問小貼士：多用開放式問題、多追問「為甚麼」、記低對方原話。</p>'+
+    '<button class="abtn ghost" id="bk">← 上一步</button> <button class="abtn" id="nx">下一步：定義問題 →</button>';
+    $('bk').addEventListener('click',function(){G.stage=0;render();});
+    $('nx').addEventListener('click',function(){G.stage=2;render();});
+  }
+  else if(G.stage===2){
+    var u2=USERS[G.user];
+    var needOpts=u2.needs.map(function(k){return '<option value="'+k+'">'+NEEDL[k]+'</option>';}).join('')+
+      '<option value="pretty">一個好靚嘅筆袋（空泛形容）</option>'+
+      '<option value="other">'+(G.user==='xiaowen'?'大容量（12支顏色筆）':G.user==='amei'?'可掛喺書包':'順滑嘅拉鏈')+'（唔係佢嘅需要）</option>';
+    var reasonOpts=u2.needs.map(function(k){return '<option value="'+k+'">'+u2.reasons[k]+'</option>';}).join('')+
+      '<option value="x">因為佢鍾意靚嘢</option>';
+    var userOpts=Object.keys(USERS).map(function(k){return '<option value="'+k+'"'+(k===G.user?' selected':'')+'>'+USERS[k].name+'</option>';}).join('');
+    st.innerHTML='<h3>③ 定義問題 <span class="en">Define</span> — 寫出需要陳述</h3>'+
+    '<p>公式：<b>用家</b> 需要 <b>甚麼</b>，因為 <b>原因</b>。<br><span class="note">好的需要陳述要具體、可觀察，唔好空泛！</span></p>'+
+    '<label><b>用家 User</b></label><select id="sU">'+userOpts+'</select>'+
+    '<label><b>需要 Need</b></label><select id="sN">'+needOpts+'</select>'+
+    '<label><b>原因 Reason</b></label><select id="sR">'+reasonOpts+'</select>'+
+    '<div id="chkMsg"></div>'+
+    '<button class="abtn ghost" id="bk">← 上一步</button> '+
+    '<button class="abtn alt" id="chk">檢查需要陳述 Check</button> '+
+    '<button class="abtn" id="nx" '+(G.needOk?'':'disabled')+'>下一步：構思 →</button>';
+    $('bk').addEventListener('click',function(){G.stage=1;render();});
+    $('chk').addEventListener('click',function(){
+      var su=$('sU').value,sn=$('sN').value,sr=$('sR').value,m=$('chkMsg');
+      if(su===G.user && u2.needs.indexOf(sn)>=0 && sr===sn){
+        G.needOk=true;
+        m.innerHTML='<p style="color:#1e8449"><b>✅ 啱晒！</b>「'+USERS[su].name+'需要'+NEEDL[sn]+'，因為'+u2.reasons[sr]+'。」具體、可觀察，係一句好嘅需要陳述！</p>';
+        $('nx').disabled=false;
+      }else{
+        var why=[];
+        if(su!==G.user)why.push('用家要係你揀嗰位同學（'+u2.name+'），唔係為其他人設計');
+        if(u2.needs.indexOf(sn)<0)why.push('「需要」唔係'+u2.name+'嘅真正需要（「好靚」太空泛；要揀訪問記錄入面嘅需要）');
+        if(sr!==sn)why.push('「原因」要同「需要」配對（追問「為甚麼」挖出嚟嗰個）');
+        m.innerHTML='<p style="color:#c0392b"><b>❌ 未啱：</b>'+why.join('；')+'。</p>';
+      }
+    });
+    $('nx').addEventListener('click',function(){if(G.needOk){G.stage=3;render();}});
+  }
+  else if(G.stage===3){
+    st.innerHTML='<h3>④ 構思 <span class="en">Ideate</span> — 揀一個設計</h3>'+
+    '<p>'+USERS[G.user].name+'嘅需要：'+needTags(G.user)+'<br><span class="note">先求數量、不作批評——呢度有三個草圖，邊個最回應到用家需要？</span></p>'+
+    Object.keys(DESIGNS).map(function(k){var d=DESIGNS[k];
+      return '<button class="dcard" data-d="'+k+'"><b>'+d.name+'</b> <span class="en">'+d.en+'</span>'+d.svg+'</button>';}).join('')+
+    '<button class="abtn ghost" id="bk">← 上一步</button>';
+    var bs=st.querySelectorAll('.dcard');
+    for(var i=0;i<bs.length;i++){bs[i].addEventListener('click',function(){G.design=this.getAttribute('data-d');G.stage=4;render();});}
+    $('bk').addEventListener('click',function(){G.stage=2;render();});
+  }
+  else if(G.stage===4){
+    st.innerHTML='<h3>⑤ 原型 <span class="en">Prototype</span> — 求快不求美</h3>'+
+    '<p>用卡紙整紙樣模型。原型的目的係<b>測試意念</b>，唔使靚，但要<b>做得切、結構完整</b>先測試到。拖太耐，連裝飾都整埋，就冇時間測試啦！</p>'+
+    '<label><b>製作時間 Build time：<span id="tV" style="color:#1a5276">'+G.time+' 分鐘</span></b></label>'+
+    '<input type="range" id="rT" min="5" max="40" step="1" value="'+G.time+'">'+
+    '<div class="quote" id="tMsg"></div>'+
+    '<button class="abtn ghost" id="bk">← 上一步</button> <button class="abtn" id="nx">完成原型，交畀用家測試 →</button>';
+    var msg=function(){
+      var t=+$('rT').value;G.time=t;$('tV').textContent=t+' 分鐘';
+      $('tMsg').textContent=t<12?'⏰ 太趕啦！模型未做完，測試唔到意念。':(t<=30?'👍 啱啱好！粗糙但完整，夠測試意念。':'🎨 花太多時間裝飾外觀，測試時間唔夠啦！');
+    };
+    $('rT').addEventListener('input',msg);msg();
+    $('bk').addEventListener('click',function(){G.stage=3;render();});
+    $('nx').addEventListener('click',function(){G.stage=5;render();});
+  }
+  else{
+    // stage 5: test
+    var u3=USERS[G.user],d=DESIGNS[G.design];
+    var matched=u3.needs.filter(function(k){return d.feats.indexOf(k)>=0;});
+    var missed=u3.needs.filter(function(k){return d.feats.indexOf(k)<0;});
+    var comp=G.time<12?G.time/12:(G.time>30?0.9:1);
+    var sc=Math.round(matched.length/3*70+comp*30-(G.time>30?5:0));
+    G.score=sc;
+    var stars=sc>=85?'★★★':(sc>=60?'★★☆':'★☆☆');
+    var verdict=sc>=85?'🎉 用家非常滿意！':(sc>=60?'🙂 用家基本滿意，仲有改善空間。':'😅 用家唔多滿意…係咪冇了解清楚佢嘅需要？');
+    var likes=matched.map(function(k){return '<div class="fb like">👍 「'+FB[G.user][k][0]+'」</div>';}).join('');
+    var fixes=missed.map(function(k){return '<div class="fb fix">🔧 「'+FB[G.user][k][1]+'」</div>';}).join('');
+    st.innerHTML='<h3>⑥ 測試 <span class="en">Test</span> — 用家試用</h3>'+
+    '<p>'+u3.name+' 試用緊你嘅「'+d.name+'」紙樣…</p>'+
+    '<div style="font-size:3rem;text-align:center" id="tryEmoji">🧑‍🎒</div>'+
+    '<div id="feedback"></div>'+
+    '<div id="resultBox" style="display:none">'+
+    '<p class="score">得分 Score：'+sc+' / 100</p>'+
+    '<p class="stars">'+stars+'</p>'+
+    '<p><b>'+verdict+'</b></p>'+
+    '<p class="note">💡 回饋係改良嘅養分：先睇喜歡之處，再睇改善建議。測試之後可以回到「構思」再走一次——設計思維都係一個循環！</p>'+
+    '<button class="abtn alt" id="again">🔁 再改良一次（回到構思）<br><span class="en" style="font-weight:400;font-size:.85rem">Improve &amp; retest</span></button> '+
+    '<button class="abtn ghost" id="restart">換個用家重新開始</button></div>';
+    var fb=$('feedback');
+    var seq=[];
+    matched.forEach(function(k){seq.push({c:'like',h:'👍 「'+FB[G.user][k][0]+'」'});});
+    missed.forEach(function(k){seq.push({c:'fix',h:'🔧 「'+FB[G.user][k][1]+'」'});});
+    if(G.time<12)seq.push({c:'fix',h:'🔧 原型太趕工，結構未完成——下次預多啲時間。'});
+    if(G.time>30)seq.push({c:'fix',h:'🔧 花太多時間裝飾外觀，記住原型「求快不求美」。'});
+    $('tryEmoji').classList.add('shake');
+    var i=0;
+    function next(){
+      if(i<seq.length){
+        var dv=document.createElement('div');dv.className='fb '+seq[i].c;dv.textContent=seq[i].h;
+        fb.appendChild(dv);i++;setTimeout(next,900);
+      }else{$('resultBox').style.display='block';}
+    }
+    setTimeout(next,800);
+    $('again').addEventListener('click',function(){G.stage=3;render();window.scrollTo(0,0);});
+    $('restart').addEventListener('click',function(){G={stage:0,user:null,needOk:false,design:null,time:15,score:null};render();window.scrollTo(0,0);});
+  }
+}
+render();
+})();
+</script>
+</body>
+</html>

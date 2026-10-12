@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：串聯並聯電路實驗室 | Sim: Series & Parallel Circuits</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap svg{width:100%;border:1px solid #bcd9f2;border-radius:10px;background:#fff;display:block}
+.ctrls{display:grid;gap:.6rem;margin:1rem 0}
+.ctrl{background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.ctrl label{font-weight:700}
+.seg{display:flex;gap:.4rem}
+.seg button{border:2px solid #1a5276;background:#fff;color:#1a5276;border-radius:8px;padding:.45rem 1rem;font-weight:700;cursor:pointer}
+.seg button.on{background:#1a5276;color:#fff}
+button.tog{border:2px solid #1a5276;background:#fff;color:#1a5276;border-radius:8px;padding:.45rem 1rem;font-weight:700;cursor:pointer}
+button.tog.on{background:#1e8449;border-color:#1e8449;color:#fff}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.2rem,1fr));gap:.5rem;margin:1rem 0}
+.ro{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.5rem .7rem}
+.ro b{display:block;font-size:.78rem;color:#1a5276;font-weight:600}
+.ro span{font-size:1.15rem;font-weight:700}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.note{font-size:.92rem;color:#555;margin:.6rem 0}
+.bulb{cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-08.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：串聯並聯電路實驗室 <span class="en">Interactive Sim: Series &amp; Parallel Circuits</span></h2>
+<div class="howto"><b>玩法 How to play：</b>切換<b>串聯／並聯</b>、加減燈泡數目，再<b>撳下燈泡</b>模擬「燈泡損壞」（再撳還原）。觀察光暗、電流同開關控制範圍的分別！
+<br><span class="en">Toggle series/parallel, change bulb count, click a bulb to break/fix it. Watch brightness, current and switch control.</span></div>
+
+<div class="sim-wrap">
+<div class="ctrls">
+<div class="ctrl"><label>接法 Connection：</label><div class="seg" id="segMode"><button data-m="series" class="on">串聯 Series</button><button data-m="parallel">並聯 Parallel</button></div></div>
+<div class="ctrl"><label>燈泡數目 Bulbs：</label><div class="seg" id="segN"><button data-n="1">1</button><button data-n="2" class="on">2</button><button data-n="3">3</button></div></div>
+<div class="ctrl"><label>總開關 Main switch：</label><button class="tog on" id="bSw">ON 開</button></div>
+</div>
+<svg id="svg" viewBox="0 0 560 340" role="img" aria-label="電路圖"></svg>
+<div class="readout">
+<div class="ro"><b>每個燈泡電壓 V per bulb</b><span id="rV">–</span></div>
+<div class="ro"><b>總電流 Total current</b><span id="rI">–</span></div>
+<div class="ro"><b>燈泡光暗 Brightness</b><span id="rB">–</span></div>
+<div class="ro"><b>電路狀態 Circuit</b><span id="rS">–</span></div>
+</div>
+<p class="note">💡 撳下燈泡 = 擰走／損壞該燈泡（click a bulb to break or restore it）｜電池 3 V（兩粒 AA），每個燈泡電阻 10 Ω</p>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var NS='http://www.w3.org/2000/svg';
+var svg=document.getElementById('svg');
+var S={mode:'series',n:2,sw:true,broken:{}};
+function $(id){return document.getElementById(id);}
+function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function wire(x1,y1,x2,y2){el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:'#1a5276','stroke-width':3},svg);}
+function battery(x,y){
+  el('line',{x1:x-2,y1:y-22,x2:x-2,y2:y+22,stroke:'#1a5276','stroke-width':3},svg);
+  el('line',{x1:x-14,y1:y-10,x2:x-14,y2:y+10,stroke:'#1a5276','stroke-width':9},svg);
+  el('line',{x1:x+8,y1:y-4,x2:x+8,y2:y+4,stroke:'#c0392b','stroke-width':9},svg);
+  var t=el('text',{x:x,y:y+40,'text-anchor':'middle','font-size':12,fill:'#1a5276'},svg);t.textContent='3V 電池';
+}
+function switchSym(x,y,on){
+  el('circle',{cx:x-16,cy:y,r:3,fill:'#1a5276'},svg);
+  el('circle',{cx:x+16,cy:y,r:3,fill:'#1a5276'},svg);
+  var l=el('line',{x1:x-16,y1:y,x2:x+16,y2:on?y:y-16,stroke:'#c0392b','stroke-width':3},svg);
+  var t=el('text',{x:x,y:y+24,'text-anchor':'middle','font-size':12,fill:'#1a5276'},svg);t.textContent=on?'開關 ON':'開關 OFF';
+}
+function bulb(x,y,idx,power,ok,glowMax){
+  var g=el('g',{'class':'bulb','data-i':idx},svg);
+  var glow=el('circle',{cx:x,cy:y,r:30,fill:'#f9e04b',opacity:ok?Math.min(0.9,power/glowMax):0},g);
+  el('circle',{cx:x,cy:y,r:16,fill:ok?'#fef9e7':'#e5e8e8',stroke:'#1a5276','stroke-width':3},g);
+  el('line',{x1:x-9,y1:y-9,x2:x+9,y2:y+9,stroke:'#1a5276','stroke-width':2},g);
+  el('line',{x1:x-9,y1:y+9,x2:x+9,y2:y-9,stroke:'#1a5276','stroke-width':2},g);
+  if(!ok){var t=el('text',{x:x,y:y+34,'text-anchor':'middle','font-size':13,fill:'#c0392b','font-weight':'bold'},g);t.textContent='✕ 壞';}
+  g.addEventListener('click',function(){S.broken[idx]=!S.broken[idx];draw();});
+}
+function phys(){
+  var V=3,R=10;
+  if(!S.sw)return {per:0,I:0,any:false,all:false,note:'開關關閉 — 電路斷開 Switch OFF'};
+  if(S.mode==='series'){
+    var brokenAny=false;for(var i=0;i<S.n;i++)if(S.broken[i])brokenAny=true;
+    if(brokenAny)return {per:0,I:0,any:false,all:true,note:'有燈泡損壞 — 全部熄滅 One broken, all out'};
+    var per=V/S.n,I=V/(R*S.n);
+    return {per:per,I:I,any:true,all:false,note:'全部發光 All lit',pPer:per*per/R};
+  }else{
+    var okN=0;for(var j=0;j<S.n;j++)if(!S.broken[j])okN++;
+    if(okN===0)return {per:0,I:0,any:false,all:true,note:'全部燈泡損壞 All broken'};
+    var pI=V/R;
+    return {per:V,I:pI*okN,any:true,all:false,note:okN+' 個發光 '+okN+' lit',pPer:V*V/R};
+  }
+}
+function draw(){
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var ph=phys();
+  var glowMax=0.9; // power at full 3V
+  var topY=110,botY=260,leftX=80,rightX=480;
+  // rails
+  wire(leftX,botY,rightX,botY);
+  battery(leftX,(topY+botY)/2);
+  if(S.mode==='series'){
+    wire(leftX,topY,rightX,topY);
+    wire(rightX,topY,rightX,botY);
+    // bulbs across top
+    for(var i=0;i<S.n;i++){
+      var x=leftX+(i+0.5)*(rightX-leftX)/S.n;
+      wire(x,topY,x,topY+26);
+      bulb(x,topY+44,i,ph.pPer||0,!S.broken[i],glowMax);
+      wire(x,topY+62,x,topY+80);
+    }
+    // switch on bottom rail
+    var sx=(leftX+rightX)/2;
+    wire(leftX,botY,sx-16,botY);wire(sx+16,botY,rightX,botY);
+    switchSym(sx,botY,S.sw);
+    var t1=el('text',{x:300,y:36,'text-anchor':'middle','font-size':15,'font-weight':'bold',fill:'#1a5276'},svg);
+    t1.textContent='串聯 Series：單一路徑，電壓由燈泡攤分';
+  }else{
+    wire(leftX,topY,rightX,topY);
+    // switch on main line (left bottom)
+    var sx2=180;
+    wire(leftX,botY,sx2-16,botY);wire(sx2+16,botY,rightX,botY);
+    switchSym(sx2,botY,S.sw);
+    for(var j=0;j<S.n;j++){
+      var bx=leftX+(j+0.5)*(rightX-leftX)/S.n;
+      wire(bx,topY,bx,topY+26);
+      bulb(bx,topY+44,j,ph.pPer||0,!S.broken[j],glowMax);
+      wire(bx,topY+62,bx,botY);
+    }
+    var t2=el('text',{x:300,y:36,'text-anchor':'middle','font-size':15,'font-weight':'bold',fill:'#1a5276'},svg);
+    t2.textContent='並聯 Parallel：多條分支，每個燈泡得全電壓';
+  }
+  // readouts
+  $('rV').textContent=ph.per.toFixed(2)+' V';
+  $('rI').textContent=ph.I.toFixed(2)+' A';
+  var bl=$('rB');
+  if(!ph.any){bl.textContent='熄滅 Off';bl.style.color='#888';}
+  else if(ph.per>=2.9){bl.textContent='光 Bright';bl.style.color='#b9770e';}
+  else if(ph.per>=1.4){bl.textContent='中等 Medium';bl.style.color='#7d6608';}
+  else{bl.textContent='暗 Dim';bl.style.color='#7d6608';}
+  $('rS').textContent=ph.note;$('rS').style.fontSize='0.95rem';
+}
+document.querySelectorAll('#segMode button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#segMode button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');S.mode=b.getAttribute('data-m');S.broken={};draw();
+  });
+});
+document.querySelectorAll('#segN button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#segN button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');S.n=+b.getAttribute('data-n');S.broken={};draw();
+  });
+});
+$('bSw').addEventListener('click',function(){
+  S.sw=!S.sw;$('bSw').classList.toggle('on',S.sw);
+  $('bSw').textContent=S.sw?'ON 開':'OFF 關';draw();
+});
+draw();
+})();
+</script>
+</body>
+</html>

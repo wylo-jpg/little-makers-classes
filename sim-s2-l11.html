@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L11 流程圖模擬 | Lesson 11: Flowchart Tracer</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1.1rem;margin:.8rem 0;font-size:.95rem}
+.tabs{display:flex;gap:.6rem;margin:1rem 0 .4rem;flex-wrap:wrap}
+.tabbtn{background:#fff;border:2px solid #1a5276;color:#1a5276;border-radius:8px;padding:.5rem 1rem;font-weight:700;cursor:pointer;font-size:.95rem}
+.tabbtn.on{background:#1a5276;color:#fff}
+svg.chart{width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;display:block;margin:.6rem 0}
+.node{fill:#fff;stroke:#1a5276;stroke-width:2.5;cursor:default}
+.node text{fill:#222}
+.node .zh{font-size:15px;font-weight:700}
+.node .en{font-size:10.5px;fill:#555}
+.node.active{fill:#fef3e2;stroke:#e67e22;stroke-width:4}
+.node.done{fill:#eafaf1;stroke:#27ae60}
+.node.hl{stroke:#e74c3c !important;stroke-width:5 !important}
+.edge{stroke:#1a5276;stroke-width:2.5;fill:none}
+.edge.hl{stroke:#e74c3c !important;stroke-width:4 !important}
+.elabel{font-size:13px;font-weight:700;fill:#1a5276}
+#dot,#dot2{display:none;fill:#e67e22;stroke:#a04000;stroke-width:2}
+.ctl{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.sbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.2rem;font-weight:700;cursor:pointer;font-size:1rem}
+.sbtn:disabled{background:#aaa;cursor:not-allowed}
+.sbtn.warn{background:#e67e22}
+.sbtn.ok{background:#27ae60}
+.sbtn.no{background:#c0392b}
+.sbtn.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276}
+#decisionBtns{display:none}
+.readout{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.7rem 0;font-size:1rem}
+.readout .big{font-size:1.3rem;font-weight:700;color:#1a5276}
+#warn{display:none;background:#fdedec;border:1px solid #e74c3c;border-radius:8px;padding:.6rem .9rem;margin:.6rem 0;color:#922b21}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin:.7rem 0}
+.leg{background:#fff;border:2px solid #dfe6ee;border-radius:8px;padding:.5rem;cursor:pointer;text-align:center;font-size:.85rem}
+.leg.on{border-color:#e74c3c;background:#fdf2f2}
+.leg svg{width:56px;height:36px;display:block;margin:0 auto .2rem}
+.leg b{display:block;color:#1a5276}
+.rules{background:#fef9e7;border:1px solid #f5d547;border-radius:10px;padding:.8rem 1.1rem;margin:.8rem 0;font-size:.93rem}
+input[type=range]{width:180px;accent-color:#1a5276}
+.sliders{display:flex;gap:1.2rem;flex-wrap:wrap;margin:.6rem 0;align-items:center}
+.sliders label{font-weight:700}
+.sliders output{font-weight:700;color:#1a5276;font-size:1.1rem}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s2-11.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L11 流程圖追蹤器 <span class="en">Lesson 11: Flowchart Tracer</span></h2>
+
+<div class="howto">🧭 <b>玩法 How to play：</b>揀一個例子，按「開始追蹤」，睇住橙色光點沿住箭頭行。當去到菱形（判斷）時，由你決定行「是」定「否」——睇下唔同選擇會帶你去邊！<br><span class="en">Press "Start trace" and watch the dot flow through the chart. When it reaches a decision diamond, YOU choose "Yes" or "No" and see where each path leads.</span></div>
+
+<div class="tabs">
+<button class="tabbtn on" id="tab1" onclick="showEx(1)">例一：製作早餐 <span class="en">Making breakfast</span></button>
+<button class="tabbtn" id="tab2" onclick="showEx(2)">例二：長方形面積 <span class="en">Rectangle area</span></button>
+</div>
+
+<div id="ex1">
+<svg class="chart" id="chart1" viewBox="0 0 620 600" role="img" aria-label="製作早餐流程圖">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a5276"/></marker></defs>
+<g id="n_start" data-sym="terminator"><ellipse class="node" cx="310" cy="45" rx="75" ry="30"/><text class="zh" x="310" y="42" text-anchor="middle">開始</text><text class="en" x="310" y="58" text-anchor="middle">Start</text></g>
+<g id="n_bread" data-sym="process"><rect class="node" x="225" y="95" width="170" height="54" rx="6"/><text class="zh" x="310" y="117" text-anchor="middle">從雪櫃取出麵包</text><text class="en" x="310" y="134" text-anchor="middle">Take bread from fridge</text></g>
+<g id="n_toaster" data-sym="process"><rect class="node" x="225" y="172" width="170" height="54" rx="6"/><text class="zh" x="310" y="194" text-anchor="middle">把麵包放入多士爐</text><text class="en" x="310" y="211" text-anchor="middle">Put bread into toaster</text></g>
+<g id="n_dec" data-sym="decision"><polygon class="node" points="310,238 420,300 310,362 200,300"/><text class="zh" x="310" y="294" text-anchor="middle">烤至金黃色嗎？</text><text class="en" x="310" y="312" text-anchor="middle">Golden brown?</text></g>
+<g id="n_keep" data-sym="process"><rect class="node" x="225" y="376" width="170" height="54" rx="6"/><text class="zh" x="310" y="398" text-anchor="middle">繼續烘烤</text><text class="en" x="310" y="415" text-anchor="middle">Keep toasting</text></g>
+<g id="n_out" data-sym="process"><rect class="node" x="440" y="274" width="160" height="54" rx="6"/><text class="zh" x="520" y="296" text-anchor="middle">取出多士</text><text class="en" x="520" y="313" text-anchor="middle">Take toast out</text></g>
+<g id="n_jam" data-sym="process"><rect class="node" x="440" y="352" width="160" height="54" rx="6"/><text class="zh" x="520" y="374" text-anchor="middle">塗果醬</text><text class="en" x="520" y="391" text-anchor="middle">Spread jam</text></g>
+<g id="n_enjoy" data-sym="io"><polygon class="node" points="460,430 600,430 580,484 440,484"/><text class="zh" x="520" y="452" text-anchor="middle">輸出：享用早餐</text><text class="en" x="520" y="469" text-anchor="middle">Output: enjoy breakfast</text></g>
+<g id="n_end" data-sym="terminator"><ellipse class="node" cx="520" cy="540" rx="75" ry="30"/><text class="zh" x="520" y="537" text-anchor="middle">結束</text><text class="en" x="520" y="553" text-anchor="middle">End</text></g>
+<path class="edge" id="e1" data-sym="flowline" d="M310,75 L310,95" marker-end="url(#arr)"/>
+<path class="edge" id="e2" data-sym="flowline" d="M310,149 L310,172" marker-end="url(#arr)"/>
+<path class="edge" id="e3" data-sym="flowline" d="M310,226 L310,238" marker-end="url(#arr)"/>
+<path class="edge" id="e_yes" data-sym="flowline" d="M420,300 L440,300" marker-end="url(#arr)"/>
+<path class="edge" id="e_out_jam" data-sym="flowline" d="M520,328 L520,352" marker-end="url(#arr)"/>
+<path class="edge" id="e_jam_enjoy" data-sym="flowline" d="M520,406 L520,430" marker-end="url(#arr)"/>
+<path class="edge" id="e_enjoy_end" data-sym="flowline" d="M520,484 L520,510" marker-end="url(#arr)"/>
+<path class="edge" id="e_no" data-sym="flowline" d="M310,362 L310,376" marker-end="url(#arr)"/>
+<path class="edge" id="e_loop" data-sym="flowline" d="M225,403 L24,403 L24,300 L200,300" marker-end="url(#arr)"/>
+<text class="elabel" x="430" y="290">是 Yes</text>
+<text class="elabel" x="322" y="372">否 No</text>
+<text class="elabel" x="60" y="392">再判斷 re-check</text>
+<circle id="dot" r="8" cx="310" cy="45"/>
+</svg>
+<div class="ctl">
+<button class="sbtn" id="startBtn" onclick="runTrace()">▶ 開始追蹤 <span class="en">Start trace</span></button>
+<span id="decisionBtns">
+<button class="sbtn ok" onclick="answer(true)">是 Yes</button>
+<button class="sbtn no" onclick="answer(false)">否 No</button>
+</span>
+<button class="sbtn ghost" onclick="resetTrace()">↺ 重置 Reset</button>
+</div>
+<div class="readout">🍞 烘烤次數 Toasting rounds：<span class="big" id="toastCount">0</span></div>
+<div id="warn">⚠️ 已經烘烤咗好多次啦！再唔揀「是」，就會變成冇完冇了嘅迴圈（仲會燶埋添）！<br><span class="en">Toasted many times already — keep choosing "No" and this becomes a never-ending loop (and burnt toast)!</span></div>
+<div class="readout" id="result1">按「開始追蹤」睇流程點行。<br><span class="en">Press "Start trace" to follow the flow.</span></div>
+</div>
+
+<div id="ex2" style="display:none">
+<svg class="chart" id="chart2" viewBox="0 0 620 480" role="img" aria-label="長方形面積流程圖">
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a5276"/></marker></defs>
+<g id="a_start" data-sym="terminator"><ellipse class="node" cx="310" cy="42" rx="75" ry="28"/><text class="zh" x="310" y="39" text-anchor="middle">開始</text><text class="en" x="310" y="55" text-anchor="middle">Start</text></g>
+<g id="a_in" data-sym="io"><polygon class="node" points="250,96 390,96 370,156 230,156"/><text class="zh" x="310" y="120" text-anchor="middle">輸入：長和闊</text><text class="en" x="310" y="138" text-anchor="middle">Input: length, width</text></g>
+<g id="a_calc" data-sym="process"><rect class="node" x="225" y="186" width="170" height="54" rx="6"/><text class="zh" x="310" y="208" text-anchor="middle">計算：面積＝長×闊</text><text class="en" x="310" y="225" text-anchor="middle">area = L × W</text></g>
+<g id="a_out" data-sym="io"><polygon class="node" points="250,270 390,270 370,330 230,330"/><text class="zh" x="310" y="294" text-anchor="middle">輸出：面積</text><text class="en" x="310" y="312" text-anchor="middle" id="a_outval">Output: area = ?</text></g>
+<g id="a_end" data-sym="terminator"><ellipse class="node" cx="310" cy="388" rx="75" ry="28"/><text class="zh" x="310" y="385" text-anchor="middle">結束</text><text class="en" x="310" y="401" text-anchor="middle">End</text></g>
+<path class="edge" id="f1" data-sym="flowline" d="M310,70 L310,96" marker-end="url(#arr2)"/>
+<path class="edge" id="f2" data-sym="flowline" d="M310,156 L310,186" marker-end="url(#arr2)"/>
+<path class="edge" id="f3" data-sym="flowline" d="M310,240 L310,270" marker-end="url(#arr2)"/>
+<path class="edge" id="f4" data-sym="flowline" d="M310,330 L310,360" marker-end="url(#arr2)"/>
+<circle id="dot2" r="8" cx="310" cy="42"/>
+</svg>
+<div class="sliders">
+<label>長 Length <input type="range" id="lenR" min="1" max="10" value="6" oninput="updLW()"><output id="lenO">6</output></label>
+<label>闊 Width <input type="range" id="widR" min="1" max="10" value="4" oninput="updLW()"><output id="widO">4</output></label>
+</div>
+<div class="ctl">
+<button class="sbtn" id="startBtn2" onclick="runTrace2()">▶ 執行追蹤 <span class="en">Run trace</span></button>
+<button class="sbtn ghost" onclick="resetTrace2()">↺ 重置 Reset</button>
+</div>
+<div class="readout" id="result2">郁下上面嘅滑桿，再按「執行追蹤」——睇下輸入唔同，輸出點變！<br><span class="en">Move the sliders, then run the trace — see how different inputs change the output!</span></div>
+</div>
+
+<h2>符號圖例 <span class="en">Symbol legend — tap a symbol to find it in the chart</span></h2>
+<div class="legend">
+<div class="leg" data-sym="terminator" onclick="toggleSym(this)"><svg viewBox="0 0 56 36"><ellipse cx="28" cy="18" rx="24" ry="14" fill="#fff" stroke="#1a5276" stroke-width="2.5"/></svg><b>橢圓形 Oval</b>開始／結束 Terminator</div>
+<div class="leg" data-sym="process" onclick="toggleSym(this)"><svg viewBox="0 0 56 36"><rect x="6" y="6" width="44" height="24" rx="4" fill="#fff" stroke="#1a5276" stroke-width="2.5"/></svg><b>長方形 Rectangle</b>處理 Process</div>
+<div class="leg" data-sym="decision" onclick="toggleSym(this)"><svg viewBox="0 0 56 36"><polygon points="28,2 54,18 28,34 2,18" fill="#fff" stroke="#1a5276" stroke-width="2.5"/></svg><b>菱形 Diamond</b>判斷 Decision</div>
+<div class="leg" data-sym="io" onclick="toggleSym(this)"><svg viewBox="0 0 56 36"><polygon points="14,4 54,4 42,32 2,32" fill="#fff" stroke="#1a5276" stroke-width="2.5"/></svg><b>平行四邊形</b>輸入／輸出 Input/Output</div>
+<div class="leg" data-sym="flowline" onclick="toggleSym(this)"><svg viewBox="0 0 56 36"><line x1="4" y1="18" x2="48" y2="18" stroke="#1a5276" stroke-width="3"/><polygon points="48,12 56,18 48,24" fill="#1a5276"/></svg><b>箭頭 Arrow</b>流程線 Flow line</div>
+</div>
+
+<div class="rules">📏 <b>繪製流程圖三條規則 Three rules：</b><br>
+1. 箭頭只准單向，唔可以雙頭。<span class="en">Arrows point one way only.</span><br>
+2. 一個長方形只做一件事。<span class="en">One rectangle, one step.</span><br>
+3. 每個菱形必須有「是」同「否」兩條出路。<span class="en">Every decision needs both "yes" and "no" exits.</span></div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+"use strict";
+function $(id){return document.getElementById(id);}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
+var busy=false, toastCount=0, decisionResolve=null;
+
+function showEx(n){
+  $("ex1").style.display = n===1 ? "block":"none";
+  $("ex2").style.display = n===2 ? "block":"none";
+  $("tab1").classList.toggle("on", n===1);
+  $("tab2").classList.toggle("on", n===2);
+}
+function clearHL(svg){
+  var els = svg.querySelectorAll(".node");
+  for(var i=0;i<els.length;i++){els[i].classList.remove("active");els[i].classList.remove("done");}
+}
+function stepNode(id){
+  var g=$(id); var svg=g;
+  while(svg && svg.tagName!=="svg") svg=svg.parentNode;
+  var cur=svg.querySelector(".node.active");
+  if(cur) cur.classList.add("done");
+  g.querySelector(".node").classList.remove("done");
+  g.querySelector(".node").classList.add("active");
+  return wait(750);
+}
+function travel(pathId, dotId){
+  return new Promise(function(res){
+    var p=$(pathId), dot=$(dotId);
+    var L=p.getTotalLength();
+    dot.style.display="block";
+    var t0=performance.now(), dur=650;
+    function f(t){
+      var k=Math.min(1,(t-t0)/dur);
+      var pt=p.getPointAtLength(L*k);
+      dot.setAttribute("cx",pt.x); dot.setAttribute("cy",pt.y);
+      if(k<1) requestAnimationFrame(f); else res();
+    }
+    requestAnimationFrame(f);
+  });
+}
+function updateCount(){$("toastCount").textContent=toastCount;}
+function answer(v){ if(decisionResolve){var r=decisionResolve; decisionResolve=null; r(v);} }
+function resetTrace(){
+  decisionResolve=null; busy=false;
+  clearHL($("chart1")); $("dot").style.display="none";
+  $("decisionBtns").style.display="none";
+  toastCount=0; updateCount(); $("warn").style.display="none";
+  $("startBtn").disabled=false;
+  $("result1").innerHTML='按「開始追蹤」睇流程點行。<br><span class="en">Press "Start trace" to follow the flow.</span>';
+}
+function runTrace(){
+  if(busy) return; busy=true; resetTrace(); busy=true;
+  $("startBtn").disabled=true;
+  $("result1").innerHTML='追蹤中… <span class="en">Tracing…</span>';
+  (async function(){
+    await stepNode("n_start"); await travel("e1","dot"); await stepNode("n_bread");
+    await travel("e2","dot"); await stepNode("n_toaster"); await travel("e3","dot");
+    await decide();
+    busy=false; $("startBtn").disabled=false;
+  })();
+}
+function decide(){
+  return (async function(){
+    await stepNode("n_dec");
+    $("result1").innerHTML='❓ 麵包烤至金黃色未？由你決定！<span class="en"> Is it golden brown? You decide!</span>';
+    $("decisionBtns").style.display="inline-flex";
+    var ans = await new Promise(function(r){decisionResolve=r;});
+    $("decisionBtns").style.display="none";
+    if(ans){
+      await travel("e_yes","dot"); await stepNode("n_out");
+      await travel("e_out_jam","dot"); await stepNode("n_jam");
+      await travel("e_jam_enjoy","dot"); await stepNode("n_enjoy");
+      await travel("e_enjoy_end","dot"); await stepNode("n_end");
+      $("result1").innerHTML='✅ 完成！早餐做好啦 🍞 烘烤次數：'+toastCount+'<br><span class="en">Done — breakfast is ready! Toasting rounds: '+toastCount+'</span>';
+    }else{
+      toastCount++; updateCount();
+      if(toastCount>=5) $("warn").style.display="block";
+      $("result1").innerHTML='↩️ 揀咗「否」：繼續烘烤，返去再判斷（第 '+toastCount+' 次）。<br><span class="en">"No": keep toasting, then check again (round '+toastCount+').</span>';
+      await travel("e_no","dot"); await stepNode("n_keep"); await travel("e_loop","dot");
+      await decide();
+    }
+  })();
+}
+/* --- example 2 --- */
+function updLW(){
+  var L=+$("lenR").value, W=+$("widR").value;
+  $("lenO").textContent=L; $("widO").textContent=W;
+}
+var busy2=false;
+function resetTrace2(){
+  busy2=false; clearHL($("chart2")); $("dot2").style.display="none";
+  $("startBtn2").disabled=false;
+  $("a_outval").textContent="Output: area = ?";
+  $("result2").innerHTML='郁下上面嘅滑桿，再按「執行追蹤」——睇下輸入唔同，輸出點變！<br><span class="en">Move the sliders, then run the trace — see how different inputs change the output!</span>';
+}
+function runTrace2(){
+  if(busy2) return; busy2=true; resetTrace2(); busy2=true;
+  $("startBtn2").disabled=true;
+  (async function(){
+    var L=+$("lenR").value, W=+$("widR").value;
+    await stepNode("a_start"); await travel("f1","dot2"); await stepNode("a_in");
+    await wait(400);
+    $("result2").innerHTML='📥 輸入：長 = '+L+'，闊 = '+W+'<br><span class="en">Input: length = '+L+', width = '+W+'</span>';
+    await travel("f2","dot2"); await stepNode("a_calc");
+    await wait(500);
+    $("result2").innerHTML='⚙️ 計算：面積 ＝ '+L+' × '+W+'<br><span class="en">Calculating: area = '+L+' × '+W+'</span>';
+    await travel("f3","dot2"); await stepNode("a_out");
+    $("a_outval").textContent="Output: area = "+(L*W);
+    $("result2").innerHTML='📤 輸出：面積 ＝ <b style="font-size:1.3rem;color:#1a5276">'+(L*W)+'</b> — 試下改滑桿再跑一次！<br><span class="en">Output: area = '+(L*W)+' — change the sliders and run it again!</span>';
+    await travel("f4","dot2"); await stepNode("a_end");
+    busy2=false; $("startBtn2").disabled=false;
+  })();
+}
+/* --- legend --- */
+function toggleSym(el){
+  var sym=el.getAttribute("data-sym");
+  el.classList.toggle("on");
+  var on=el.classList.contains("on");
+  ["chart1","chart2"].forEach(function(cid){
+    var svg=$(cid);
+    var els=svg.querySelectorAll('[data-sym="'+sym+'"]');
+    for(var i=0;i<els.length;i++){
+      var n=els[i].querySelector(".node")||els[i].querySelector(".edge");
+      if(n) n.classList.toggle("hl", on);
+    }
+  });
+}
+updLW();
+</script>
+</body>
+</html>

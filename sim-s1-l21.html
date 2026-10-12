@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>「如何能……？」定題產生器 | L21 | 創科班</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+label.f{display:block;font-weight:700;margin:.6rem 0 .25rem}
+input[type=text],textarea{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #c8d3e0;border-radius:8px;font-size:1rem;font-family:inherit}
+textarea{min-height:3rem;resize:vertical}
+.groups{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.5rem 0}
+.groups button{border:2px solid #bcd9f2;background:#f4f9ff;border-radius:10px;padding:.7rem .4rem;font-size:1rem;cursor:pointer;font-family:inherit}
+.groups button.on{border-color:#1a5276;background:#eaf4fd;font-weight:700}
+.btn.sm{padding:.35rem .8rem;font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.result{background:#eaf6ff;border:2px solid #1a5276;border-radius:10px;padding:1rem;margin:.8rem 0;font-size:1.15rem;font-weight:700}
+.badge{display:inline-block;border-radius:20px;padding:.2rem .7rem;font-size:.85rem;margin:.15rem .2rem .15rem 0}
+.badge.ok{background:#d5f5e3;color:#1e8449}
+.badge.no{background:#fadbd8;color:#922b21}
+.hist-item{background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem;margin:.5rem 0}
+.hist-item .q{font-weight:700;margin-bottom:.4rem}
+.hist-item .t{font-size:.8rem;color:#888}
+.en{font-size:.85rem;color:#666;font-weight:400}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-21.html">← 返回課堂 Back to lesson</a></nav>
+<h2>「如何能……？」定題產生器 <span class="en">How-Might-We Question Generator</span></h2>
+<div class="card">
+<p><b>玩法 How to play：</b>① 選一類關愛對象；② 寫出他們的一個<strong>真實需要</strong>（不是你想做的東西）；③ 按「產生問題定義」——工具會組合成一句「如何能……？」，並即時檢查夠不夠具體；④ 滿意就複製下來，或存入紀錄。</p>
+<p class="en">1 Pick a caring target group. 2 Describe one <b>real need</b> (not what you want to make). 3 Generate the HMW question and check it is specific enough. 4 Copy it or save it to the history.</p>
+</div>
+
+<div class="card">
+<label class="f">1. 關愛對象 Caring target group</label>
+<div class="groups" id="grpBtns">
+<button data-g="長者">👴 長者<br><span class="en">Elderly</span></button>
+<button data-g="視障人士">🧑‍🦯 視障人士<br><span class="en">Visually impaired</span></button>
+<button data-g="小朋友">🧒 小朋友<br><span class="en">Young children</span></button>
+<button data-g="清潔工">🧹 清潔工<br><span class="en">Cleaners</span></button>
+</div>
+<label class="f">或自訂對象 <span class="en">Or enter your own</span></label>
+<input type="text" id="customG" placeholder="例如：獨居長者 / 輪椅使用者">
+
+<label class="f">2. 真實需要 Real need <span class="en">（對方真實面對的困難）</span></label>
+<textarea id="need" placeholder="例如：清晨在光線不足的街道上工作，容易被途人忽視，有危險"></textarea>
+
+<div class="row">
+<button class="btn sm" id="ex1">填入示例一：清潔工</button>
+<button class="btn sm" id="ex2">填入示例二：長者</button>
+<button class="btn sm" id="ex3">填入示例三：視障人士</button>
+</div>
+
+<label class="f">3. 希望達成的改變 <span class="en">Desired change</span></label>
+<input type="text" id="goal" placeholder="例如：更容易被途人看見">
+
+<div class="row">
+<button class="btn" id="gen">✨ 產生問題定義 Generate</button>
+</div>
+
+<div class="result" id="result" style="display:none"></div>
+<div id="checks" style="display:none">
+<span class="badge" id="c1">對象明確 Clear target</span>
+<span class="badge" id="c2">情境具體 Concrete situation</span>
+<span class="badge" id="c3">可觀察 Observable</span>
+<div id="warn" style="margin-top:.4rem;color:#922b21;font-weight:700"></div>
+</div>
+<div class="row" id="afterRow" style="display:none">
+<button class="btn" id="copyBtn">📋 複製問題 Copy</button>
+<button class="btn alt" id="saveBtn">💾 存入紀錄 Save</button>
+</div>
+</div>
+
+<div class="card">
+<h3>問題定義紀錄 <span class="en">History</span></h3>
+<div id="hist"></div>
+<div class="row"><button class="btn sm" id="clearHist">清空紀錄 Clear all</button></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var group="清潔工";
+var grpBtns=document.getElementById("grpBtns").querySelectorAll("button");
+function paint(){grpBtns.forEach(function(b){b.classList.toggle("on",b.getAttribute("data-g")===group&&!document.getElementById("customG").value.trim());});}
+grpBtns.forEach(function(b){b.addEventListener("click",function(){group=b.getAttribute("data-g");document.getElementById("customG").value="";paint();});});
+document.getElementById("customG").addEventListener("input",paint);
+paint();
+var examples={
+ex1:{g:"清潔工",need:"清晨在光線不足的街道上工作，容易被途人忽視，有危險",goal:"更容易被途人看見"},
+ex2:{g:"長者",need:"膝蓋退化，上下樓梯時容易失去平衡",goal:"更安全地上下樓梯"},
+ex3:{g:"視障人士",need:"過馬路時難以分辨來車的方向",goal:"更清楚分辨來車的方向"}};
+Object.keys(examples).forEach(function(k){document.getElementById(k).addEventListener("click",function(){var e=examples[k];group=e.g;document.getElementById("customG").value="";document.getElementById("need").value=e.need;document.getElementById("goal").value=e.goal;paint();});});
+function cur(){var c=document.getElementById("customG").value.trim();return c||group;}
+function build(){var g=cur(),need=document.getElementById("need").value.trim(),goal=document.getElementById("goal").value.trim();var q="如何能讓"+g;if(goal)q+=""+goal;else if(need)q+="解決「"+need+"」的問題";q+="？";return q;}
+function check(q){var g=cur(),need=document.getElementById("need").value.trim(),goal=document.getElementById("goal").value.trim();var ok1=g.length>0,ok2=goal.length>=4||need.length>=10,ok3=goal.length>0;var vague=/幫助所有|所有人|更美好|幸福|快樂$|變得更好/.test(goal+need);return{ok1:ok1,ok2:ok2,ok3:ok3,vague:vague};}
+var lastQ="";
+document.getElementById("gen").addEventListener("click",function(){
+lastQ=build();var r=document.getElementById("result");r.style.display="block";r.textContent=lastQ;
+var c=check(lastQ);document.getElementById("checks").style.display="block";
+function set(id,ok){var e=document.getElementById(id);e.className="badge "+(ok?"ok":"no");e.textContent=(ok?"✓ ":"✗ ")+e.textContent.replace(/^[✓✗] /,"");}
+set("c1",c.ok1);set("c2",c.ok2);set("c3",c.ok3);
+var w=document.getElementById("warn");w.textContent="";
+if(c.vague)w.textContent="⚠️ 太空泛了！試試聚焦一個具體情境（何時、何地、做什麼）。";
+else if(!c.ok2)w.textContent="⚠️ 情境不夠具體：寫清楚「在什麼情況下」希望改變什麼。";
+else if(!c.ok3)w.textContent="⚠️ 請填寫「希望達成的改變」，做到與否要看得見、驗證得到。";
+document.getElementById("afterRow").style.display="flex";});
+function toast(m){alert(m);}
+document.getElementById("copyBtn").addEventListener("click",function(){copyText(lastQ,function(){toast("已複製！Copied!");});});
+function copyText(t,cb){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(cb).catch(function(){fallback();});}else fallback();function fallback(){var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");cb();}catch(e){toast("複製失敗，請手動複製");}document.body.removeChild(ta);}}
+function load(){try{return JSON.parse(localStorage.getItem("hmw-history")||"[]");}catch(e){return[];}}
+function store(a){localStorage.setItem("hmw-history",JSON.stringify(a));}
+function render(){var h=load(),box=document.getElementById("hist");box.innerHTML=h.length?"":"<p style='color:#888'>暫無紀錄 No history yet.</p>";
+h.forEach(function(it,i){var d=document.createElement("div");d.className="hist-item";
+var q=document.createElement("div");q.className="q";q.textContent=it.q;d.appendChild(q);
+var t=document.createElement("div");t.className="t";t.textContent=new Date(it.ts).toLocaleString("zh-HK");d.appendChild(t);
+var row=document.createElement("div");row.className="row";
+var cp=document.createElement("button");cp.className="btn sm";cp.textContent="📋 複製";cp.addEventListener("click",function(){copyText(it.q,function(){toast("已複製！Copied!");});});
+var del=document.createElement("button");del.className="btn sm";del.textContent="刪除 Delete";del.addEventListener("click",function(){var a=load();a.splice(i,1);store(a);render();});
+row.appendChild(cp);row.appendChild(del);d.appendChild(row);box.appendChild(d);});}
+document.getElementById("saveBtn").addEventListener("click",function(){if(!lastQ)return;var a=load();a.unshift({q:lastQ,ts:Date.now()});store(a);render();toast("已存入紀錄 Saved!");});
+document.getElementById("clearHist").addEventListener("click",function(){if(confirm("確定清空所有紀錄？")){store([]);render();}});
+render();
+})();
+</script>
+</body>
+</html>

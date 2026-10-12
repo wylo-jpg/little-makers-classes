@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：意粉橋承重實驗室 | Sim: Spaghetti Bridge Lab</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;border:1px solid #bcd9f2;border-radius:10px;background:#f4fafe;display:block}
+.ctrls{display:grid;gap:.6rem;margin:1rem 0}
+.ctrl{display:grid;grid-template-columns:9.5rem 1fr 5rem;gap:.6rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+.ctrl label{font-weight:700}
+.ctrl output{font-weight:700;color:#1a5276;text-align:right}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.2rem,1fr));gap:.5rem;margin:1rem 0}
+.ro{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.5rem .7rem}
+.ro b{display:block;font-size:.78rem;color:#1a5276;font-weight:600}
+.ro span{font-size:1.15rem;font-weight:700}
+.btns{margin:.8rem 0;display:flex;gap:.6rem;flex-wrap:wrap}
+button.big{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.big:active{transform:scale(.97)}
+button.big:disabled{background:#95a5b8}
+button.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276;border-radius:8px;padding:.6rem 1.2rem;font-size:.95rem;font-weight:700;cursor:pointer}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.verdict{font-size:1.15rem;font-weight:700;margin:.6rem 0;min-height:1.8em}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-06.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：意粉橋承重實驗室 <span class="en">Interactive Sim: Spaghetti Bridge Lab</span></h2>
+<div class="howto"><b>玩法 How to play：</b>拖動滑桿設計你的橋（三角形單元數量、用料粗幼），按「開始加重」逐個加上 100 g 砝碼，睇下橋幾時斷！目標：找出<b>效率值最高</b>（效率值 ＝ 最大承重 ÷ 橋重）的配搭。
+<br><span class="en">Design your truss, load it with 100 g weights until it breaks. Maximise efficiency = max load ÷ bridge weight.</span></div>
+
+<div class="sim-wrap">
+<div class="ctrls">
+<div class="ctrl"><label>三角形單元 Triangles</label><input type="range" id="sTri" min="2" max="10" step="1" value="6"><output id="oTri">6</output></div>
+<div class="ctrl"><label>意粉粗幼 Strands</label><input type="range" id="sTh" min="1" max="3" step="1" value="2"><output id="oTh">2 條</output></div>
+</div>
+<div class="btns"><button class="big" id="bLoad">⚖️ 開始加重 Load test</button><button class="ghost" id="bReset">↺ 重設 Reset</button></div>
+<canvas id="cv"></canvas>
+<div class="verdict" id="verdict"></div>
+<div class="readout">
+<div class="ro"><b>橋身重量 Bridge weight</b><span id="rW">–</span></div>
+<div class="ro"><b>已加載重 Current load</b><span id="rL">0 g</span></div>
+<div class="ro"><b>預計最大承重 Predicted max</b><span id="rM">–</span></div>
+<div class="ro"><b>效率值 Efficiency</b><span id="rE">–</span></div>
+<div class="ro"><b>本節最佳 Best efficiency</b><span id="rB">–</span></div>
+</div>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function fit(){var w=cv.parentElement.clientWidth;cv.width=Math.max(320,w);cv.height=Math.round(cv.width*0.55);draw();}
+window.addEventListener('resize',fit);
+var S={tri:6,th:2,coins:0,testing:false,broken:false,best:0};
+function $(id){return document.getElementById(id);}
+function weight(){return 8+S.tri*2.2*S.th;}
+function maxLoad(){return 1500*(1-Math.exp(-S.tri*S.th/6));}
+function eff(){return maxLoad()/weight();}
+function refresh(){
+  $('oTri').textContent=S.tri;
+  $('oTh').textContent=S.th+' 條';
+  $('rW').textContent=weight().toFixed(1)+' g';
+  $('rL').textContent=(S.coins*100)+' g';
+  $('rM').textContent=maxLoad().toFixed(0)+' g';
+  $('rE').textContent=eff().toFixed(1);
+  $('rB').textContent=S.best>0?S.best.toFixed(1):'–';
+}
+function reset(msg){S.coins=0;S.testing=false;S.broken=false;$('bLoad').disabled=false;if(msg!==false)$('verdict').textContent='';refresh();draw();}
+function loadTest(){
+  if(S.testing)return;reset(false);S.testing=true;$('bLoad').disabled=true;
+  var limit=maxLoad();
+  (function add(){
+    if(S.coins*100>=limit){breakBridge();return;}
+    S.coins++;refresh();draw();
+    setTimeout(add,450);
+  })();
+}
+function breakBridge(){
+  S.broken=true;S.testing=false;
+  var e=eff();
+  if(e>S.best)S.best=e;
+  var v=$('verdict');
+  if(e>=30){v.style.color='#1e8449';v.textContent='🎉 橋斷咗！承重 '+ (S.coins*100) +' g，效率值 '+e.toFixed(1)+' —— 「效率王」級數！';}
+  else{v.style.color='#7d6608';v.textContent='💥 橋斷咗！承重 '+(S.coins*100)+' g，效率值 '+e.toFixed(1)+'。試下加減三角形單元或改變粗幼，睇下效率值點變。';}
+  refresh();draw();$('bLoad').disabled=false;
+}
+function draw(){
+  var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  var groundY=H-60,deckY=H-140;
+  ctx.fillStyle='#d7dbdd';ctx.fillRect(0,groundY,W,H-groundY);
+  // supports
+  var sx1=W*0.16,sx2=W*0.84;
+  ctx.fillStyle='#5d6d7e';
+  ctx.fillRect(sx1-24,deckY,48,groundY-deckY);
+  ctx.fillRect(sx2-24,deckY,48,groundY-deckY);
+  ctx.fillStyle='#1a5276';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+  ctx.fillText('30 cm 跨距',W/2,deckY-8);
+  var n=S.tri,x0=sx1,x1=sx2,seg=(x1-x0)/n;
+  var sag=S.broken?0:(S.coins*100)/Math.max(1,maxLoad())*26;
+  var midY=deckY+sag;
+  function py(x){var f=Math.abs(x-W/2)/( (x1-x0)/2 );return deckY+sag*f;}
+  ctx.lineWidth=2+S.th*1.6;ctx.strokeStyle=S.broken?'#a93226':'#b9770e';ctx.lineCap='round';
+  // deck
+  ctx.beginPath();ctx.moveTo(x0,py(x0));ctx.lineTo(x1,py(x1));ctx.stroke();
+  // warren truss above deck
+  var topY=deckY-64;
+  ctx.beginPath();
+  for(var i=0;i<=n;i++){
+    var x=x0+i*seg;
+    ctx.moveTo(x,py(x));ctx.lineTo(x,topY+((i%2)?10:-6));
+    if(i<n){var xn=x+seg;ctx.moveTo(x,topY+((i%2)?10:-6));ctx.lineTo(xn,py(xn));}
+  }
+  ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x0,topY-6);ctx.lineTo(x1,topY-6);ctx.stroke();
+  if(S.broken){
+    // crack
+    ctx.strokeStyle='#a93226';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(W/2-14,deckY-70);ctx.lineTo(W/2+6,deckY-20);ctx.lineTo(W/2-8,deckY+10);ctx.stroke();
+    ctx.fillStyle='#a93226';ctx.font='bold 22px sans-serif';ctx.fillText('💥 斷裂！',W/2,deckY-88);
+  }
+  // coins
+  var cx=W/2,cy=py(W/2)-14;
+  for(var c=0;c<S.coins;c++){
+    var row=Math.floor(c/6),col=c%6;
+    var px=cx+(col-2.5)*22,pyy=cy-row*20;
+    if(S.broken){pyy+=40+row*14;}
+    ctx.fillStyle='#f4d03f';ctx.strokeStyle='#7d6608';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(px,pyy,9,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7d6608';ctx.font='9px sans-serif';ctx.fillText('100',px,pyy+3);
+  }
+  ctx.fillStyle='#1a5276';ctx.font='13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('效率值 ＝ 最大承重 ÷ 橋重 ＝ '+maxLoad().toFixed(0)+' ÷ '+weight().toFixed(1)+' ＝ '+eff().toFixed(1),12,H-14);
+}
+$('sTri').addEventListener('input',function(e){S.tri=+e.target.value;reset();});
+$('sTh').addEventListener('input',function(e){S.th=+e.target.value;reset();});
+$('bLoad').addEventListener('click',loadTest);
+$('bReset').addEventListener('click',function(){reset();});
+refresh();fit();
+})();
+</script>
+</body>
+</html>

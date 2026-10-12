@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L11 互動模擬：機械人迷宮 | Robot Maze — Algorithm Simulator</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas#maze{width:100%;max-width:480px;display:block;margin:0 auto;background:#fff;border:2px solid #1a5276;border-radius:10px;touch-action:manipulation}
+.cbtn{display:inline-block;padding:.55rem .95rem;border-radius:8px;border:1px solid #bcd9f2;background:#fff;color:#1a5276;font-weight:700;font-size:.95rem;margin:.25rem;cursor:pointer}
+.cbtn:hover{background:#eaf6ff}
+.cbtn.primary{background:#1a5276;color:#fff;border-color:#1a5276}
+.cbtn.primary:hover{background:#14425f}
+.cbtn.warn{background:#e67e22;color:#fff;border-color:#e67e22}
+.cbtn.danger{background:#c0392b;color:#fff;border-color:#c0392b}
+.cbtn:disabled{opacity:.45;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0;min-height:2.6rem}
+.chip{background:#eaf6ff;border:1px solid #1a5276;color:#1a5276;border-radius:20px;padding:.3rem .7rem;font-size:.92rem;font-weight:700;display:inline-flex;align-items:center;gap:.4rem}
+.chip .x{cursor:pointer;color:#c0392b;font-weight:700}
+.chip.cur{background:#1a5276;color:#fff}
+.chip.fail{background:#c0392b;color:#fff;border-color:#c0392b}
+#readout{font-size:1.05rem;font-weight:700}
+#readout .en{font-size:.85rem;font-weight:400;color:#555}
+.trace td:first-child{width:3.2rem;text-align:center}
+.trace tr.cur td{background:#fff3d6}
+label.speed{font-size:.9rem;color:#555}
+input[type=range]{width:140px;vertical-align:middle}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-11.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L11 互動模擬：機械人迷宮 <span class="en">Robot Maze — give precise, well-ordered instructions</span></h2>
+
+<div class="card"><b>玩法 How to play</b>
+<ol>
+<li>用下面嘅按鈕加入指令（每步只有一個動作，同課堂一樣）。<br><span class="en">Add steps with the buttons below — one action per step.</span></li>
+<li>按 <b>▶ 執行</b> 睇機械人「照字面」執行你嘅指令；或用 <b>⏭ 逐步執行</b> 逐行追蹤。<br><span class="en">Run it and watch the robot follow your instructions literally — or step through line by line.</span></li>
+<li>機械人撞牆／行錯，就係你嘅演算法要改良嘅地方。試下用 7 步送佢去紅色終點！<br><span class="en">Wall crash = your algorithm needs fixing. Try to reach the red goal in 7 steps!</span></li>
+</ol></div>
+
+<div class="card"><b>① 加入指令 Add steps</b><br>
+<button class="cbtn" id="addF1">➕ 向前行一格 <span style="font-weight:400;font-size:.8rem">Move forward 1</span></button>
+<button class="cbtn" id="addF2">➕ 向前行兩格 <span style="font-weight:400;font-size:.8rem">Move forward 2</span></button>
+<button class="cbtn" id="addF3">➕ 向前行三格 <span style="font-weight:400;font-size:.8rem">Move forward 3</span></button>
+<button class="cbtn" id="addL">➕ 向左轉 <span style="font-weight:400;font-size:.8rem">Turn left</span></button>
+<button class="cbtn" id="addR">➕ 向右轉 <span style="font-weight:400;font-size:.8rem">Turn right</span></button>
+<div class="chips" id="chips"></div>
+<button class="cbtn" id="undo">↩ 刪除最後一步 <span style="font-weight:400;font-size:.8rem">Undo</span></button>
+<button class="cbtn" id="clear">🗑 清空 <span style="font-weight:400;font-size:.8rem">Clear</span></button>
+<button class="cbtn" id="demo">📋 載入範例 <span style="font-weight:400;font-size:.8rem">Load example</span></button>
+</div>
+
+<div class="card"><b>② 執行 Run</b><br>
+<button class="cbtn primary" id="run">▶ 執行 <span style="font-weight:400;font-size:.8rem">Run all</span></button>
+<button class="cbtn" id="stepBtn">⏭ 逐步執行 <span style="font-weight:400;font-size:.8rem">Step</span></button>
+<button class="cbtn" id="reset">↺ 重設位置 <span style="font-weight:400;font-size:.8rem">Reset robot</span></button>
+<label class="speed">速度 Speed <input type="range" id="speed" min="1" max="10" value="5"></label>
+<canvas id="maze" width="480" height="480"></canvas>
+<div id="readout" style="margin-top:.6rem">🤖 機械人喺起點等緊你嘅指令。<br><span class="en">The robot is waiting for your instructions.</span></div>
+</div>
+
+<div class="card"><b>③ 追蹤執行 Trace</b><p class="en">Position / facing after each step — just like tracing on paper.</p>
+<table class="trace" id="trace"><thead><tr><th>步驟<br>Step</th><th>指令 Instruction</th><th>執行後位置／面向<br>After: position / facing</th><th>正常？<br>OK?</th></tr></thead><tbody><tr><td colspan="4" style="text-align:center;color:#888">未執行 No run yet</td></tr></tbody></table>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var N=7, cell=480/N;
+var corridor={};
+["0,0","1,0","2,0","3,0","3,1","3,2","4,2","5,2","6,2","6,3","6,4","6,5","6,6"].forEach(function(k){corridor[k]=1;});
+var START={x:0,y:0}, GOAL={x:6,y:6};
+var DX=[1,0,-1,0], DY=[0,1,0,-1];
+var DIRNAME=["→ 向右","↓ 向下","← 向左","↑ 向上"];
+var DIRNAME_EN=["right","down","left","up"];
+var steps=[];
+var robot={x:START.x,y:START.y,dir:0};
+var running=false, stepIdx=0, curAnim=null;
+var canvas=document.getElementById("maze"), ctx=canvas.getContext("2d");
+var dpr=window.devicePixelRatio||1;
+canvas.width=480*dpr; canvas.height=480*dpr; ctx.scale(dpr,dpr);
+
+function stepText(s){
+  if(s.type==="fwd") return "向前行"+["零","一","兩","三"][s.n]+"格";
+  if(s.type==="left") return "向左轉";
+  return "向右轉";
+}
+function stepTextEn(s){
+  if(s.type==="fwd") return "Forward "+s.n;
+  if(s.type==="left") return "Turn left";
+  return "Turn right";
+}
+function renderChips(cur,failIdx){
+  var box=document.getElementById("chips"); box.innerHTML="";
+  steps.forEach(function(s,i){
+    var c=document.createElement("span"); c.className="chip";
+    if(i===cur) c.className+=" cur";
+    if(i===failIdx) c.className+=" fail";
+    c.innerHTML=(i+1)+". "+stepText(s)+' <span class="x" data-i="'+i+'" title="刪除">✕</span>';
+    box.appendChild(c);
+  });
+  box.querySelectorAll(".x").forEach(function(x){
+    x.onclick=function(){ steps.splice(+x.getAttribute("data-i"),1); resetRobot(); };
+  });
+}
+function resetRobot(){
+  robot={x:START.x,y:START.y,dir:0}; stepIdx=0; curAnim=null;
+  draw();
+  document.getElementById("readout").innerHTML="🤖 機械人已重設喺起點（面向右方）。<br><span class=\"en\">Robot reset at the start, facing right.</span>";
+  var tb=document.querySelector("#trace tbody"); tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#888">未執行 No run yet</td></tr>';
+  renderChips(-1,-1);
+}
+function draw(){
+  ctx.clearRect(0,0,480,480);
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){
+    var px=x*cell, py=y*cell;
+    if(corridor[x+","+y]){ ctx.fillStyle="#f4f8fb"; }
+    else { ctx.fillStyle="#2c3e50"; }
+    ctx.fillRect(px,py,cell,cell);
+    ctx.strokeStyle="#dfe6ee"; ctx.strokeRect(px+.5,py+.5,cell-1,cell-1);
+  }
+  // START / GOAL
+  ctx.fillStyle="#27ae60"; ctx.fillRect(START.x*cell,START.y*cell,cell,cell);
+  ctx.fillStyle="#fff"; ctx.font="bold "+(cell*0.28)+"px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("START",START.x*cell+cell/2,START.y*cell+cell/2);
+  ctx.fillStyle="#e74c3c"; ctx.fillRect(GOAL.x*cell,GOAL.y*cell,cell,cell);
+  ctx.fillStyle="#fff"; ctx.fillText("GOAL",GOAL.x*cell+cell/2,GOAL.y*cell+cell/2);
+  drawRobot(robot.px!==undefined?robot.px:robot.x, robot.py!==undefined?robot.py:robot.y, robot.ang!==undefined?robot.ang:robot.dir);
+}
+function drawRobot(gx,gy,dirAng){
+  var cx=(gx+0.5)*cell, cy=(gy+0.5)*cell, r=cell*0.32;
+  var ang=dirAng*Math.PI/2;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+  ctx.fillStyle="#f39c12"; ctx.strokeStyle="#7d4e00"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle="#7d4e00";
+  ctx.beginPath(); ctx.moveTo(r*1.25,0); ctx.lineTo(r*0.25,-r*0.7); ctx.lineTo(r*0.25,r*0.7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function cellDelay(){ var v=+document.getElementById("speed").value; return 420-(v-1)*40; }
+function sleep(ms){ return new Promise(function(r){setTimeout(r,ms);}); }
+
+async function animateForward(s){
+  for(var k=0;k<s.n;k++){
+    var nx=robot.x+DX[robot.dir], ny=robot.y+DY[robot.dir];
+    if(nx<0||ny<0||nx>=N||ny>=N){ return {fail:"out",x:nx,y:ny}; }
+    if(!corridor[nx+","+ny]){
+      // bump animation
+      var bx=robot.x+DX[robot.dir]*0.25, by=robot.y+DY[robot.dir]*0.25;
+      for(var t=0;t<6;t++){ robot.px=robot.x+DX[robot.dir]*0.25*Math.sin(t/5*Math.PI); robot.py=robot.y+DY[robot.dir]*0.25*Math.sin(t/5*Math.PI); draw(); await sleep(40); }
+      robot.px=robot.x; robot.py=robot.y; draw();
+      return {fail:"wall",x:nx,y:ny};
+    }
+    var sx=robot.x, sy=robot.y, frames=8;
+    for(var f=1;f<=frames;f++){ robot.px=sx+(nx-sx)*f/frames; robot.py=sy+(ny-sy)*f/frames; draw(); await sleep(cellDelay()/frames); }
+    robot.x=nx; robot.y=ny; robot.px=nx; robot.py=ny;
+  }
+  return {fail:null};
+}
+async function animateTurn(s){
+  var from=robot.dir, to=s.type==="right"?(from+1)%4:(from+3)%4;
+  var delta=s.type==="right"?1:-1, frames=8;
+  for(var f=1;f<=frames;f++){ robot.ang=from+delta*f/frames; draw(); await sleep(140/frames); }
+  robot.dir=to; robot.ang=to; draw();
+  return {fail:null};
+}
+function traceRow(i,s,res,cur){
+  var tb=document.querySelector("#trace tbody");
+  if(i===0) tb.innerHTML="";
+  tb.querySelectorAll("tr.cur").forEach(function(r){r.className="";});
+  var tr=document.createElement("tr");
+  if(cur) tr.className="cur";
+  var after="("+robot.x+","+robot.y+") "+DIRNAME[robot.dir].split(" ")[0];
+  var ok=res.fail?("✗ "+(res.fail==="wall"?"撞牆！":"走出範圍！")):"✓";
+  tr.innerHTML="<td>"+(i+1)+"</td><td>"+stepText(s)+"<br><span style='color:#888;font-size:.8rem'>"+stepTextEn(s)+"</span></td><td>"+after+"</td><td>"+ok+"</td>";
+  tb.appendChild(tr);
+}
+async function execOne(i){
+  var s=steps[i], res;
+  renderChips(i,-1);
+  if(s.type==="fwd") res=await animateForward(s); else res=await animateTurn(s);
+  traceRow(i,s,res,true);
+  return res;
+}
+async function runAll(){
+  if(running) return;
+  if(!steps.length){ alert("請先加入指令！Please add steps first."); return; }
+  running=true; setButtons(false);
+  resetRobotSilent();
+  var failAt=-1, failKind=null;
+  for(var i=0;i<steps.length;i++){
+    var res=await execOne(i);
+    if(res.fail){ failAt=i; failKind=res.fail; renderChips(i,i); break; }
+  }
+  var ro=document.getElementById("readout");
+  if(failAt>=0){
+    ro.innerHTML=(failKind==="wall"?"💥 第 "+(failAt+1)+" 步撞牆！":"⚠️ 第 "+(failAt+1)+" 步走出迷宮範圍！")+"機械人只會照字面執行，唔會幫你兜路。<br><span class=\"en\">The robot follows instructions literally. Check step "+(failAt+1)+".</span>";
+  }else if(robot.x===GOAL.x&&robot.y===GOAL.y){
+    ro.innerHTML="🎉 到達終點！你用咗 "+steps.length+" 步，好嘢！<br><span class=\"en\">Goal reached in "+steps.length+" steps — a precise algorithm!</span>";
+  }else{
+    ro.innerHTML="🤖 步數用完，機械人停喺 ("+robot.x+","+robot.y+")，未到終點。再諗下次序同步數！<br><span class=\"en\">Out of steps at ("+robot.x+","+robot.y+"). Re-check order and counts.</span>";
+  }
+  running=false; setButtons(true);
+}
+function resetRobotSilent(){
+  robot={x:START.x,y:START.y,dir:0,px:START.x,py:START.y,ang:0}; stepIdx=0; draw();
+  document.querySelector("#trace tbody").innerHTML="";
+  renderChips(-1,-1);
+}
+async function stepOnce(){
+  if(running||!steps.length) return;
+  if(stepIdx>=steps.length){ document.getElementById("readout").innerHTML="✅ 已經執行晒所有步驟。<br><span class=\"en\">All steps executed.</span>"; return; }
+  var res=await execOne(stepIdx);
+  stepIdx++;
+  var ro=document.getElementById("readout");
+  if(res.fail){
+    ro.innerHTML=(res.fail==="wall"?"💥 撞牆！":"⚠️ 走出範圍！")+"呢一步有問題，追蹤下原因。<br><span class=\"en\">This step failed — trace why.</span>";
+    renderChips(stepIdx-1,stepIdx-1);
+  }else{
+    ro.innerHTML="第 "+stepIdx+" 步完成：位置 ("+robot.x+","+robot.y+")，面向"+DIRNAME[robot.dir]+"。<br><span class=\"en\">Step "+stepIdx+" done.</span>";
+  }
+}
+function setButtons(on){
+  ["run","stepBtn","reset","undo","clear","demo","addF1","addF2","addF3","addL","addR"].forEach(function(id){ document.getElementById(id).disabled=!on; });
+}
+document.getElementById("addF1").onclick=function(){steps.push({type:"fwd",n:1});resetRobot();};
+document.getElementById("addF2").onclick=function(){steps.push({type:"fwd",n:2});resetRobot();};
+document.getElementById("addF3").onclick=function(){steps.push({type:"fwd",n:3});resetRobot();};
+document.getElementById("addL").onclick=function(){steps.push({type:"left"});resetRobot();};
+document.getElementById("addR").onclick=function(){steps.push({type:"right"});resetRobot();};
+document.getElementById("undo").onclick=function(){steps.pop();resetRobot();};
+document.getElementById("clear").onclick=function(){steps=[];resetRobot();};
+document.getElementById("demo").onclick=function(){
+  steps=[{type:"fwd",n:3},{type:"right"},{type:"fwd",n:2},{type:"left"},{type:"fwd",n:3},{type:"right"},{type:"fwd",n:4}];
+  resetRobot();
+  document.getElementById("readout").innerHTML="📋 已載入範例（7 步）。按 ▶ 執行睇下！<br><span class=\"en\">Example loaded — press Run!</span>";
+};
+document.getElementById("run").onclick=runAll;
+document.getElementById("stepBtn").onclick=stepOnce;
+document.getElementById("reset").onclick=resetRobot;
+draw(); renderChips(-1,-1);
+})();
+</script>
+</body>
+</html>

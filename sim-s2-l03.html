@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L03 同情 vs 同理・設計判官 | Sympathy vs Empathy Judge</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.casecard{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:.8rem 0}
+.casecard h3{color:#1a5276;margin:0 0 .3rem}
+.casecard .en{font-size:.85rem;color:#666;font-weight:400}
+.story{background:#f7f9fc;border-radius:8px;padding:.8rem .9rem;margin:.6rem 0;line-height:1.8}
+.judgebtns{display:flex;gap:.6rem;flex-wrap:wrap;margin:.6rem 0}
+.judgebtns button{flex:1;min-width:10rem;padding:.8rem;border:2px solid #dfe6ee;border-radius:10px;background:#fff;font-size:1.05rem;font-weight:700;cursor:pointer}
+.judgebtns button.sym:hover{border-color:#e67e22}
+.judgebtns button.emp:hover{border-color:#1e7e34}
+.judgebtns button:disabled{cursor:default;opacity:.9}
+.judgebtns button.picked{border-width:3px}
+.reveal{display:none;margin-top:.6rem;border-radius:8px;padding:.8rem .9rem}
+.reveal.show{display:block;animation:fadein .4s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.reveal.empathy{background:#eafbe7;border:2px solid #1e7e34}
+.reveal.sympathy{background:#fef5e7;border:2px solid #e67e22}
+.checks{list-style:none;margin:.5rem 0}
+.checks li{margin:.3rem 0;font-size:.95rem}
+.verdict{font-size:1.2rem;font-weight:800;margin:.3rem 0}
+.verdict.empathy{color:#1e7e34}.verdict.sympathy{color:#b26a00}
+#dots{display:flex;gap:.45rem;margin:.6rem 0}
+#dots svg{width:26px;height:26px}
+.bigscore{font-size:2rem;color:#1a5276;font-weight:800}
+.resetbtn{background:#95a5a6;color:#fff;border:none;border-radius:8px;padding:.55rem 1.1rem;font-size:.95rem;cursor:pointer;font-weight:700}
+.warnbox{background:#fef9e7;border:1px solid #f0c929;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-03.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L03 同情 vs 同理・設計判官 <span class="en">Sympathy vs Empathy: The Design Judge</span></h2>
+<div class="card">
+<b>玩法 How to play</b><br>
+下面有 6 個真實感十足嘅設計個案。你做判官：每個個案，判斷佢係出於<b>😢 同情</b>（由上而下嘅憐憫）定<b>🤝 同理</b>（設身處地理解需要）。判完會有「三條檢測問題」幫你驗證答案！
+<p class="en">You are the judge! For each of 6 design cases, decide: 😢 sympathy (top-down pity) or 🤝 empathy (understanding real needs)? Three check-questions will verify your verdict.</p>
+<div class="warnbox">⚠️ <b>三條檢測問題 The 3 checks：</b>① 設計者有冇真正諮詢使用者？② 設計係咪針對使用者嘅真正需要？③ 令設計者自我感覺良好 ≠ 有同理心；科技先進 ≠ 有關愛。<br><span class="en">Did the designer consult users? Does it address genuine needs? Feeling good ≠ empathy; advanced tech ≠ care.</span></div>
+<div id="dots"></div>
+<div style="font-weight:700">判官成績 Judge score: <span id="scoreNow">0</span> / 6</div>
+</div>
+
+<div id="cases"></div>
+
+<div class="card hidden" id="sumCard">
+<h2 style="margin-top:0">判案完畢 <span class="en">All cases judged</span></h2>
+<div class="bigscore" id="finalScore"></div>
+<p id="finalMsg"></p>
+<p><b>帶走一句 Takeaway：</b>同理心嘅設計，嚟自真正理解使用者需要，而唔係技術有幾先進。下次見到一件「關愛設計」，先問自己上面三條檢測問題。<br><span class="en">Empathetic design comes from truly understanding users — not from advanced technology.</span></p>
+<button class="resetbtn" id="resetBtn">再判一次 Judge again</button>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+
+<script>
+(function(){
+var CASES=[
+ {t:'個案 1：藥物點字標籤',en:'Case 1: Braille labels on medicines',
+  story:'視障人士睇唔到藥物包裝上嘅印刷說明，誤服藥物可危害健康。有設計師為藥樽加上點字標籤，將重要資訊轉為可觸讀形式，而且標籤永遠貼喺樽身同一個固定位置，方便視障人士憑觸覺穩定咁搵到。',
+  ans:'empathy',
+  checks:['✅ 有：理解視障人士依賴觸覺嘅習慣（固定位置方便觸摸尋找）','✅ 有：針對真正而迫切嘅需要——用藥安全','✅ 技術好簡單，但正正回應需要'],
+  why:'設計由使用者嘅真實習慣同需要出發（觸覺＋用藥安全），唔係流於表面嘅關懷 → 同理。'},
+ {t:'個案 2：會講嘢嘅血壓計',en:'Case 2: Talking blood pressure monitor',
+  story:'視障人士同長者睇唔清血壓計螢幕嘅數字，難以自行量血壓。有產品喺量度完成後用語音報讀結果，按鍵設計簡單、步驟少，等使用者唔使靠人幫手都量到。',
+  ans:'empathy',
+  checks:['✅ 有：針對「睇唔到螢幕」呢個真實困難','✅ 有：令使用者可以獨立完成，維護自主同尊嚴','✅ 技術唔複雜，但改變咗使用者嘅生活'],
+  why:'設計令使用者唔使長期依賴他人，維護自主與尊嚴 → 同理。記住：科技愈先進唔等於愈有同理心。'},
+ {t:'個案 3：舊衣捐災民＋影相宣傳',en:'Case 3: Donating unwanted clothes, with photos',
+  story:'某團體將自己唔再要嘅舊衫（款式殘舊、尺碼混亂）大批送去災區，仲安排攝影師影低派發過程放上社交媒體宣傳，標題寫住「滿滿的愛心」。',
+  ans:'sympathy',
+  checks:['❌ 冇：冇了解災民真正需要咩（尺碼啱唔啱？衛生點？）','❌ 唔係：重點似係令捐贈者自我感覺良好＋宣傳','⚠️ 影相宣傳令人懷疑動機係為受助者定為自己'],
+  why:'由上而下嘅施予，焦點喺「我」嘅感受同形象，而唔係對方嘅需要 → 同情。'},
+ {t:'個案 4：按尺碼整理衣物＋試穿',en:'Case 4: Sorted clothes with try-on',
+  story:'另一個團體先了解災民嘅需要，然後將捐嚟嘅衣物按尺碼、季節整理好，仲安排地方畀災民試穿，確保拎走嘅衫真係啱着、啱用。',
+  ans:'empathy',
+  checks:['✅ 有：先了解需要，再按尺碼整理','✅ 有：針對「件衫要啱着」呢個真實需要','✅ 安排試穿 = 尊重對方嘅選擇同尊嚴'],
+  why:'由使用者需要出發，仲顧及對方嘅尊嚴同選擇權 → 同理。同個案 3 對比：同樣係捐衫，做法差天共地。'},
+ {t:'個案 5：社交媒體表示同情',en:'Case 5: Expressing sympathy online',
+  story:'見到災難新聞，有人喺社交媒體寫「好慘呀，為你哋難過」，配個喊樣 emoji，然後繼續碌手機，冇任何實際行動。',
+  ans:'sympathy',
+  checks:['❌ 冇：完全冇接觸受影響嘅人','❌ 唔係：停留喺自己嘅感受，未必帶嚟任何改變','⚠️ 典型「我為你難過」——焦點喺「我」'],
+  why:'純粹表達自己嘅感受，冇理解對方需要，冇行動 → 同情（課堂筆記嘅例子：結果停留喺感受層面）。'},
+ {t:'個案 6：捐款但要求公開致謝',en:'Case 6: Donating, demanding public thanks',
+  story:'有善長捐咗一大筆錢，但要求受助機構喺典禮上公開讀出佢個名致謝，仲要機構出新聞稿表揚佢嘅善心。',
+  ans:'sympathy',
+  checks:['⚠️ 捐款本身可能幫到人，但附加條件暴露動機','❌ 焦點明顯喺捐贈者自己嘅名聲同感受','❌ 唔係由受助者需要出發'],
+  why:'焦點喺令自己感覺良好、得到認同，而唔係理解對方需要 → 偏向同情。做好事嘅同時，都可以問下自己：為咗邊個？'}
+];
+var score=0, judged=0;
+var wrap=document.getElementById('cases'), dots=document.getElementById('dots'),
+    scoreNow=document.getElementById('scoreNow');
+function dotSVG(i){
+ return '<svg viewBox="0 0 26 26" id="dot'+i+'"><circle cx="13" cy="13" r="11" fill="#eef3f8" stroke="#bdc3c7" stroke-width="2"/><text x="13" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="#95a5a6">'+(i+1)+'</text></svg>';
+}
+dots.innerHTML=CASES.map(function(_,i){return dotSVG(i);}).join('');
+function badgeSVG(ok){
+ var c=ok?'#1e7e34':'#c0392b', sym=ok?'✓':'✗';
+ return '<svg width="44" height="44" viewBox="0 0 44 44" style="vertical-align:middle;margin-right:.4rem"><circle cx="22" cy="22" r="19" fill="none" stroke="'+c+'" stroke-width="4"/><text x="22" y="30" text-anchor="middle" font-size="22" font-weight="800" fill="'+c+'">'+sym+'</text></svg>';
+}
+CASES.forEach(function(cs,ci){
+ var d=document.createElement('div');d.className='casecard';
+ d.innerHTML='<h3>'+cs.t+' <span class="en">'+cs.en+'</span></h3>'
+  +'<div class="story">'+cs.story+'</div>'
+  +'<div class="judgebtns"><button class="sym" data-v="sympathy">😢 同情 <span class="en" style="font-weight:400">Sympathy</span></button>'
+  +'<button class="emp" data-v="empathy">🤝 同理 <span class="en" style="font-weight:400">Empathy</span></button></div>'
+  +'<div class="reveal"></div>';
+ wrap.appendChild(d);
+ var btns=d.querySelectorAll('.judgebtns button'), rev=d.querySelector('.reveal');
+ btns.forEach(function(b){b.addEventListener('click',function(){
+  btns.forEach(function(x){x.disabled=true;});
+  b.classList.add('picked');
+  var ok=b.dataset.v===cs.ans;judged++;if(ok)score++;
+  scoreNow.textContent=score;
+  var dot=document.getElementById('dot'+ci);
+  dot.querySelector('circle').setAttribute('fill',ok?'#d4efdf':'#fadbd8');
+  dot.querySelector('circle').setAttribute('stroke',ok?'#1e7e34':'#c0392b');
+  dot.querySelector('text').setAttribute('fill',ok?'#1e7e34':'#c0392b');
+  rev.className='reveal show '+cs.ans;
+  rev.innerHTML=badgeSVG(ok)
+   +'<span class="verdict '+cs.ans+'">'+(ok?'✅ 判啱！':'❌ 判錯咗，')+'呢個設計屬於「'+(cs.ans==='empathy'?'🤝 同理':'😢 同情')+'」</span>'
+   +'<br><span class="en" style="font-size:.85rem;color:#666">Verdict: '+(cs.ans==='empathy'?'empathy':'sympathy')+'</span>'
+   +'<ul class="checks">'+cs.checks.map(function(c){return '<li>'+c+'</li>';}).join('')+'</ul>'
+   +'<b>判案理由 Reasoning：</b>'+cs.why;
+  if(judged===CASES.length){
+   var s=document.getElementById('sumCard');s.classList.remove('hidden');
+   document.getElementById('finalScore').textContent='總分：'+score+' / '+CASES.length;
+   document.getElementById('finalMsg').innerHTML=score>=5
+    ?'🌟 金牌判官！你識得分辨同情同同理，仲識用三條檢測問題驗證 —— 下一步就係將同理心化為行動！<br><span class="en">Excellent — you can tell sympathy from empathy and verify with the three checks!</span>'
+    :score>=3?'👍 唔錯！記住竅門：唔好睇件事有幾感人，要睇設計者有冇真正了解使用者需要。<br><span class="en">Good! Tip: don\'t judge by how touching it looks — check whether real user needs were understood.</span>'
+    :'💪 繼續努力！每次判斷前，先問自己三條檢測問題：有冇諮詢使用者？係咪針對真正需要？定只係自我感覺良好？<br><span class="en">Keep practising — run the three checks before every verdict.</span>';
+   s.scrollIntoView({behavior:'smooth'});
+  }
+ });});
+});
+document.getElementById('resetBtn').addEventListener('click',function(){location.reload();});
+})();
+</script>
+</body>
+</html>

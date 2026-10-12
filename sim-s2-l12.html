@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L12 條件與迴圈實驗室 | Lesson 12: Conditions &amp; Loops Lab</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px}
+.howto{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1.1rem;margin:.8rem 0;font-size:.95rem}
+.panel{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0}
+.code{background:#1a2a3a;color:#eaf2f8;border-radius:8px;padding:.8rem 1rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;line-height:2;margin:.6rem 0;white-space:pre-wrap}
+.code .ln{border-radius:5px;padding:.1rem .4rem;transition:background .3s}
+.code .ln.hit{background:#e67e22;color:#fff}
+.ctl{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.sbtn{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.2rem;font-weight:700;cursor:pointer;font-size:1rem}
+.sbtn:disabled{background:#aaa;cursor:not-allowed}
+.sbtn.warn{background:#e67e22}
+.sbtn.danger{background:#c0392b}
+.sbtn.ghost{background:#fff;color:#1a5276;border:2px solid #1a5276}
+.tbtn{background:#fff;border:2px solid #1a5276;color:#1a5276;border-radius:8px;padding:.45rem 1rem;font-weight:700;cursor:pointer}
+.tbtn.on{background:#1a5276;color:#fff}
+input[type=range]{width:170px;accent-color:#1a5276}
+.readout{background:#f7f9fc;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem;margin:.7rem 0;font-size:1rem;min-height:3.2rem}
+.readout .big{font-size:1.25rem;font-weight:700;color:#1a5276}
+#stars{font-size:2rem;line-height:1.5;word-break:break-all;min-height:3rem;background:#fff;border:1px dashed #bcd9f2;border-radius:8px;padding:.5rem .8rem;margin:.6rem 0}
+#infWarn{display:none;background:#fdedec;border:2px solid #e74c3c;border-radius:10px;padding:.8rem 1rem;margin:.6rem 0;color:#922b21;font-weight:700;animation:blink 1s infinite}
+@keyframes blink{50%{background:#fadbd8}}
+.log{max-height:150px;overflow:auto;font-size:.9rem;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.5rem .8rem;margin:.5rem 0}
+.log div{padding:.1rem 0;border-bottom:1px dotted #eee}
+.radio-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+#minimap .mnode{fill:#fff;stroke:#1a5276;stroke-width:2.5}
+#minimap .mnode.on{fill:#fef3e2;stroke:#e67e22;stroke-width:4}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>創科班 Little Makers Class</h1><div class="en">S.K.H. Lui Ming Choi Secondary School</div></div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s2-12.html">← 返回課堂 Back to lesson</a></nav>
+<h2>L12 條件與迴圈實驗室 <span class="en">Lesson 12: Conditions &amp; Loops Lab</span></h2>
+<div class="howto">🧪 <b>玩法 How to play：</b>呢度有兩個實驗。第一個：較日子同埋時段，睇服藥提醒演算法點做決定。第二個：較「重複幾多次」，再試下<b>刪走終止條件</b>——睇下會發生咩事！<br><span class="en">Two experiments: (1) change the day and time to see how the reminder algorithm decides; (2) set the repeat count — then try <b>removing the termination condition</b> and see what happens!</span></div>
+
+<div class="panel">
+<h2 style="margin-top:0">實驗一：服藥提醒・條件追蹤器 <span class="en">Experiment 1: Medication reminder — condition tracer</span></h2>
+<div class="code"><span class="ln" id="cl1">🔁 重複每一天，直至一星期結束（第 <span id="dayEcho">1</span> 天）</span>
+<span class="ln" id="cl2">　❓ 如果係早上 → 提醒服白色藥丸</span>
+<span class="ln" id="cl3">　❓ 否則如果係晚上 → 提醒服黃色藥丸</span></div>
+<svg id="minimap" viewBox="0 0 620 360" role="img" aria-label="服藥提醒演算法地圖" style="width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;display:block;margin:.6rem 0">
+<defs><marker id="marr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a5276"/></marker></defs>
+<g id="m_loop"><rect class="mnode" x="200" y="15" width="220" height="50" rx="10"/><text x="310" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#222">🔁 重複每一天，直至一星期結束</text></g>
+<g id="m_dec1"><polygon class="mnode" points="310,85 400,130 310,175 220,130"/><text x="310" y="137" text-anchor="middle" font-size="15" font-weight="700" fill="#222">早上？</text></g>
+<g id="m_white"><rect class="mnode" x="430" y="105" width="170" height="50" rx="8"/><text x="515" y="135" text-anchor="middle" font-size="14" font-weight="700" fill="#222">💊 白色藥丸</text></g>
+<g id="m_dec2"><polygon class="mnode" points="310,200 400,245 310,290 220,245"/><text x="310" y="252" text-anchor="middle" font-size="15" font-weight="700" fill="#222">晚上？</text></g>
+<g id="m_yellow"><rect class="mnode" x="430" y="220" width="170" height="50" rx="8"/><text x="515" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#222">💊 黃色藥丸</text></g>
+<g id="m_nothing"><rect class="mnode" x="20" y="220" width="170" height="50" rx="8"/><text x="105" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#222">😴 什麼都不做</text></g>
+<path d="M310,65 L310,85" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<path d="M400,130 L430,130" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<path d="M310,175 L310,200" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<path d="M400,245 L430,245" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<path d="M220,245 L190,245" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<path d="M310,290 L310,330 L12,330 L12,40 L200,40" stroke="#1a5276" stroke-width="2.5" fill="none" marker-end="url(#marr)"/>
+<text x="415" y="122" font-size="12" font-weight="700" fill="#1a5276">是 Yes</text>
+<text x="322" y="192" font-size="12" font-weight="700" fill="#1a5276">否 No</text>
+<text x="415" y="237" font-size="12" font-weight="700" fill="#1a5276">是 Yes</text>
+<text x="150" y="237" font-size="12" font-weight="700" fill="#1a5276">否 No</text>
+<text x="60" y="322" font-size="12" font-weight="700" fill="#1a5276">下一天 next day</text>
+</svg>
+<div class="ctl radio-row">
+<span><b>日子 Day：</b></span>
+<input type="range" id="dayR" min="1" max="7" value="1" oninput="$('dayEcho').textContent=this.value;$('dayO').textContent=this.value">
+<b id="dayO" style="color:#1a5276">1</b>
+</div>
+<div class="ctl radio-row">
+<span><b>時段 Time：</b></span>
+<button class="tbtn on" data-t="morning" onclick="setTime(this)">☀️ 早上 Morning</button>
+<button class="tbtn" data-t="afternoon" onclick="setTime(this)">🌤️ 下午 Afternoon</button>
+<button class="tbtn" data-t="evening" onclick="setTime(this)">🌙 晚上 Evening</button>
+</div>
+<div class="ctl">
+<button class="sbtn" id="traceBtn" onclick="runCondition()">▶ 執行追蹤 <span class="en">Run trace</span></button>
+<button class="sbtn ghost" onclick="day8()">第 8 天會點？ <span class="en">What about day 8?</span></button>
+</div>
+<div class="readout" id="condOut">較好日子同埋時段，按「執行追蹤」。<br><span class="en">Set the day and time, then run the trace.</span></div>
+<div class="log" id="condLog"></div>
+</div>
+
+<div class="panel">
+<h2 style="margin-top:0">實驗二：迴圈實驗室・畫星星 <span class="en">Experiment 2: Loop lab — drawing stars</span></h2>
+<div class="code"><span class="ln" id="loopCode">🔁 重複 4 次：畫一粒星 ★</span></div>
+<div class="ctl radio-row">
+<span><b>重複次數 Repeat：</b></span>
+<input type="range" id="nR" min="1" max="12" value="4" oninput="updN()">
+<b id="nO" style="color:#1a5276">4</b>
+<span style="margin-left:.6rem"><b>終止條件 Termination：</b></span>
+<button class="tbtn on" id="termOn" onclick="setTerm(true)">有 Have</button>
+<button class="tbtn" id="termOff" onclick="setTerm(false)">無 None ⚠️</button>
+</div>
+<div class="ctl">
+<button class="sbtn warn" id="loopBtn" onclick="startLoop()">▶ 開始 Start</button>
+<button class="sbtn danger" id="stopBtn" style="display:none" onclick="stopLoop()">⏹ 緊急停止 Emergency stop</button>
+<button class="sbtn ghost" onclick="resetLoop()">↺ 重置 Reset</button>
+</div>
+<div class="readout">已畫 Drawn：<span class="big" id="starCount">0</span> 粒星</div>
+<div id="infWarn">⚠️ 無限迴圈！INFINITE LOOP！冇咗終止條件，個程式永遠停唔到——就好似一個永遠響唔停嘅鬧鐘！<br><span class="en">With no termination condition, the loop never stops — like an alarm clock that never stops ringing!</span></div>
+<div id="stars"></div>
+<div class="readout" id="loopOut" style="min-height:2.5rem">撳「開始」，睇住粒星一粒一粒畫出嚟。<br><span class="en">Press "Start" and watch the stars appear one by one.</span></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+"use strict";
+function $(id){return document.getElementById(id);}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+/* ---------- experiment 1: conditions ---------- */
+var curTime="morning", condBusy=false;
+var timeName={morning:"早上 Morning",afternoon:"下午 Afternoon",evening:"晚上 Evening"};
+function setTime(btn){
+  var bs=document.querySelectorAll('[data-t]');
+  for(var i=0;i<bs.length;i++) bs[i].classList.remove("on");
+  btn.classList.add("on"); curTime=btn.getAttribute("data-t");
+}
+function hit(id){ $(id).classList.add("hit"); }
+function unhit(){ ["cl1","cl2","cl3"].forEach(function(id){$(id).classList.remove("hit");}); }
+function mhl(id){var g=$(id);if(g)g.querySelector(".mnode").classList.add("on");}
+function munhl(){var els=document.querySelectorAll("#minimap .mnode.on");for(var i=0;i<els.length;i++)els[i].classList.remove("on");}
+function runCondition(){
+  if(condBusy) return; condBusy=true; unhit(); munhl();
+  $("traceBtn").disabled=true;
+  (async function(){
+    var day=$("dayR").value;
+    hit("cl1"); mhl("m_loop"); await wait(700);
+    var action;
+    mhl("m_dec1"); hit("cl2"); await wait(600);
+    if(curTime==="morning"){
+      action="💊 提醒服白色藥丸 Remind: white pill";
+      mhl("m_white"); await wait(500);
+    }else{
+      hit("cl3"); mhl("m_dec2"); await wait(600);
+      if(curTime==="evening"){ action="💊 提醒服黃色藥丸 Remind: yellow pill"; mhl("m_yellow"); }
+      else { action="😴 咩都唔做（既唔係早上，亦唔係晚上）Nothing — neither morning nor evening"; mhl("m_nothing"); }
+      await wait(500);
+    }
+    $("condOut").innerHTML='<span class="big">第 '+day+' 天 · '+timeName[curTime]+'</span><br>→ '+action+'<br><span class="en">Termination check: day '+day+' of 7 — the loop keeps going.</span>';
+    var lg=document.createElement("div");
+    lg.textContent="第 "+day+" 天 · "+timeName[curTime]+" → "+action.replace(/^[^\s]+\s/,"");
+    $("condLog").prepend(lg);
+    condBusy=false; $("traceBtn").disabled=false;
+  })();
+}
+function day8(){
+  unhit(); munhl(); hit("cl1"); mhl("m_loop");
+  $("condOut").innerHTML='⛔ <span class="big">第 8 天唔會執行！</span><br>迴圈喺第 7 天結束後已經停止——因為「直至一星期結束」呢個<b>終止條件</b>成立咗。<br><span class="en">Day 8 never runs! The loop stopped after day 7 because the termination condition "until the week ends" was met.</span>';
+}
+
+/* ---------- experiment 2: loops ---------- */
+var N=4, hasTerm=true, loopTimer=null, drawn=0, MAXSTARS=200;
+function updN(){
+  N=+$("nR").value; $("nO").textContent=N;
+  paintLoopCode();
+}
+function paintLoopCode(){
+  $("loopCode").textContent = hasTerm
+    ? "🔁 重複 "+N+" 次：畫一粒星 ★"
+    : "🔁 重複：畫一粒星 ★（⚠️ 冇終止條件！）";
+}
+function setTerm(v){
+  hasTerm=v;
+  $("termOn").classList.toggle("on",v);
+  $("termOff").classList.toggle("on",!v);
+  paintLoopCode();
+}
+function startLoop(){
+  if(loopTimer) return;
+  resetLoop(false);
+  $("loopBtn").disabled=true;
+  if(!hasTerm){ $("stopBtn").style.display="inline-block"; }
+  loopTimer=setInterval(tick,380);
+}
+function tick(){
+  drawn++;
+  $("starCount").textContent=drawn;
+  if(drawn<=MAXSTARS){
+    $("stars").textContent += "★";
+  }
+  if(hasTerm && drawn>=N){
+    stopLoop();
+    $("loopOut").innerHTML='✅ 畫完！共畫咗 <b>'+N+'</b> 粒星，迴圈因為終止條件（重複夠 '+N+' 次）而停止。<br><span class="en">Done — '+N+' stars. The loop stopped because its termination condition was met.</span>';
+  }else if(!hasTerm){
+    if(drawn===1){
+      $("infWarn").style.display="block";
+      $("loopOut").innerHTML='😱 停唔到！粒星一直畫落去… 快啲撳「緊急停止」！<br><span class="en">It won\'t stop! Stars keep coming… hit "Emergency stop"!</span>';
+    }
+    if(drawn===MAXSTARS+1){
+      var note=document.createElement("div");
+      note.style.cssText="color:#922b21;font-weight:700";
+      note.textContent="…（太多啦，唔再顯示，但計數器繼續行 — 迴圈真係停唔到！）";
+      $("stars").appendChild(note);
+    }
+  }
+}
+function stopLoop(){
+  if(loopTimer){ clearInterval(loopTimer); loopTimer=null; }
+  $("loopBtn").disabled=false; $("stopBtn").style.display="none";
+}
+function resetLoop(full){
+  stopLoop();
+  drawn=0; $("starCount").textContent="0"; $("stars").textContent="";
+  $("infWarn").style.display="none";
+  if(full!==false){
+    $("loopOut").innerHTML='撳「開始」，睇住粒星一粒一粒畫出嚟。<br><span class="en">Press "Start" and watch the stars appear one by one.</span>';
+  }
+  paintLoopCode();
+}
+paintLoopCode();
+</script>
+</body>
+</html>

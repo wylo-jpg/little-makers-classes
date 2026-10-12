@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：演算法偏見實驗室 | L18 AI 倫理個案研討</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas.sim{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe6ee;border-radius:10px;margin:.8rem 0}
+.ctl{margin:.8rem 0;background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.8rem 1rem}
+.ctl label{font-weight:700}
+.ctl .en,.en2{font-size:.85rem;color:#666;font-weight:400}
+.ctl .val{color:#1a5276;font-weight:700}
+input[type=range]{width:100%;margin-top:.3rem}
+.readout{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.readout .en{font-size:.82rem;color:#555}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap;margin:.7rem 0}
+button.act{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.act.alt{background:#2e86c1}
+button.act:disabled{opacity:.5;cursor:default}
+.howto{background:#fff8ee;border:1px solid #f0d9a8;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox{background:#fef9e7;border:1px solid #f5d76e;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.tipbox .en{font-size:.82rem;color:#666}
+.q{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:.9rem 1rem;margin:.8rem 0}
+.q .opts button{display:block;width:100%;text-align:left;margin:.35rem 0;background:#f4f6f8;border:1px solid #dfe6ee;border-radius:8px;padding:.55rem .8rem;font-size:.98rem;cursor:pointer}
+.q .opts button:hover{background:#eaf2f8}
+.q .opts button.right{background:#d5f5e3;border-color:#27ae60}
+.q .opts button.wrong{background:#fadbd8;border-color:#c0392b}
+.q .fb{margin-top:.4rem;font-size:.95rem}
+.good{color:#27ae60;font-weight:700}.bad{color:#c0392b;font-weight:700}
+.score{font-size:1.1rem;font-weight:700;color:#1a5276}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-18.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：演算法偏見實驗室 <span class="en">Interactive Simulation: Algorithmic Bias Lab</span></h2>
+<div class="howto"><b>玩法 How to play（第一部分）：</b>你係一間科技公司的工程師，要訓練 AI 招聘系統為求職者評 1–5 星。拖動滑桿改變訓練履歷的男女比例，睇下 AI 學到咩「規律」。第二部分：挑戰三條倫理判斷題。<br><span class="en">Train a simulated AI hiring system. Drag the slider to change the gender balance of training resumes and watch what pattern the AI learns. Then take the 3-question ethics challenge.</span></div>
+
+<h2>第一部分：偏見是怎樣產生的 <span class="en">Part 1: How bias is born</span></h2>
+<div class="ctl">
+<label>訓練履歷中男性比例 Male resumes in training data：<span class="val" id="rV">90%</span><span class="en">個案二：公司過去十年的履歷大多來自男性</span></label>
+<input type="range" id="ratio" min="50" max="100" step="5" value="90">
+</div>
+<canvas id="cv" class="sim" width="700" height="300"></canvas>
+<div class="readout" id="biasOut"></div>
+
+<div class="ctl">
+<label>🔎 關鍵詞實驗 Keyword experiment <span class="en2">兩份能力相同的履歷，只差一個詞，AI 會點評分？</span></label>
+<div class="btnrow">
+<button class="act alt" id="kw1">履歷 A：西洋棋學會<br><span style="font-size:.75rem;font-weight:400">Chess club</span></button>
+<button class="act alt" id="kw2">履歷 B：女子西洋棋學會<br><span style="font-size:.75rem;font-weight:400">Women's chess club</span></button>
+</div>
+<div class="readout" id="kwOut">撳上面兩個掣，比較 AI 的評分。<br><span class="en">Press the two buttons to compare the AI's scores.</span></div>
+</div>
+<div class="tipbox">💡 <b>AI 沒有感情，但不等於公平。</b>AI 從人類資料中學習——資料有偏見，AI 就會複製偏見，甚至放大。<b>「技術無罪」不等於「無人需要負責」</b>：責任在採用未經偏見檢測系統的企業及設計者。<br><span class="en">AI has no feelings, but that does not make it fair. Biased data → biased AI.</span></div>
+
+<h2>第二部分：倫理判斷挑戰 <span class="en">Part 2: Ethics challenge</span></h2>
+<div class="score" id="qScore">得分 Score：0 / 3</div>
+<div class="q" id="q1">
+<b>Q1. 個案一（deepfake 視像會議騙案）：誰應負主要責任？</b><br><span class="en2">Case 1 (deepfake fraud): who bears the main responsibility?</span>
+<div class="opts">
+<button data-c="0">A. 發明視像會議的人 The inventor of video conferencing</button>
+<button data-c="1">B. 使用 deepfake 行騙的騙徒 The fraudsters who used deepfake to scam</button>
+<button data-c="0">C. 受騙的職員 The deceived employee</button>
+</div><div class="fb"></div>
+</div>
+<div class="q" id="q2">
+<b>Q2. 個案二中，AI 招聘系統出現性別偏見的主要原因是？</b><br><span class="en2">Case 2: what mainly caused the gender bias?</span>
+<div class="opts">
+<button data-c="0">A. 工程師故意寫入歧視規則 Engineers deliberately wrote discriminatory rules</button>
+<button data-c="1">B. 訓練用的履歷大多來自男性，系統學會了有偏差的規律 Most training resumes came from men, so the system learnt a biased pattern</button>
+<button data-c="0">C. 女性求職者能力較低 Female applicants were less capable</button>
+</div><div class="fb"></div>
+</div>
+<div class="q" id="q3">
+<b>Q3. 「道德判斷三問」不包括以下哪一問？</b><br><span class="en2">Which is NOT one of the three questions of moral judgement?</span>
+<div class="opts">
+<button data-c="0">A. 誰受影響？ Who is affected?</button>
+<button data-c="0">B. 是否公平？為甚麼？ Is it fair? Why?</button>
+<button data-c="1">C. AI 的電費是多少？ How much is the AI's electricity bill?</button>
+</div><div class="fb"></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=300;
+var ratio=document.getElementById('ratio'),rV=document.getElementById('rV');
+var cur={m:3,f:3},tgt={m:3,f:3},anim=null;
+function targets(){
+  var r=+ratio.value,bias=(r-50)/50;
+  tgt.m=3.0+1.0*bias;tgt.f=3.0-1.2*bias;
+}
+function g(m,s){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(6.2831853*v);}
+function draw(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.font='bold 15px sans-serif';ctx.textAlign='left';ctx.fillStyle='#1a5276';
+  ctx.fillText('AI 學到的評分規律（1–5 星）',40,34);
+  ctx.font='12px sans-serif';ctx.fillStyle='#888';ctx.textAlign='right';
+  ctx.fillText('Learned scoring pattern',660,34);
+  bar(70,'👨 男性求職者 Male',cur.m,'#2e86c1');
+  bar(150,'👩 女性求職者 Female',cur.f,'#e67e22');
+  // gap
+  var gap=cur.m-cur.f;
+  ctx.textAlign='center';ctx.font='bold 15px sans-serif';
+  ctx.fillStyle=gap>0.3?'#c0392b':'#27ae60';
+  ctx.fillText(gap>0.3?('⚠ 性別差距 Gender gap：'+gap.toFixed(1)+' 星 — 系統性偏低！'):'✓ 兩性評分相近（差距 '+gap.toFixed(1)+' 星）',W/2,238);
+  ctx.font='12px sans-serif';ctx.fillStyle='#888';
+  ctx.fillText('模擬：男女各 100 名求職者，≥3.5 星獲聘',W/2,264);
+  ctx.fillText('Simulation: 100 applicants each; hired if ≥ 3.5 stars',W/2,284);
+}
+function bar(y,label,v,color){
+  ctx.textAlign='left';ctx.font='14px sans-serif';ctx.fillStyle='#222';
+  ctx.fillText(label,40,y+5);
+  var w=(v/5)*(W-260);
+  ctx.fillStyle='#ecf0f1';ctx.fillRect(220,y-14,W-260,28);
+  ctx.fillStyle=color;ctx.fillRect(220,y-14,Math.max(2,w),28);
+  ctx.fillStyle='#1a5276';ctx.font='bold 16px sans-serif';ctx.textAlign='left';
+  ctx.fillText('★ '+v.toFixed(1),220+Math.max(2,w)+10,y+6);
+}
+function paint(){
+  if(anim)cancelAnimationFrame(anim);
+  targets();
+  function fr(){
+    var d=0.12;
+    cur.m+=(tgt.m-cur.m)*d;cur.f+=(tgt.f-cur.f)*d;
+    draw();updateOut();
+    if(Math.abs(tgt.m-cur.m)>0.005||Math.abs(tgt.f-cur.f)>0.005)anim=requestAnimationFrame(fr);
+    else{cur.m=tgt.m;cur.f=tgt.f;draw();updateOut();}
+  }
+  fr();
+}
+function updateOut(){
+  var m=tgt.m,f=tgt.f,hm=0,hf=0,i,s;
+  for(i=0;i<100;i++){s=g(m,0.8);if(s>=3.5)hm++;}
+  for(i=0;i<100;i++){s=g(f,0.8);if(s>=3.5)hf++;}
+  document.getElementById('biasOut').innerHTML=
+    '📊 訓練履歷男性比例 <b>'+ratio.value+'%</b> → AI 學會的「規律」：男性平均 <b>'+m.toFixed(1)+' ★</b>，女性平均 <b>'+f.toFixed(1)+' ★</b><br>'+
+    '💼 模擬招聘（男女各 100 人）：男性獲聘 <b>'+hm+'</b> 人，女性獲聘 <b>'+hf+'</b> 人'+(hf<hm?' — <span class="bad">女性被系統性篩走！</span>':'')+
+    '<br><span class="en">The AI copied and amplified the bias in its training data.</span>';
+}
+ratio.oninput=function(){rV.textContent=ratio.value+'%';paint();};
+document.getElementById('kw1').onclick=function(){
+  document.getElementById('kwOut').innerHTML='📄 履歷 A「西洋棋學會」→ AI 評分：<b>4.0 ★</b><br><span class="en">Resume A scores 4.0 stars.</span>';
+};
+document.getElementById('kw2').onclick=function(){
+  document.getElementById('kwOut').innerHTML='📄 履歷 B「<b>女子</b>西洋棋學會」→ AI 評分：<b><span class="bad">3.0 ★（被扣 1 星！）</span></b><br>💡 兩份履歷能力相同，只因出現「女子」二字就被扣分——AI 學會了資料中的性別偏見。<br><span class="en">Identical ability, but the word "women\'s" costs a full star.</span>';
+};
+// quiz
+var score=0,doneQ={};
+var fbs={
+  q1:['B 正確！責任在<b>作惡的使用者（騙徒）</b>——三層責任：技術、設計者、使用者。','唔係。諗下「三層責任」：技術無罪，但作惡的<b>使用者（騙徒）</b>要負責。'],
+  q2:['B 正確！偏見唔係工程師故意寫入，而係 AI <b>忠實地學會了有偏差資料中的規律</b>。','唔係。個案講明：訓練履歷大多來自男性，系統學會了「男性較優勝」的規律。'],
+  q3:['C 正確！三問係：誰受影響？是否公平？誰應負責？——電費唔係其中一問 😄','唔係。三問係：誰受影響？是否公平？誰應負責？']
+};
+['q1','q2','q3'].forEach(function(id){
+  var box=document.getElementById(id),btns=box.querySelectorAll('button'),fb=box.querySelector('.fb');
+  btns.forEach(function(b){
+    b.onclick=function(){
+      if(doneQ[id])return;doneQ[id]=true;
+      var ok=b.getAttribute('data-c')==='1';
+      btns.forEach(function(x){x.disabled=true;if(x.getAttribute('data-c')==='1')x.classList.add('right');});
+      if(ok){b.classList.add('right');score++;fb.innerHTML='<span class="good">✓ '+fbs[id][0]+'</span>';}
+      else{b.classList.add('wrong');fb.innerHTML='<span class="bad">✗ '+fbs[id][1]+'</span>';}
+      document.getElementById('qScore').textContent='得分 Score：'+score+' / 3'+(score===3?' 🎉 全部答對！三問＋三層責任你都掌握了！':'');
+    };
+  });
+});
+targets();draw();updateOut();
+})();
+</script>
+</body>
+</html>

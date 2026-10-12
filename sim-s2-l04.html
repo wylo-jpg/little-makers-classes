@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>互動模擬：液壓傳動實驗室 | Sim: Hydraulic Force Explorer</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap canvas{width:100%;border:1px solid #bcd9f2;border-radius:10px;background:#f4fafe;display:block}
+.ctrls{display:grid;gap:.6rem;margin:1rem 0}
+.ctrl{display:grid;grid-template-columns:8.5rem 1fr 4.2rem;gap:.6rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+.ctrl label{font-weight:700}
+.ctrl output{font-weight:700;color:#1a5276;text-align:right}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.2rem,1fr));gap:.5rem;margin:1rem 0}
+.ro{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:8px;padding:.5rem .7rem}
+.ro b{display:block;font-size:.78rem;color:#1a5276;font-weight:600}
+.ro span{font-size:1.15rem;font-weight:700}
+.btns{margin:.8rem 0;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+button.big{background:#1a5276;color:#fff;border:none;border-radius:8px;padding:.7rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer}
+button.big:active{transform:scale(.97)}
+button.big:disabled{background:#95a5b8}
+.howto{background:#fff8e6;border:1px solid #f0d488;border-radius:10px;padding:.8rem 1rem;margin:1rem 0}
+.verdict{font-size:1.15rem;font-weight:700;margin:.6rem 0;min-height:1.8em}
+.check{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.6rem .8rem}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s2-04.html">← 返回課堂 Back to lesson</a></nav>
+<h2>互動模擬：液壓傳動實驗室 <span class="en">Interactive Sim: Hydraulic Force Explorer</span></h2>
+<div class="howto"><b>玩法 How to play：</b>調校輸入針筒的推力同兩支針筒的活塞面積，按「推動」睇下輸出端舉唔舉得起 <b>25 N</b> 的重物。記住帕斯卡原理：F₂ = F₁ × (A₂/A₁)，但行程會縮短！
+<br><span class="en">Adjust the input force and both piston areas, then push. Can the output lift the 25 N load? Pascal's principle: F₂ = F₁ × (A₂/A₁), but travel shortens.</span></div>
+
+<div class="sim-wrap">
+<div class="ctrls">
+<div class="ctrl"><label>輸入推力 Input force F₁</label><input type="range" id="sF1" min="2" max="20" step="1" value="6"><output id="oF1">6 N</output></div>
+<div class="ctrl"><label>輸入針筒面積 A₁</label><input type="range" id="sA1" min="1" max="6" step="0.5" value="1"><output id="oA1">1 cm²</output></div>
+<div class="ctrl"><label>輸出針筒面積 A₂</label><input type="range" id="sA2" min="1" max="8" step="0.5" value="4"><output id="oA2">4 cm²</output></div>
+<div class="check"><input type="checkbox" id="cBub"><label for="cBub"><b>水管有氣泡</b> Air bubble in tube <span class="en">(傳動變慢、變弱 — 見思考題！)</span></label></div>
+</div>
+<div class="btns"><button class="big" id="bPush">💪 推動針筒 Push</button></div>
+<canvas id="cv"></canvas>
+<div class="verdict" id="verdict"></div>
+<div class="readout">
+<div class="ro"><b>壓力 Pressure P = F₁/A₁</b><span id="rP">–</span></div>
+<div class="ro"><b>輸出力 Output force F₂</b><span id="rF2">–</span></div>
+<div class="ro"><b>力的放大 Force ×</b><span id="rMag">–</span></div>
+<div class="ro"><b>輸入行程 Input travel d₁</b><span id="rD1">–</span></div>
+<div class="ro"><b>輸出舉升 Lift d₂</b><span id="rD2">–</span></div>
+</div>
+</div>
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function fit(){var w=cv.parentElement.clientWidth;cv.width=Math.max(320,w);cv.height=Math.round(cv.width*0.60);draw(S.t);}
+window.addEventListener('resize',fit);
+var S={F1:6,A1:1,A2:4,bubble:false,t:0,anim:false,lifted:null};
+function $(id){return document.getElementById(id);}
+function phys(){
+  var P=S.F1/S.A1;
+  var F2=P*S.A2*(S.bubble?0.5:1);
+  var d1=90,d2=d1*S.A1/S.A2;
+  return {P:P,F2:F2,d1:d1,d2:d2,mag:S.A2/S.A1};
+}
+function refresh(){
+  $('oF1').textContent=S.F1+' N';
+  $('oA1').textContent=S.A1+' cm²';
+  $('oA2').textContent=S.A2+' cm²';
+  var p=phys();
+  $('rP').textContent=p.P.toFixed(1)+' N/cm²';
+  $('rF2').textContent=p.F2.toFixed(1)+' N';
+  $('rMag').textContent='×'+p.mag.toFixed(2);
+  $('rD1').textContent=p.d1.toFixed(0)+' 單位';
+  $('rD2').textContent=p.d2.toFixed(1)+' 單位';
+}
+function tubePts(W,H){
+  var x1=40,x2=W-110,y1=H*0.32,yb=H-46,y2=H*0.52;
+  return [[x1+150,y1],[x1+190,y1],[x1+190,yb],[x2-30,yb],[x2-30,y2]];
+}
+function tubePoint(pts,s){
+  var lens=[],tot=0,i;
+  for(i=0;i<pts.length-1;i++){var dx=pts[i+1][0]-pts[i][0],dy=pts[i+1][1]-pts[i][1];var L=Math.sqrt(dx*dx+dy*dy);lens.push(L);tot+=L;}
+  var d=s*tot;
+  for(i=0;i<lens.length;i++){if(d<=lens[i]){var f=lens[i]?d/lens[i]:0;return [pts[i][0]+(pts[i+1][0]-pts[i][0])*f,pts[i][1]+(pts[i+1][1]-pts[i][1])*f];}d-=lens[i];}
+  return pts[pts.length-1];
+}
+function draw(t){
+  var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  var p=phys();
+  var x1=40,y1=H*0.32,barrelLen=150;
+  var h1=16+S.A1*9;
+  // input syringe (horizontal)
+  ctx.fillStyle='#d6e9f8';ctx.strokeStyle='#1a5276';ctx.lineWidth=3;
+  ctx.beginPath();ctx.rect(x1,y1-h1/2,barrelLen,h1);ctx.fill();ctx.stroke();
+  var plx=t*p.d1;
+  ctx.fillStyle='#7fb3d5';ctx.fillRect(x1-14+plx,y1-h1/2+4,20,h1-8);ctx.strokeRect(x1-14+plx,y1-h1/2+4,20,h1-8);
+  ctx.fillStyle='#1a5276';ctx.fillRect(x1-44+plx,y1-3,34,6);
+  ctx.font='bold 13px sans-serif';ctx.fillStyle='#1a5276';ctx.textAlign='center';
+  ctx.fillText('A₁ = '+S.A1+' cm²',x1+barrelLen/2,y1-h1/2-10);
+  ctx.fillText('F₁ = '+S.F1+' N →',x1-40,y1+h1/2+22);
+  // tube
+  var pts=tubePts(W,H);
+  ctx.strokeStyle='#5dade2';ctx.lineWidth=10;ctx.lineJoin='round';ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.stroke();
+  ctx.strokeStyle='#1a5276';ctx.lineWidth=1.5;ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.stroke();
+  // water particles
+  ctx.fillStyle='#1a5276';
+  for(var k=0;k<10;k++){var q=tubePoint(pts,(k/10+t*1.2)%1);ctx.beginPath();ctx.arc(q[0],q[1],3.4,0,7);ctx.fill();}
+  // air bubble
+  if(S.bubble){var bq=tubePoint(pts,0.55);ctx.fillStyle='#fff';ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.beginPath();ctx.arc(bq[0],bq[1],9,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#888';ctx.font='11px sans-serif';ctx.fillText('氣泡',bq[0],bq[1]-14);}
+  // output syringe (vertical)
+  var x2=W-110,y2=H*0.52,barrelW=16+S.A2*7,barrelH=120;
+  ctx.fillStyle='#d6e9f8';ctx.strokeStyle='#1a5276';ctx.lineWidth=3;
+  ctx.beginPath();ctx.rect(x2-barrelW/2,y2-barrelH,barrelW,barrelH);ctx.fill();ctx.stroke();
+  var lift=(p.F2>=25)?t*p.d2:0;
+  var shake=(p.F2<25&&t>0.05&&t<1)?Math.sin(t*50)*4*t:0;
+  var ply=y2-barrelH-14-lift;
+  ctx.fillStyle='#7fb3d5';ctx.fillRect(x2-barrelW/2+4,ply,barrelW-8,16);ctx.strokeRect(x2-barrelW/2+4,ply,barrelW-8,16);
+  ctx.fillStyle='#1a5276';ctx.fillRect(x2-3,ply-46,6,46);
+  ctx.font='bold 13px sans-serif';ctx.fillStyle='#1a5276';
+  ctx.fillText('A₂ = '+S.A2+' cm²',x2,y2+26);
+  // platform + crate
+  ctx.fillStyle='#a67c52';ctx.fillRect(x2-58,ply-58,116,12);ctx.strokeRect(x2-58,ply-58,116,12);
+  ctx.fillStyle='#c9a06a';ctx.fillRect(x2-44,ply-108+shake,88,50);ctx.strokeRect(x2-44,ply-108+shake,88,50);
+  ctx.fillStyle='#5d3f1f';ctx.font='bold 14px sans-serif';ctx.fillText('25 N',x2,ply-80+shake);
+  // force arrows
+  ctx.fillStyle='#e74c3c';ctx.font='bold 14px sans-serif';
+  ctx.fillText('F₂ = '+p.F2.toFixed(1)+' N ↑',x2+70,y2-60);
+  // formula footer
+  ctx.fillStyle='#1a5276';ctx.font='13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('帕斯卡原理：F₂ = F₁ × (A₂/A₁) ＝ '+S.F1+' × ('+S.A2+'/'+S.A1+') ＝ '+p.F2.toFixed(1)+' N',12,H-10);
+  ctx.textAlign='center';
+}
+function push(){
+  if(S.anim)return;S.anim=true;S.t=0;S.lifted=null;$('verdict').textContent='';$('bPush').disabled=true;
+  var dur=S.bubble?2600:1300,last=performance.now();
+  function step(now){
+    S.t=Math.min(1,S.t+(now-last)/dur);last=now;draw(S.t);
+    if(S.t<1){requestAnimationFrame(step);return;}
+    S.anim=false;$('bPush').disabled=false;
+    var p=phys();
+    if(p.F2>=25){S.lifted=true;$('verdict').style.color='#1e8449';$('verdict').textContent='✅ 成功舉起！輸出舉升了 '+p.d2.toFixed(1)+' 單位（力放大 ×'+p.mag.toFixed(2)+'，行程縮短）。';}
+    else{S.lifted=false;$('verdict').style.color='#c0392b';$('verdict').textContent='❌ 舉唔起！F₂ 只有 '+p.F2.toFixed(1)+' N。試下加大 A₂ 或 F₁，再睇下行程有咩變化。';}
+  }
+  requestAnimationFrame(step);
+}
+$('sF1').addEventListener('input',function(e){S.F1=+e.target.value;refresh();draw(S.t);});
+$('sA1').addEventListener('input',function(e){S.A1=+e.target.value;refresh();draw(S.t);});
+$('sA2').addEventListener('input',function(e){S.A2=+e.target.value;refresh();draw(S.t);});
+$('cBub').addEventListener('change',function(e){S.bubble=e.target.checked;refresh();draw(S.t);});
+$('bPush').addEventListener('click',push);
+refresh();fit();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>展示計時器 | L25 | 創科班</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+label.f{display:block;font-weight:700;margin:.6rem 0 .25rem}
+input[type=text],input[type=number],textarea,select{width:100%;box-sizing:border-box;padding:.55rem;border:1px solid #c8d3e0;border-radius:8px;font-size:1rem;font-family:inherit}
+textarea{min-height:2.6rem;resize:vertical}
+.btn.sm{padding:.35rem .8rem;font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0;align-items:center}
+.timer{background:#1a5276;color:#fff;border-radius:14px;padding:1.2rem;text-align:center;transition:background .5s}
+.timer.amber{background:#b7791f}.timer.red{background:#922b21}
+.timer .t{font-size:4rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.timer .phase{font-size:1.15rem;margin-top:.4rem;font-weight:700}
+.pbar{height:12px;background:rgba(255,255,255,.3);border-radius:6px;overflow:hidden;margin-top:.8rem}
+.pbar>div{height:100%;background:#fff;width:0}
+.sect{display:flex;gap:.5rem;margin:.6rem 0;flex-wrap:wrap}
+.sect div{flex:1;min-width:150px;border:2px solid #dfe6ee;border-radius:8px;padding:.5rem .6rem;font-size:.92rem;background:#f8fafc}
+.sect div.now{border-color:#1a5276;background:#eaf4fd;font-weight:700}
+.sect div.doneS{opacity:.55}
+.chk{font-size:1rem;margin:.35rem 0}
+.chk input{transform:scale(1.4);margin-right:.5rem}
+.rate{background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.7rem .9rem;margin:.5rem 0}
+.rate .rh{font-weight:700;font-size:1.05rem}
+.rate .rc{font-size:.9rem;color:#444}
+.crit{display:flex;align-items:center;gap:.5rem;margin:.35rem 0}
+.crit label{flex:1;font-size:.92rem}
+.crit select{width:auto}
+.en{font-size:.85rem;color:#666;font-weight:400}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap">
+<nav class="crumb"><a href="lesson-s1-25.html">← 返回課堂 Back to lesson</a></nav>
+<h2>展示計時器 <span class="en">Presentation Timer</span></h2>
+<div class="card">
+<p><b>玩法 How to play：</b>① 設定分鐘數（展示 3 分鐘、問答 1 分鐘）；② 按「開始」——大時鐘倒數，顏色由綠轉黃轉紅，時間到會響鈴；③ 跟著「1＋1＋1」階段提示講：每分鐘自動顯示該講什麼；④ 台下可用「互評速記」即時評分。</p>
+<p class="en">Set the minutes (3 for the showcase, 1 for Q&amp;A), press start. The big clock counts down green → amber → red and chimes at the end. Follow the 1+1+1 stage prompts. The audience can score groups live with the quick peer-rating below.</p>
+</div>
+
+<div class="card">
+<div class="row" style="align-items:flex-end">
+<div style="flex:1;min-width:120px"><label class="f">分鐘數 Minutes</label><input type="number" id="mins" min="1" max="10" value="3"></div>
+<div><button class="btn" id="start">▶ 開始 Start</button></div>
+<div><button class="btn alt" id="pause">⏸ 暫停 Pause</button></div>
+<div><button class="btn sm" id="reset">↺ 重設 Reset</button></div>
+<div><button class="btn sm alt" id="qa">問答 1 分鐘 Q&amp;A</button></div>
+</div>
+<div class="timer" id="timerBox">
+<div class="t" id="clock">3:00</div>
+<div class="phase" id="phase">準備好就按「開始」</div>
+<div class="pbar"><div id="tpbar"></div></div>
+</div>
+<h3>1＋1＋1 階段提示 <span class="en">Stage prompts</span></h3>
+<div class="sect" id="sects">
+<div data-s="1"><b>第 1 分鐘</b><br>關愛對象＋真實需要<br><span class="en">Who? What difficulty?</span></div>
+<div data-s="2"><b>第 2 分鐘</b><br>實物設計＋如何回應需要<br><span class="en">The physical design</span></div>
+<div data-s="3"><b>第 3 分鐘</b><br>AI 生成部分＋分工<br><span class="en">AI part &amp; task allocation</span></div>
+</div>
+</div>
+
+<div class="card">
+<h3>🎤 展示四要素檢查 Four elements</h3>
+<div class="chk"><input type="checkbox"> ① 關愛對象是誰 <span class="en">Who is the caring target</span></div>
+<div class="chk"><input type="checkbox"> ② 真實需要是什麼 <span class="en">What is the real need</span></div>
+<div class="chk"><input type="checkbox"> ③ 實物設計是怎樣的 <span class="en">What is the physical design</span></div>
+<div class="chk"><input type="checkbox"> ④ AI 生成部分是什麼 <span class="en">What is the AI-generated part</span></div>
+</div>
+
+<div class="card">
+<h3>⭐ 互評速記 Peer rating <span class="en">（不評自己組別，每項 1–5 分）</span></h3>
+<label class="f">組別 <span class="en">Group</span></label>
+<input type="text" id="gName" placeholder="例如：第 2 組">
+<div id="crits"></div>
+<label class="f">具體讚賞 <span class="en">Specific compliment</span>（指出特點＋好在哪裡）</label>
+<textarea id="gPraise" placeholder="例如：他們的反光牌支架用了三角形結構，很穩固"></textarea>
+<div class="row"><button class="btn" id="addRate">💾 儲存評分 Save</button></div>
+<div id="rates"></div>
+</div>
+
+<footer>創科班 Little Makers Class · 聖公會呂明才中學<br><span class="en">Course materials website · 課程教材網站</span></footer>
+</div>
+<script>
+(function(){
+"use strict";
+var total=180,remain=180,running=false,tid=null,endAt=0;
+var clock=document.getElementById("clock"),phase=document.getElementById("phase"),
+box=document.getElementById("timerBox"),tpbar=document.getElementById("tpbar");
+var PH=["準備好就按「開始」","第 1 分鐘：關愛對象＋真實需要","第 2 分鐘：實物設計＋如何回應需要","第 3 分鐘：AI 生成部分＋分工","問答時間 Q&A"];
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2);}
+function paint(){clock.textContent=fmt(remain);
+var frac=total?remain/total:0;tpbar.style.width=Math.round((1-frac)*100)+"%";
+box.classList.remove("amber","red");
+if(running||remain<total){if(remain<=30)box.classList.add("red");else if(remain<=60)box.classList.add("amber");}
+var mins=parseFloat(document.getElementById("mins").value)||3;
+var elapsed=total-remain,stage;
+if(mins===1){stage=4;phase.textContent=running||remain<total?PH[4]:PH[0];}
+else{stage=elapsed<60?1:elapsed<120?2:3;phase.textContent=(running||remain<total)?PH[stage]:PH[0];}
+var secs=document.getElementById("sects").querySelectorAll("div");
+secs.forEach(function(d){var s=parseInt(d.getAttribute("data-s"),10);
+d.classList.toggle("now",(running||remain<total)&&mins>1&&s===stage);
+d.classList.toggle("doneS",(remain<total)&&mins>1&&s<stage);});}
+function chime(){try{var C=window.AudioContext||window.webkitAudioContext;var ctx=new C();
+[523,659,784,1047].forEach(function(f,i){var o=ctx.createOscillator(),g=ctx.createGain();
+o.type="sine";o.frequency.value=f;
+var t0=ctx.currentTime+i*0.22;
+g.gain.setValueAtTime(0.001,t0);g.gain.exponentialRampToValueAtTime(0.5,t0+0.03);g.gain.exponentialRampToValueAtTime(0.001,t0+0.4);
+o.connect(g);g.connect(ctx.destination);o.start(t0);o.stop(t0+0.45);});}catch(e){}}
+function tick(){remain=Math.max(0,(endAt-Date.now())/1000);paint();
+if(remain<=0){running=false;clearInterval(tid);phase.textContent="⏰ 時間到！Time's up!";chime();}}
+document.getElementById("start").addEventListener("click",function(){
+if(running)return;var m=parseFloat(document.getElementById("mins").value)||3;
+if(remain<=0||remain===total||Math.round(remain)!==Math.round(total)){if(remain<=0)remain=m*60;total=m*60;if(remain>total)remain=total;}
+total=m*60;if(remain<=0)remain=total;
+endAt=Date.now()+remain*1000;running=true;clearInterval(tid);tid=setInterval(tick,200);paint();});
+document.getElementById("pause").addEventListener("click",function(){if(!running)return;running=false;clearInterval(tid);remain=Math.max(0,(endAt-Date.now())/1000);paint();phase.textContent="已暫停 Paused";});
+document.getElementById("reset").addEventListener("click",function(){running=false;clearInterval(tid);var m=parseFloat(document.getElementById("mins").value)||3;total=m*60;remain=total;paint();});
+document.getElementById("qa").addEventListener("click",function(){document.getElementById("mins").value=1;running=false;clearInterval(tid);total=60;remain=60;paint();});
+document.getElementById("mins").addEventListener("change",function(){if(!running){var m=parseFloat(document.getElementById("mins").value)||3;total=m*60;remain=total;paint();}});
+paint();
+/* --- peer rating --- */
+var CRIT=["關愛對象與需要是否明確","實物原型是否配合需要、製作認真","AI 生成部分是否配合主題","介紹是否清晰、有條理","整體創意"];
+var critBox=document.getElementById("crits");
+CRIT.forEach(function(c,i){var d=document.createElement("div");d.className="crit";
+var lb=document.createElement("label");lb.textContent=(i+1)+". "+c;var sel=document.createElement("select");sel.id="cr"+i;
+for(var s=1;s<=5;s++){var o=document.createElement("option");o.value=s;o.textContent=s+" 分";sel.appendChild(o);}
+d.appendChild(lb);d.appendChild(sel);critBox.appendChild(d);});
+function load(){try{return JSON.parse(localStorage.getItem("l25-rates")||"[]");}catch(e){return[];}}
+function store(a){localStorage.setItem("l25-rates",JSON.stringify(a));}
+var rates=load();
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function render(){var box=document.getElementById("rates");box.innerHTML="";
+rates.forEach(function(r,i){var d=document.createElement("div");d.className="rate";
+var tot=r.scores.reduce(function(a,b){return a+b;},0);
+d.innerHTML='<div class="rh">'+esc(r.group)+'　<span style="color:#1a5276">'+tot+' / 25</span></div><div class="rc">評分：'+r.scores.join("、")+'<br>讚賞：'+esc(r.praise||"—")+'</div>';
+var row=document.createElement("div");row.className="row";
+var del=document.createElement("button");del.className="btn sm";del.textContent="刪除";del.addEventListener("click",function(){rates.splice(i,1);store(rates);render();});
+row.appendChild(del);d.appendChild(row);box.appendChild(d);});
+if(!rates.length)box.innerHTML='<p style="color:#888">暫無評分。No ratings yet.</p>';}
+document.getElementById("addRate").addEventListener("click",function(){
+var g=document.getElementById("gName").value.trim();if(!g){alert("請先填寫組別");return;}
+var scores=CRIT.map(function(_,i){return parseInt(document.getElementById("cr"+i).value,10);});
+rates.unshift({group:g,scores:scores,praise:document.getElementById("gPraise").value.trim(),ts:Date.now()});
+document.getElementById("gName").value="";document.getElementById("gPraise").value="";store(rates);render();});
+render();
+})();
+</script>
+</body>
+</html>

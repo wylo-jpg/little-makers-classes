@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>水火箭發射 互動模擬 | Sim: Water Rocket Launch</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:linear-gradient(#bfe3f5,#eef9ff);touch-action:manipulation}
+.readout{background:#fff;border-left:5px solid #2980b9;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#2980b9}
+.big-btn{padding:.7rem 1.6rem;font-size:1.05rem;background:#2980b9;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.big-btn:disabled{background:#95a5a6}
+.big-btn.reset{background:#e74c3c;margin-left:.5rem}
+label.slider{display:block;margin:.8rem 0 .3rem;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+.note{font-size:.92rem;color:#555}
+.warn{color:#e74c3c;font-weight:700}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-09.html">← 返回課堂 Back to lesson</a></nav>
+<h2>水火箭發射 <span class="en">Water Rocket Launch — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：調校水量、發射角度同打氣次數，按「發射！」——量度飛行距離，搵出最佳組合！<br>
+<span class="en">Set water volume, launch angle and pump strokes, then launch! Find the best combination.</span></p>
+<p class="note">原理：壓縮空氣把水向下推出（作用力），反作用力把火箭向上推。<br><span class="en">Compressed air pushes water down (action); reaction pushes the rocket up.</span></p>
+</div>
+
+<label class="slider">水量 <span class="en">Water volume</span>：<span id="waterVal">33</span> %（約三分之一樽）</label>
+<input type="range" id="water" min="0" max="100" step="1" value="33">
+<label class="slider">發射角度 <span class="en">Launch angle</span>：<span id="angVal">45</span>°</label>
+<input type="range" id="ang" min="5" max="90" step="1" value="45">
+<label class="slider">打氣次數 <span class="en">Pump strokes</span>：<span id="pumpVal">6</span> 下</label>
+<input type="range" id="pump" min="1" max="10" step="1" value="6">
+<div style="margin:.8rem 0">
+<button class="big-btn" id="launchBtn">🚀 發射！Launch!</button>
+<button class="big-btn reset" id="resetBtn">重設 Reset</button>
+</div>
+
+<canvas id="cv" height="380"></canvas>
+
+<div class="readout">
+<div>飛行距離 <span class="en">Flight distance</span>：<span class="big" id="rDist">0.0</span> 米 m</div>
+<div id="rMsg" style="margin-top:.4rem"></div>
+<p class="note">最佳成績 <span class="en">Best so far</span>：<strong id="rBest">—</strong></p>
+<p class="warn">安全（真實活動時）：只准老師打氣加壓；發射時所有人退到安全線後。<br><span class="en">Real-world safety: only the teacher pumps; stay behind the safety line.</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=380,water=33,angle=45,pump=6;
+var state='idle',t=0,T=1,vx=0,vy=0,dist=0,best=0;
+var particles=[];
+var waterEl=document.getElementById('water'),angEl=document.getElementById('ang'),pumpEl=document.getElementById('pump');
+waterEl.addEventListener('input',function(){water=+waterEl.value;document.getElementById('waterVal').textContent=water;});
+angEl.addEventListener('input',function(){angle=+angEl.value;document.getElementById('angVal').textContent=angle;});
+pumpEl.addEventListener('input',function(){pump=+pumpEl.value;document.getElementById('pumpVal').textContent=pump;});
+function fit(){var w=cv.clientWidth;cv.width=w;cv.height=Math.round(w*H/W);}
+window.addEventListener('resize',function(){fit();draw();});fit();
+
+function eff(){return Math.max(0.05,1-Math.abs(water-33)/90);}
+function flightDist(){return 42*eff()*(pump/10)*Math.sin(2*angle*Math.PI/180);}
+document.getElementById('resetBtn').addEventListener('click',reset);
+function reset(){state='idle';t=0;particles=[];document.getElementById('rDist').textContent='0.0';
+  document.getElementById('rMsg').textContent='';document.getElementById('launchBtn').disabled=false;draw();}
+document.getElementById('launchBtn').addEventListener('click',function(){
+  reset();dist=flightDist();state='fly';this.disabled=true;
+  var rad=angle*Math.PI/180,T0=2.2;
+  T=T0;vx=Math.cos(rad);vy=Math.sin(rad);  var msg=document.getElementById('rMsg');
+  if(water>60)msg.innerHTML='水太多，壓縮空氣不足，推力弱。<br><span class="en">Too much water: too little compressed air.</span>';
+  else if(water<15)msg.innerHTML='水太少，推力維持時間短。<br><span class="en">Too little water: thrust lasts only briefly.</span>';
+  else msg.innerHTML='水量適中！試下角度 45° 係咪飛最遠。<br><span class="en">Good water level! Is 45° the furthest?</span>';
+});
+function draw(){
+  var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  var s=w/W;ctx.save();ctx.scale(s,s);
+  // ground
+  ctx.fillStyle='#9ccc65';ctx.fillRect(0,320,W,60);
+  ctx.fillStyle='#7f8c8d';ctx.font='13px sans-serif';
+  for(var m=0;m<=10;m++){var mx=60+m*60;ctx.fillText((m*4)+'m',mx-8,344);
+    ctx.strokeStyle='#7f8c8d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,320);ctx.lineTo(mx,328);ctx.stroke();}
+  var sx=60,sy=320;
+  if(state==='idle'||state==='fly'||state==='done'){
+    var rad=angle*Math.PI/180;
+    if(state==='idle'){
+      // rocket on launcher at angle
+      drawRocket(sx,sy,rad,false);
+      drawLauncher(sx,sy,rad);
+      // angle arc
+      ctx.strokeStyle='#555';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,sy,52,0,-rad,true);ctx.stroke();
+      ctx.fillStyle='#555';ctx.font='14px sans-serif';ctx.fillText(angle+'°',sx+58,sy-20);
+    }else{
+      // flying along a normalized projectile arc
+      var X=dist/40*560; // pixels for full distance
+      var rad=angle*Math.PI/180;
+      var peak=Math.sin(rad)*Math.sin(rad)*160*eff();
+      var xx=sx+X*t, yy=sy-4*peak*t*(1-t);
+      if(t>=1){xx=sx+X;yy=sy;}
+      drawRocket(xx,yy,rad,true);
+      // water spray particles during early flight
+      particles.forEach(function(p){ctx.fillStyle='rgba(52,152,219,'+p.a+')';
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+      // landing mark
+      if(state==='done'){
+        ctx.fillStyle='#e74c3c';ctx.font='bold 15px sans-serif';
+        ctx.fillText('▼ 著陸 '+dist.toFixed(1)+' m',Math.min(sx+X-40,W-130),sy-14);
+      }
+    }
+  }
+  ctx.restore();
+}
+function drawLauncher(x,y,rad){
+  ctx.strokeStyle='#555';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-30,y);ctx.stroke();
+  ctx.fillStyle='#666';ctx.fillRect(x-34,y-6,10,26);
+}
+function drawRocket(x,y,rad,fly){
+  ctx.save();ctx.translate(x,y);ctx.rotate(-rad);
+  // body
+  ctx.fillStyle='#e74c3c';ctx.fillRect(-8,-46,16,44);
+  ctx.fillStyle='#c0392b';ctx.beginPath();ctx.moveTo(-8,-46);ctx.lineTo(0,-62);ctx.lineTo(8,-46);ctx.closePath();ctx.fill();
+  // fins
+  ctx.fillStyle='#f1c40f';
+  ctx.beginPath();ctx.moveTo(-8,-6);ctx.lineTo(-20,6);ctx.lineTo(-8,6);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(8,-6);ctx.lineTo(20,6);ctx.lineTo(8,6);ctx.closePath();ctx.fill();
+  // water fill level (when idle)
+  if(!fly){ctx.fillStyle='rgba(52,152,219,.7)';var wh=44*water/100;ctx.fillRect(-8,-2-wh,16,wh);}
+  // flame/spray at nozzle (bottom, y=0)
+  if(state==='fly'&&t<0.35){
+    ctx.fillStyle='rgba(52,152,219,.85)';
+    ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(0,26+Math.random()*18);ctx.lineTo(6,0);ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
+function loop(){
+  if(state==='fly'){
+    t+=0.016;
+    if(t<0.4&&Math.random()<0.8){
+      var rad2=angle*Math.PI/180;
+      particles.push({x:60+t*300*Math.cos(rad2),y:320-t*300*Math.sin(rad2),r:2+Math.random()*3,a:0.7,vx:-40-Math.random()*40,vy:30+Math.random()*30});
+    }
+    particles.forEach(function(p){p.x+=p.vx*0.016;p.y+=p.vy*0.016;p.a-=0.01;});
+    particles=particles.filter(function(p){return p.a>0;});
+    if(t>=1){t=1;state='done';
+      document.getElementById('rDist').textContent=dist.toFixed(1);
+      if(dist>best){best=dist;document.getElementById('rBest').textContent=best.toFixed(1)+' 米 m（水 '+water+'%，角度 '+angle+'°，打氣 '+pump+' 下）';}
+      document.getElementById('launchBtn').disabled=false;
+    }
+    draw();
+  }
+  requestAnimationFrame(loop);
+}
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

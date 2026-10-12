@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>電磁鐵拾物比賽 互動模擬 | Sim: Electromagnet Pick-up</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.sim-wrap{max-width:760px;margin:0 auto}
+canvas{width:100%;height:auto;display:block;border:1px solid #ccc;border-radius:8px;background:#f7f9fb;touch-action:manipulation}
+.readout{background:#fff;border-left:5px solid #8e44ad;padding:.8rem 1rem;border-radius:6px;margin:1rem 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.readout .big{font-size:1.6rem;font-weight:700;color:#8e44ad}
+.big-btn{padding:.7rem 1.6rem;font-size:1.05rem;background:#8e44ad;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.big-btn.off{background:#e74c3c}
+label.slider{display:block;margin:.8rem 0 .3rem;font-weight:700}
+input[type=range]{width:100%;max-width:420px}
+.note{font-size:.92rem;color:#555}
+.flow{font-size:1.05rem;margin:.6rem 0}
+.flow b{color:#8e44ad}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>創科班 Little Makers Class</h1>
+<div class="en">S.K.H. Lui Ming Choi Secondary School</div>
+</div></header>
+<div class="wrap sim-wrap">
+<nav class="crumb"><a href="lesson-s1-06.html">← 返回課堂 Back to lesson</a></nav>
+<h2>電磁鐵拾物比賽 <span class="en">Electromagnet Pick-up Contest — Interactive Simulation</span></h2>
+<div class="card">
+<p><strong>玩法 How to play</strong>：調校線圈匝數同電池數目，按「通電」接上電池——看看電磁鐵吸起幾多枚回形針！再按「斷電」，睇下磁力點消失。<br>
+<span class="en">Set coil turns and battery count, then power on to attract paper clips. Power off and watch the magnetism vanish.</span></p>
+<p class="flow"><b>線圈 coil</b> ＋ <b>鐵芯 iron core</b> ＋ <b>電池 batteries</b> ＝ 電磁鐵 electromagnet（電生磁！）</p>
+</div>
+
+<label class="slider">線圈匝數 <span class="en">Coil turns</span>：<span id="turnVal">50</span> 匝</label>
+<input type="range" id="turns" min="10" max="100" step="5" value="50">
+<label class="slider">電池數目 <span class="en">Batteries</span>：<span id="batVal">2</span> 粒</label>
+<input type="range" id="bats" min="1" max="2" step="1" value="2">
+<div style="margin:.8rem 0">
+<button class="big-btn" id="powerBtn">⚡ 通電 Power ON</button>
+</div>
+
+<canvas id="cv" height="360"></canvas>
+
+<div class="readout">
+<div>吸起回形針 <span class="en">Paper clips attracted</span>：<span class="big" id="rClips">0</span> / 20 枚</div>
+<div id="rMsg" style="margin-top:.4rem"></div>
+<p class="note">安全提示（模擬裡面冇危險，真實做嗰陣）：嚴禁短路、唔好長時間接駁、用完即拆。<br>
+<span class="en">Real-world safety: never short-circuit, don't stay connected long, disconnect right after use.</span></p>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var W=700,H=360,turns=50,bats=2,power=false;
+var clips=[]; // {x,y,vx,vy,stuck,stickY}
+var target=0;
+for(var i=0;i<20;i++){clips.push({x:80+(i%10)*56,y:300+Math.floor(i/10)*28,vx:0,vy:0,stuck:false});}
+
+function targetClips(){return Math.min(20,Math.round(turns*bats/10));}
+var turnsEl=document.getElementById('turns'),batsEl=document.getElementById('bats');
+turnsEl.addEventListener('input',function(){turns=+turnsEl.value;document.getElementById('turnVal').textContent=turns;});
+batsEl.addEventListener('input',function(){bats=+batsEl.value;document.getElementById('batVal').textContent=bats;});
+var powerBtn=document.getElementById('powerBtn');
+powerBtn.addEventListener('click',function(){
+  power=!power;target=power?targetClips():0;
+  powerBtn.textContent=power?'🔌 斷電 Power OFF':'⚡ 通電 Power ON';
+  powerBtn.classList.toggle('off',power);
+  if(!power){clips.forEach(function(c){if(c.stuck){c.stuck=false;c.vy=1+Math.random()*2;c.vx=(Math.random()-0.5)*3;}});}
+});
+function fit(){var w=cv.clientWidth;cv.width=w;cv.height=Math.round(w*H/W);}
+window.addEventListener('resize',function(){fit();draw();});fit();
+
+function draw(){
+  var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);
+  var s=w/W;ctx.save();ctx.scale(s,s);
+  // nail (iron core) horizontal
+  var nailY=120;
+  ctx.fillStyle='#7f8c8d';ctx.fillRect(140,nailY-10,320,20);
+  ctx.fillStyle='#95a5a6';ctx.beginPath();ctx.moveTo(460,nailY-10);ctx.lineTo(492,nailY);ctx.lineTo(460,nailY+10);ctx.fill();
+  // coil windings
+  var n=Math.round(turns/5);
+  ctx.strokeStyle='#b87333';ctx.lineWidth=5;
+  for(var k=0;k<n;k++){var x=170+k*(280/n);
+    ctx.beginPath();ctx.arc(x,nailY,16,Math.PI*0.5,Math.PI*1.5);ctx.stroke();}
+  // wire to battery
+  ctx.strokeStyle='#b87333';ctx.lineWidth=4;ctx.beginPath();
+  ctx.moveTo(140,nailY-16);ctx.lineTo(90,nailY-16);ctx.lineTo(90,240);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(460,nailY+16);ctx.lineTo(600,nailY+16);ctx.lineTo(600,240);ctx.stroke();
+  // battery holder
+  ctx.fillStyle='#333';ctx.fillRect(250,230,220,46);
+  for(var b=0;b<bats;b++){ctx.fillStyle=b?'#f39c12':'#e74c3c';
+    ctx.fillRect(275+b*95,236,70,34);
+    ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText('AA',300+b*95,258);}
+  if(!power){ctx.fillStyle='#e74c3c';ctx.font='bold 15px sans-serif';ctx.fillText('✕ 電路斷開 (disconnected)',250,290);}
+  else{ctx.fillStyle='#27ae60';ctx.font='bold 15px sans-serif';ctx.fillText('✓ 通電中 (powered)',250,290);}
+  // magnetic field lines when powered
+  if(power){ctx.strokeStyle='rgba(142,68,173,.45)';ctx.lineWidth=2;
+    for(var f=0;f<4;f++){ctx.beginPath();ctx.arc(300,nailY,44+f*18,0,Math.PI*2);ctx.stroke();}}
+  // clips
+  clips.forEach(function(c){
+    ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.stuck?Math.PI/2:c.vy*0.1);
+    ctx.strokeStyle='#555';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(-9,-14);ctx.lineTo(9,-14);ctx.arc(9,-8,6,-Math.PI/2,Math.PI/2);
+    ctx.lineTo(-9,-2);ctx.arc(-9,-6,4,-Math.PI/2,Math.PI/2,true);ctx.stroke();
+    ctx.restore();
+  });
+  ctx.fillStyle='#333';ctx.font='13px sans-serif';
+  ctx.fillText('回形針 paper clips',60,270);
+  ctx.restore();
+}
+function loop(){
+  var changed=false,stuckCount=0;
+  clips.forEach(function(c){
+    if(c.stuck){stuckCount++;return;}
+    if(power&&stuckCount<target){
+      // fly toward nail tip region
+      var tx=190+stuckCount*13,ty=136+Math.random()*0;
+      c.x+=(tx-c.x)*0.08;c.y+=(ty-c.y)*0.08;changed=true;
+      if(Math.hypot(c.x-tx,c.y-ty)<3){c.stuck=true;}
+    }else if(!power&&c.vy!==0){
+      c.y+=c.vy;c.x+=c.vx;changed=true;
+      if(c.y>330){c.y=330;c.vy=0;c.vx=0;}
+    }
+  });
+  if(power){
+    var msg=document.getElementById('rMsg');
+    var t=targetClips();
+    msg.innerHTML='匝數 '+turns+' × 電池 '+bats+' → 預計吸起約 '+t+' 枚。<br><span class="en">More turns / batteries → stronger magnet.</span>';
+  }else{
+    document.getElementById('rMsg').innerHTML='斷電後磁力消失，回形針掉下——電磁鐵可以開關。<br><span class="en">Power off: magnetism vanishes.</span>';
+  }
+  var n2=clips.filter(function(c){return c.stuck;}).length;
+  document.getElementById('rClips').textContent=n2;
+  if(changed||power)draw();
+  requestAnimationFrame(loop);
+}
+draw();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
