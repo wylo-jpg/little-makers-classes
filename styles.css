@@ -1,0 +1,35 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Noto Sans TC","PingFang HK","Microsoft JhengHei",sans-serif;line-height:1.7;color:#222;background:#f7f9fc;padding:0 0 3rem}
+header{background:#1a5276;color:#fff;padding:1.4rem 1rem 1.1rem}
+header h1{font-size:1.35rem;margin-bottom:.2rem}
+header .en{font-size:.9rem;opacity:.85}
+.wrap{max-width:760px;margin:0 auto;padding:0 1rem}
+.crumb{font-size:.85rem;padding:.8rem 0;color:#555}
+.crumb a{color:#1a5276;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+h2{font-size:1.25rem;color:#1a5276;margin:1.2rem 0 .4rem}
+h2 .en{display:block;font-size:.85rem;color:#666;font-weight:400}
+p.en{color:#555;font-size:.92rem}
+.card{background:#fff;border:1px solid #dfe6ee;border-radius:10px;padding:1rem 1.1rem;margin:.8rem 0}
+.card a.title{font-size:1.05rem;font-weight:700;color:#1a5276;text-decoration:none}
+.card a.title:hover{text-decoration:underline}
+.card .en{font-size:.85rem;color:#666}
+.meta{font-size:.82rem;color:#888;margin-top:.2rem}
+.btns{display:flex;gap:.7rem;flex-wrap:wrap;margin:1rem 0}
+.btn{display:inline-block;background:#1a5276;color:#fff !important;padding:.7rem 1.3rem;border-radius:8px;text-decoration:none;font-weight:700}
+.btn.alt{background:#2e86c1}
+.file{display:flex;justify-content:space-between;align-items:center;gap:.8rem;background:#fff;border:1px solid #dfe6ee;border-radius:8px;padding:.7rem .9rem;margin:.5rem 0}
+.file a{color:#1a5276;font-weight:700;text-decoration:none}
+.file a:hover{text-decoration:underline}
+.file .size{font-size:.8rem;color:#888;white-space:nowrap}
+.sim-btn{display:inline-block;background:#e67e22;color:#fff !important;padding:.7rem 1.4rem;border-radius:8px;text-decoration:none;font-weight:700;margin:.7rem 0 .2rem;font-size:1.02rem}
+.sim-btn:hover{background:#d35400}
+.sim-btn .en{font-size:.82rem;opacity:.92;font-weight:400}
+table{width:100%;border-collapse:collapse;background:#fff;margin:1rem 0;font-size:.92rem}
+th,td{border:1px solid #dfe6ee;padding:.6rem .5rem;text-align:left;vertical-align:top}
+th{background:#1a5276;color:#fff}
+a.ext{color:#1a5276}
+footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #dfe6ee;font-size:.8rem;color:#888;text-align:center}
+.theme{background:#eaf6ff;border:1px solid #bcd9f2;border-radius:10px;padding:1rem 1.1rem;margin:1rem 0}
+.theme b{color:#1a5276}
+@media(min-width:640px){header h1{font-size:1.6rem}}
