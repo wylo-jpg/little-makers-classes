@@ -40,7 +40,7 @@
 <div class="howto">
 <b>玩法 How to play：</b>
 <ol>
-<li>揀<b>類別 A（紅）/ 類別 B（藍）</b>，再<b>撳畫布</b>加訓練樣本（模擬 Teachable Machine 影相）。左半係 A 類區，右半係 B 類區。</li>
+<li>揀<b>類別 A（紅）/ 類別 B（藍）</b>，再<b>撳畫布</b>加訓練樣本（模擬 Teachable Machine 影相）。<br>用「🔴 自動加紅點」/「🔵 自動加藍點」快速加樣本。<br>💡 你可以自由擺位——試下將藍點放喺左邊，睇下測試會點！</li>
 <li>撳「<b>訓練</b>」——電腦會計出兩個類別嘅中心，畫出<b>分界線</b>。</li>
 <li>撳「<b>測試</b>」——用電腦未見過嘅新點考佢，睇準確率。</li>
 <li>做<b>偏見實驗</b>：只用左上角訓練 A 類，再全面測試——睇下會發生咩事。</li>
@@ -50,18 +50,28 @@
 <div class="ctrls">
 <button class="classbtn a onA" id="btnA">🔴 類別 A（左區）</button>
 <button class="classbtn b" id="btnB">🔵 類別 B（右區）</button>
-<button class="ghostbtn" id="autoBtn">📸 自動加 20 個樣本</button>
+<button class="ghostbtn" id="autoBtnA">🔴 自動加紅點</button>
+<button class="ghostbtn" id="autoBtnB">🔵 自動加藍點</button>
 <button class="ghostbtn" id="clearBtn">🗑 清除</button>
 </div>
 
 <div class="sliderbox">
-<label>📊 每類樣本數（自動加時用）：<b id="nVal">20</b></label><br>
+<label>📊 自動加樣本數：<b id="nVal">20</b></label><br>
 <input type="range" id="nSamples" min="3" max="60" value="20">
 </div>
 
 <canvas id="cv" width="560" height="360"></canvas>
 
 <div class="ctrls">
+<div style="background:#f8f9fa;border:1px solid #ddd;border-radius:8px;padding:.7rem 1rem;margin:.6rem 0;font-size:.9rem;line-height:1.8">
+<b>圖例 Legend：</b><br>
+🔴 紅點＝A類訓練樣本（你畀電腦睇嘅）<br>
+🔵 藍點＝B類訓練樣本<br>
+🟢 綠點＝測試新點（AI估啱咗）<br>
+❌ 紅叉＝測試新點（AI估錯咗）<br>
+⭕ 大圓點＝電腦計出嘅類別中心<br>
+🟣 紫線＝AI學到嘅分界線
+</div>
 <button class="bigbtn" id="trainBtn">🧠 訓練 Train</button>
 <button class="bigbtn" id="testBtn" disabled>🧪 測試 Test</button>
 <button class="ghostbtn" id="biasBtn">⚠️ 偏見實驗：只用左上角訓練 A 類</button>
@@ -135,19 +145,24 @@ function centroid(arr){
   arr.forEach(function(p){ sx+=p.x; sy+=p.y; });
   return {x:sx/arr.length, y:sy/arr.length};
 }
-function addRandom(n, biased){
+function addRandom(n, biased, onlyClass){
   for(var i=0;i<n;i++){
-    if(biased){
-      ptsA.push({x: 30+Math.random()*120, y: 30+Math.random()*100}); // 左上角
-    } else {
-      ptsA.push({x: 20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+    if(!onlyClass || onlyClass==='A'){
+      if(biased){
+        ptsA.push({x: 30+Math.random()*50, y: 30+Math.random()*50}); // 左上角細角落
+      } else {
+        ptsA.push({x: 20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+      }
     }
-    ptsB.push({x: W/2+20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+    if(!onlyClass || onlyClass==='B'){
+      ptsB.push({x: W/2+20+Math.random()*(W/2-40), y: 20+Math.random()*(H-40)});
+    }
   }
   trained = false; testPts = []; boundary = null;
   document.getElementById('testBtn').disabled = true;
   document.getElementById('stAcc').textContent = '—';
   document.getElementById('accFill').style.width = '0';
+  hideLesson();
   draw(); stats();
 }
 cv.addEventListener('click', function(e){
@@ -156,6 +171,10 @@ cv.addEventListener('click', function(e){
   var y = (e.clientY - r.top) * (H / r.height);
   (activeClass === 'A' ? ptsA : ptsB).push({x:x, y:y});
   trained = false; boundary = null; testPts = [];
+  document.getElementById('testBtn').disabled = true;
+  document.getElementById('stAcc').textContent = '—';
+  document.getElementById('accFill').style.width = '0';
+  hideLesson();
   document.getElementById('testBtn').disabled = true;
   document.getElementById('stAcc').textContent = '—';
   draw(); stats();
@@ -169,8 +188,11 @@ document.getElementById('btnB').onclick = function(){
   this.classList.add('onB'); document.getElementById('btnA').classList.remove('onA');
 };
 document.getElementById('nSamples').oninput = function(){ document.getElementById('nVal').textContent = this.value; };
-document.getElementById('autoBtn').onclick = function(){
-  addRandom(parseInt(document.getElementById('nSamples').value,10), false);
+document.getElementById('autoBtnA').onclick = function(){
+  addRandom(parseInt(document.getElementById('nSamples').value,10), false, 'A');
+};
+document.getElementById('autoBtnB').onclick = function(){
+  addRandom(parseInt(document.getElementById('nSamples').value,10), false, 'B');
 };
 document.getElementById('clearBtn').onclick = function(){
   ptsA=[]; ptsB=[]; testPts=[]; boundary=null; trained=false;
@@ -194,28 +216,45 @@ function hideLesson(){ document.getElementById('lessonBox').style.display='none'
 document.getElementById('trainBtn').onclick = function(){
   if(ptsA.length===0 || ptsB.length===0){ alert('兩類都要有樣本先訓練到！'); return; }
   var cA = centroid(ptsA), cB = centroid(ptsB);
+  var rA = maxDist(ptsA, cA), rB = maxDist(ptsB, cB);
   // 分界線：兩中心連線的中垂線
   var mx=(cA.x+cB.x)/2, my=(cA.y+cB.y)/2;
   var dx=cB.x-cA.x, dy=cB.y-cA.y;
   // 中垂線方向 (-dy, dx)
   var t = 2000, nx=-dy, ny=dx;
   var len = Math.sqrt(nx*nx+ny*ny)||1; nx/=len; ny/=len;
-  boundary = {x1:mx-nx*t, y1:my-ny*t, x2:mx+nx*t, y2:my+ny*t, cA:cA, cB:cB, dx:dx, dy:dy, mx:mx, my:my};
+  boundary = {x1:mx-nx*t, y1:my-ny*t, x2:mx+nx*t, y2:my+ny*t, cA:cA, cB:cB, rA:rA, rB:rB, nA:ptsA.length, nB:ptsB.length, dx:dx, dy:dy, mx:mx, my:my};
   trained = true; testPts = [];
   document.getElementById('testBtn').disabled = false;
   document.getElementById('stAcc').textContent = '—';
   showLesson('🧠 <b>訓練完成！</b>電腦搵到兩類樣本嘅中心（大圓點），畫出紫色<b>分界線</b>——<br>電腦唔係「諗」，只係<b>比對圖案特徵</b>（邊個中心近就歸邊類）。宜家撳「測試」！');
   draw();
 };
+function maxDist(pts, c){
+  var m = 0;
+  pts.forEach(function(p){
+    var d = Math.sqrt((p.x-c.x)*(p.x-c.x)+(p.y-c.y)*(p.y-c.y));
+    if(d > m) m = d;
+  });
+  return m;
+}
 function classify(x, y){
-  // 邊個中心近
+  // 中心＋半徑＋樣本數：樣本愈少信心愈低，超出範圍＝AI唔識＝當錯
   var cA = boundary.cA, cB = boundary.cB;
-  var dA = (x-cA.x)*(x-cA.x)+(y-cA.y)*(y-cA.y);
-  var dB = (x-cB.x)*(x-cB.x)+(y-cB.y)*(y-cB.y);
-  return dA < dB ? 'A' : 'B';
+  var confA = Math.min(1, boundary.nA / 10);
+  var confB = Math.min(1, boundary.nB / 10);
+  var dA = Math.sqrt((x-cA.x)*(x-cA.x)+(y-cA.y)*(y-cA.y));
+  var dB = Math.sqrt((x-cB.x)*(x-cB.x)+(y-cB.y)*(y-cB.y));
+  var inA = dA <= boundary.rA * 1.2 * confA;
+  var inB = dB <= boundary.rB * 1.2 * confB;
+  if(inA && !inB) return 'A';
+  if(inB && !inA) return 'B';
+  if(inA && inB) return dA < dB ? 'A' : 'B';
+  return '?';
 }
 document.getElementById('testBtn').onclick = function(){
   if(!trained) return;
+  showLesson('🔬 <b>測試中…</b><br>電腦而家用<b>40個全新、未見過</b>嘅點考自己：<br>• 左邊撒20個（答案應該係A類）<br>• 右邊撒20個（答案應該係B類）<br>• 綠點＝AI估啱，紅叉＝AI估錯<br>睇下準確率有幾高！');
   testPts = [];
   var right = 0, N = 40;
   for(var i=0;i<N;i++){
